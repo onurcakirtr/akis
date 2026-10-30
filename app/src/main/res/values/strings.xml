@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">Akış</string>
     <string name="share_to_tv">TV\'de oynat</string>
+    <string name="widget_small_desc">Yayını tek dokunuşla aç / kapat</string>
+    <string name="widget_large_desc">Durum, oynatılan dosya ve TV kumandası</string>
+    <string name="widget_small_label">Akış • aç/kapat</string>
+    <string name="widget_large_label">Akış • kumanda</string>
 </resources>

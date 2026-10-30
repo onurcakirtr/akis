@@ -33,7 +33,10 @@ import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.VerifiedUser
 import androidx.compose.material.icons.rounded.RestartAlt
@@ -74,6 +77,7 @@ import com.akis.app.Prefs
 import com.akis.app.ServerState
 import com.akis.app.WatchHistory
 import com.akis.app.cast.Remote
+import com.akis.app.widget.Widgets
 import com.akis.app.dlna.MediaLibrary
 import com.akis.app.dlna.Subtitles
 import com.akis.app.dlna.Uploads
@@ -239,7 +243,13 @@ fun SettingsScreen() {
                             TextButton(onClick = { editPin = true }) { Text("Değiştir") }
                         }
                     },
-                ) { on -> if (on) editPin = true else Prefs.update { putString("webPin", "") } }
+                ) { on ->
+                    if (on) {
+                        editPin = true
+                    } else {
+                        Prefs.update { putString("webPin", "") }
+                    }
+                }
                 FeatureRow(
                     Icons.Rounded.Upload, "Web'den yükleme",
                     "Bilgisayarın tarayıcısından telefona sürükle-bırak dosya gönder",
@@ -270,7 +280,24 @@ fun SettingsScreen() {
                     Prefs.set("cast", on)
                     if (on) Remote.ensureInit() else Remote.disconnect()
                 }
-                // FEATURES
+                FeatureRow(
+                    Icons.Rounded.Widgets, "Ana ekran widget'ları",
+                    "Küçük: aç/kapat • Büyük: durum, oynatılan dosya ve TV kumandası",
+                    s.widget, divider = true,
+                ) { on ->
+                    Prefs.set("widget", on)
+                    Widgets.setEnabled(ctx, on)
+                }
+                FeatureRow(
+                    Icons.Rounded.Notifications, "Bildirim paneli ayrıntıları",
+                    "Bildirimde ve hızlı ayar kutucuğunda ilerleme, cihaz sayısı, oynatılan dosya",
+                    s.notifDetails, divider = true,
+                ) { Prefs.set("notifDetails", it) }
+                FeatureRow(
+                    Icons.Rounded.Tune, "Bildirimde kumanda",
+                    "TV'ye gönderirken bildirimde oynat/duraklat/sar; telefonun ses tuşları TV'nin sesini açar/kısar",
+                    s.notifControls, divider = true,
+                ) { Prefs.set("notifControls", it) }
             }
         }
 

@@ -127,7 +127,11 @@ fun SendScreen() {
         }
     }
     BackHandler(enabled = stack.size > 1 || query.isNotEmpty()) {
-        if (query.isNotEmpty()) query = "" else stack = stack.dropLast(1)
+        if (query.isNotEmpty()) {
+            query = ""
+        } else {
+            stack = stack.dropLast(1)
+        }
     }
 
     val folderId = stack.last().first

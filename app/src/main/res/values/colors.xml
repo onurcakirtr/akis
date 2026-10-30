@@ -1,3 +1,9 @@
 <resources>
     <color name="ic_bg">#FF0A0A0A</color>
+    <!-- Widget: web arayüzüyle aynı palet -->
+    <color name="widget_bg">#FFF4F4F6</color>
+    <color name="widget_fg">#FF111111</color>
+    <color name="widget_muted">#FF66666C</color>
+    <color name="widget_tonal">#14000000</color>
+    <color name="widget_accent">#FFD71921</color>
 </resources>

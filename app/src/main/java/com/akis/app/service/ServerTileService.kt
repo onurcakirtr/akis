@@ -5,7 +5,10 @@ import android.content.Intent
 import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
+import com.akis.app.Prefs
 import com.akis.app.ServerState
+import com.akis.app.cast.Remote
+import kotlinx.coroutines.flow.combine
 import com.akis.app.ui.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,7 +22,7 @@ class ServerTileService : TileService() {
     override fun onStartListening() {
         super.onStartListening()
         job = CoroutineScope(Dispatchers.Main).launch {
-            ServerState.running.collect { render(it) }
+            combine(ServerState.running, ServerState.streams, Remote.state) { on, _, _ -> on }.collect { render(it) }
         }
     }
 
@@ -57,7 +60,17 @@ class ServerTileService : TileService() {
         val t = qsTile ?: return
         t.state = if (on) Tile.STATE_ACTIVE else Tile.STATE_INACTIVE
         t.label = "Akış"
-        t.subtitle = if (on) "Yayında" else "Kapalı"
+        val rs = Remote.state.value
+        val stream = ServerState.streams.value.firstOrNull()
+        val clients = ServerState.clients.value.size
+        t.subtitle = when {
+            !on -> "Kapalı"
+            !Prefs.current.notifDetails -> "Yayında"
+            rs.hasMedia -> (if (rs.playing) "▶ " else "⏸ ") + rs.title
+            stream != null -> "▶ ${stream.title}"
+            clients > 0 -> "Yayında • $clients cihaz"
+            else -> "Yayında"
+        }
         t.updateTile()
     }
 }

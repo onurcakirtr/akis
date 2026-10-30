@@ -211,8 +211,8 @@ object Remote {
         if (st.playing) backend?.pause() else backend?.resume()
     }
 
-    fun pause() = backend?.pause()
-    fun resume() = backend?.resume()
+    fun pause() { backend?.pause() }
+    fun resume() { backend?.resume() }
 
     fun stop() {
         backend?.stop()
