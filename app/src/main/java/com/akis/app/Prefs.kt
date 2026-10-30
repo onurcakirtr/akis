@@ -33,10 +33,8 @@ data class Settings(
     val webPin: String,             // boşsa PIN kapalı
     val upload: Boolean,            // web arayüzünden yükleme
     val uploadFolder: String,       // boşsa İndirilenler/Akış
-    val cast: Boolean,              // TV'ye gönderme (Google Cast + DLNA)
     val widget: Boolean,            // ana ekran widget'ları
     val notifDetails: Boolean,      // bildirimde ilerleme / cihaz sayısı
-    val notifControls: Boolean,     // bildirimde medya kumandası
 )
 
 /** Basit, senkron ayar deposu. Değişiklikler StateFlow ile UI'ye ve servise yansır. */
@@ -79,10 +77,8 @@ object Prefs {
         webPin = sp.getString("webPin", "") ?: "",
         upload = sp.getBoolean("upload", false),
         uploadFolder = sp.getString("uploadFolder", "") ?: "",
-        cast = sp.getBoolean("cast", true),
         widget = sp.getBoolean("widget", true),
         notifDetails = sp.getBoolean("notifDetails", true),
-        notifControls = sp.getBoolean("notifControls", true),
     )
 
     fun update(block: SharedPreferences.Editor.() -> Unit) {

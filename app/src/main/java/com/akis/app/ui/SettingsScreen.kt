@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
-import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.DeleteSweep
@@ -35,7 +34,6 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
-import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.VerifiedUser
@@ -76,7 +74,6 @@ import com.akis.app.DeviceAccess
 import com.akis.app.Prefs
 import com.akis.app.ServerState
 import com.akis.app.WatchHistory
-import com.akis.app.cast.Remote
 import com.akis.app.widget.Widgets
 import com.akis.app.dlna.MediaLibrary
 import com.akis.app.dlna.Subtitles
@@ -273,16 +270,8 @@ fun SettingsScreen() {
                     },
                 ) { Prefs.set("upload", it) }
                 FeatureRow(
-                    Icons.Rounded.Cast, "TV'ye gönderme",
-                    "Google TV / Chromecast ve DLNA TV'lere gönder, telefondan kumanda et",
-                    s.cast, divider = true,
-                ) { on ->
-                    Prefs.set("cast", on)
-                    if (on) Remote.ensureInit() else Remote.disconnect()
-                }
-                FeatureRow(
                     Icons.Rounded.Widgets, "Ana ekran widget'ları",
-                    "Küçük: aç/kapat • Büyük: durum, oynatılan dosya ve TV kumandası",
+                    "Küçük: aç/kapat • Büyük: durum, bağlı cihazlar ve oynatılan dosya",
                     s.widget, divider = true,
                 ) { on ->
                     Prefs.set("widget", on)
@@ -293,11 +282,6 @@ fun SettingsScreen() {
                     "Bildirimde ve hızlı ayar kutucuğunda ilerleme, cihaz sayısı, oynatılan dosya",
                     s.notifDetails, divider = true,
                 ) { Prefs.set("notifDetails", it) }
-                FeatureRow(
-                    Icons.Rounded.Tune, "Bildirimde kumanda",
-                    "TV'ye gönderirken bildirimde oynat/duraklat/sar; telefonun ses tuşları TV'nin sesini açar/kısar",
-                    s.notifControls, divider = true,
-                ) { Prefs.set("notifControls", it) }
             }
         }
 

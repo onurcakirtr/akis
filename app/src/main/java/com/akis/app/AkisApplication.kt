@@ -5,7 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ComponentName
 import android.service.quicksettings.TileService
-import com.akis.app.cast.Remote
 import com.akis.app.service.ServerTileService
 import com.akis.app.widget.Widgets
 import kotlinx.coroutines.CoroutineScope
@@ -21,7 +20,6 @@ class AkisApplication : Application() {
         Prefs.init(this)
         WatchHistory.init(this)
         DeviceAccess.init(this)
-        com.akis.app.cast.Remote.init(this)
         watchState()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
@@ -45,12 +43,11 @@ class AkisApplication : Application() {
     /** Sunucu / TV durumu değişince widget'ları ve hızlı ayar kutucuğunu tazeler (ilerleme 5 sn'de bir). */
     private fun watchState() {
         CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {
-            combine(ServerState.running, ServerState.clients, ServerState.streams, Remote.state, Prefs.settings) { run, c, s, rs, set ->
+            combine(ServerState.running, ServerState.clients, ServerState.streams, ServerState.address, Prefs.settings) { run, c, s, a, set ->
                 val st = s.firstOrNull()
                 listOf(
-                    run, c.size, ServerState.address.value, st?.title, st?.let { if (it.size > 0) it.position * 20 / it.size else 0 },
-                    rs.title, rs.playing, rs.buffering, rs.hasMedia, rs.device?.name, rs.positionMs / 5000,
-                    set.widget, set.notifDetails, set.cast,
+                    run, c.size, a, st?.title, st?.let { if (it.size > 0) it.position * 20 / it.size else 0 },
+                    set.widget, set.notifDetails,
                 )
             }.distinctUntilChanged().collect {
                 Widgets.refresh(this@AkisApplication)

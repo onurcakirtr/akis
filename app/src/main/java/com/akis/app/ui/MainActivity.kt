@@ -3,7 +3,6 @@ package com.akis.app.ui
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -23,7 +22,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.VideoLibrary
@@ -46,9 +44,7 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.Prefs
 import com.akis.app.ServerState
-import com.akis.app.dlna.MediaLibrary
 import com.akis.app.service.DlnaService
-import kotlinx.coroutines.flow.MutableStateFlow
 import com.akis.app.ui.theme.AkisTheme
 import com.akis.app.ui.theme.LocalNothingStyle
 
@@ -82,24 +78,6 @@ class MainActivity : ComponentActivity() {
 
     private fun handleIntent(intent: Intent?) {
         if (intent?.action == DlnaService.ACTION_START && !ServerState.running.value) DlnaService.start(this)
-        if (intent?.action == Intent.ACTION_SEND || intent?.action == Intent.ACTION_SEND_MULTIPLE) {
-            @Suppress("DEPRECATION")
-            val uri: Uri? = intent.getParcelableExtra(Intent.EXTRA_STREAM)
-                ?: intent.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)?.firstOrNull()
-            val e = uri?.let { MediaLibrary(this).share(it, intent.type) }
-            if (e != null) {
-                pendingShare.value = e
-                openTab.value = TAB_SEND
-            }
-        }
-        if (intent?.action == ACTION_OPEN_SEND) openTab.value = TAB_SEND
-    }
-
-    companion object {
-        const val ACTION_OPEN_SEND = "com.akis.app.OPEN_SEND"
-        const val TAB_SEND = 1
-        /** Dışarıdan (paylaşım, bildirim, widget) açılacak sekme. */
-        val openTab = MutableStateFlow<Int?>(null)
     }
 }
 
@@ -107,7 +85,6 @@ private data class Tab(val label: String, val icon: androidx.compose.ui.graphics
 
 private val tabs = listOf(
     Tab("Yayın", Icons.Rounded.Home),
-    Tab("Gönder", Icons.Rounded.Cast),
     Tab("Kaynaklar", Icons.Rounded.VideoLibrary),
     Tab("Ayarlar", Icons.Rounded.Settings),
 )
@@ -116,13 +93,6 @@ private val tabs = listOf(
 fun AppRoot() {
     val ctx = LocalContext.current
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    val requested by MainActivity.openTab.collectAsStateWithLifecycle()
-    LaunchedEffect(requested) {
-        requested?.let {
-            tab = it
-            MainActivity.openTab.value = null
-        }
-    }
     val nothing = LocalNothingStyle.current
     val cs = MaterialTheme.colorScheme
 
@@ -167,8 +137,7 @@ fun AppRoot() {
             ) { t ->
                 when (t) {
                     0 -> HomeScreen()
-                    1 -> SendScreen()
-                    2 -> SourcesScreen()
+                    1 -> SourcesScreen()
                     else -> SettingsScreen()
                 }
             }

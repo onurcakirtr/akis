@@ -50,11 +50,6 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("com.google.zxing:core:3.5.3")
-    // TV'ye gönderme: Google Cast (Google TV / Chromecast) + cihaz bulma
-    implementation("com.google.android.gms:play-services-cast-framework:22.0.0")
-    implementation("androidx.mediarouter:mediarouter:1.7.0")
-    // Bildirimde medya kumandası
-    implementation("androidx.media:media:1.7.0")
 }
 
 kotlin {

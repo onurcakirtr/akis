@@ -24,7 +24,7 @@ data class WatchRecord(
 
 /**
  * İzleme geçmişi: hangi videonun nereye kadar izlendiği.
- *  - Kendi kumandamız (Cast / DLNA) ve web oynatıcı tam saniyeyi bildirir
+ *  - Web oynatıcı tam saniyeyi bildirir
  *  - TV dosyayı kendi açtığında, gönderilen bayttan tahmin edilir
  */
 object WatchHistory {
@@ -36,8 +36,6 @@ object WatchHistory {
     private val _records = MutableStateFlow<List<WatchRecord>>(emptyList())
     val records: StateFlow<List<WatchRecord>> get() = _records
     @Volatile private var saveQueued = false
-    /** Kumandayla oynatılan video: konumu kesin bilindiği için bayt tahmini yapılmaz. */
-    @Volatile var preciseId: String? = null
 
     private val enabled get() = Prefs.current.history
 
@@ -68,7 +66,7 @@ object WatchHistory {
 
     fun inProgress(): List<WatchRecord> = synchronized(map) { map.values.filter { it.inProgress }.sortedByDescending { it.updated } }
 
-    /** Kesin konum bildirimi (kumanda, web oynatıcı). */
+    /** Kesin konum bildirimi (web oynatıcı). */
     fun report(id: String, title: String, posMs: Long, durMs: Long) {
         if (!enabled || durMs <= 0) return
         val prev = get(id)
@@ -82,7 +80,7 @@ object WatchHistory {
      * önceden okur; bu yüzden sondan başlayan istekler yok sayılır ve tahmin biraz geride tutulur.
      */
     fun reportBytes(e: Entry, requestStart: Long, pos: Long, size: Long) {
-        if (!enabled || e.kind != Kind.VIDEO || e.durationMs <= 0 || size <= 0 || e.id == preciseId) return
+        if (!enabled || e.kind != Kind.VIDEO || e.durationMs <= 0 || size <= 0) return
         val prev = get(e.id)
         val startFrac = requestStart.toFloat() / size
         if (startFrac > 0.9f && (prev == null || prev.fraction < 0.8f)) return

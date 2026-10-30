@@ -12,14 +12,13 @@ Telefonundaki videoları, müzikleri ve fotoğrafları yerel ağdaki **VLC, akı
 - **Hızlı ayar kutucuğu:** bildirim panelinden tek dokunuşla aç/kapa
 - Ekran kapalıyken de çalışır (foreground service + Wi-Fi/multicast kilidi)
 - Telefonun hotspot'u açıkken de çalışır
-- **TV'ye gönder:** Google TV / Chromecast (Google Cast) ve DLNA TV'lere telefondan gönder; oynat/duraklat, sarma, ses kumandası; *Paylaş → TV'de oynat*
 - **Arama:** TV/VLC'den ve web arayüzünden başlık, sanatçı, albüm araması (Türkçe karakter duyarsız)
 - **İzleme geçmişi:** *Devam et* ve *İzlenmemiş* klasörleri, izlenenlere ✓, kaldığın yerden devam
 - **Gelişmiş altyazı:** .srt/.vtt/.ass/.sub, `film.tr.srt` gibi dilli adlar, Türkçe karakter düzeltme
 - **Web'den yükleme:** bilgisayarın tarayıcısından telefona sürükle-bırak dosya gönder
 - **Güvenlik:** yeni cihazlar için *İzin ver / Engelle* onayı, web PIN'i
 - **Gizli klasörler:** `.nomedia` içerenler ve elle gizlediklerin paylaşılmaz
-- **Widget'lar ve bildirim:** aç/kapat widget'ı, kumandalı büyük widget, bildirimde ilerleme ve medya kumandası; telefonun ses tuşları TV'nin sesini ayarlar
+- **Widget'lar ve bildirim:** aç/kapat widget'ı, durum widget'ı, bildirimde ve kutucukta ilerleme ile oynatılan dosya
 - Her özellik *Ayarlar → Özellikler*'den açılıp kapatılabilir
 - **İki tema:** Material You (duvar kâğıdına göre renk alır) ve **Nothing** (siyah-beyaz, kırmızı vurgu, nokta ızgarası, mono yazı); açık / koyu / sistem modu
 
@@ -55,11 +54,8 @@ service/DlnaService.kt Ön plan servisi, kilitler, bildirim, ağ değişimi
 service/ServerTileService.kt  Hızlı ayar kutucuğu
 dlna/Subtitles.kt      Altyazı eşleştirme ve srt/vtt dönüştürme
 dlna/Uploads.kt        Web'den gelen dosyaları kaydetme
-cast/Remote.kt         TV'ye gönderme cephesi (Cast + DLNA ortak kumanda)
-cast/CastBackend.kt    Google Cast (Google TV / Chromecast)
-cast/DlnaRenderer.kt   DLNA TV'leri bulma ve AVTransport kumandası
 WatchHistory.kt        İzleme geçmişi
 DeviceAccess.kt        Cihaz onayı ve web PIN'i
-widget/Widgets.kt      Ana ekran widget'ları ve kumanda düğmeleri
-ui/…                   Compose + Material 3 arayüzü (Yayın / Gönder / Kaynaklar / Ayarlar)
+widget/Widgets.kt      Ana ekran widget'ları
+ui/…                   Compose + Material 3 arayüzü (Yayın / Kaynaklar / Ayarlar)
 ```

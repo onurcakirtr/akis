@@ -24,17 +24,8 @@ import com.akis.app.R
 import com.akis.app.ServerState
 import com.akis.app.dlna.DlnaServer
 import com.akis.app.net.NetUtil
-import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaSessionCompat
-import android.support.v4.media.session.PlaybackStateCompat
-import androidx.media.VolumeProviderCompat
-import androidx.media.app.NotificationCompat.MediaStyle
-import com.akis.app.cast.Remote
 import com.akis.app.ui.MainActivity
 import com.akis.app.ui.formatBytes
-import com.akis.app.ui.formatDuration
-import com.akis.app.widget.Widgets
-import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -131,18 +122,14 @@ class DlnaService : Service() {
         val sc = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         scope = sc
         sc.launch {
-            combine(ServerState.address, ServerState.clients, ServerState.streams, Remote.state, Prefs.settings) { a, c, s, rs, set ->
+            combine(ServerState.address, ServerState.clients, ServerState.streams, Prefs.settings) { a, c, s, set ->
                 val st = s.firstOrNull()
                 listOf(
                     a, c.size, st?.let { "${it.title} → ${it.client}" },
                     if (set.notifDetails && st != null && st.size > 0) st.position * 50 / st.size else null,
-                    rs.title, rs.playing, rs.buffering, rs.hasMedia, rs.volume, rs.device?.name,
-                    rs.positionMs / 5000, set.notifDetails, set.notifControls, set.cast,
+                    set.notifDetails,
                 )
-            }.distinctUntilChanged().collect {
-                updateSession()
-                updateNotification()
-            }
+            }.distinctUntilChanged().collect { updateNotification() }
         }
         sc.launch {
             while (isActive) {
@@ -244,9 +231,6 @@ class DlnaService : Service() {
             ServerState.log("Yayın durdu")
         }
         releaseLocks()
-        session?.release()
-        session = null
-        volumeProvider = null
         ServerState.running.value = false
         ServerState.address.value = null
         ServerState.streams.value = emptyList()
@@ -261,9 +245,7 @@ class DlnaService : Service() {
 
     private fun buildNotification(): Notification {
         val s = Prefs.current
-        val rs = Remote.state.value
-        val remote = s.cast && rs.hasMedia
-        val open = if (remote) Widgets.openIntent(this, true) else PendingIntent.getActivity(
+        val open = PendingIntent.getActivity(
             this, 0, Intent(this, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
@@ -274,14 +256,8 @@ class DlnaService : Service() {
         val addr = ServerState.address.value
         val stream = ServerState.streams.value.firstOrNull()
         val clients = ServerState.clients.value.size
-        val title = when {
-            remote -> (if (rs.playing) "▶ " else "⏸ ") + rs.title
-            stream != null -> "▶ ${stream.title}"
-            else -> "Akış yayında"
-        }
+        val title = if (stream != null) "▶ ${stream.title}" else "Akış yayında"
         val text = when {
-            remote -> "${rs.device?.name ?: "TV"} cihazında" +
-                if (s.notifDetails && rs.durationMs > 0) " • ${formatDuration(rs.positionMs)} / ${formatDuration(rs.durationMs)}" else ""
             stream != null -> "${stream.client} cihazında oynatılıyor"
             addr != null -> "${s.name} • $addr" + if (clients > 0) " • $clients cihaz" else ""
             else -> "Ağ bekleniyor…"
@@ -298,98 +274,12 @@ class DlnaService : Service() {
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(open)
+            .addAction(0, "Durdur", stop)
         if (s.notifDetails) {
-            when {
-                remote && rs.durationMs > 0 && !s.notifControls -> b.setProgress(1000, Widgets.progress(rs), false)
-                !remote && stream != null && stream.size > 0 -> b.setProgress(1000, (stream.position * 1000 / stream.size).toInt(), false)
-            }
+            if (stream != null && stream.size > 0) b.setProgress(1000, (stream.position * 1000 / stream.size).toInt(), false)
             if (addr != null) b.setSubText("$clients cihaz • ${formatBytes(ServerState.bytesSent.value)} gönderildi")
         }
-        if (remote && s.notifControls) {
-            b.addAction(R.drawable.ic_w_rewind, "10 sn geri", Widgets.controlIntent(this, "rew"))
-            b.addAction(
-                if (rs.playing) R.drawable.ic_w_pause else R.drawable.ic_w_play,
-                if (rs.playing) "Duraklat" else "Oynat",
-                Widgets.controlIntent(this, "toggle"),
-            )
-            b.addAction(R.drawable.ic_w_forward, "30 sn ileri", Widgets.controlIntent(this, "fwd"))
-            b.addAction(R.drawable.ic_w_stop, "TV'de durdur", Widgets.controlIntent(this, "stop"))
-            b.addAction(R.drawable.ic_w_power, "Yayını kapat", stop)
-            b.setStyle(
-                MediaStyle()
-                    .setMediaSession(session?.sessionToken)
-                    .setShowActionsInCompactView(0, 1, 2),
-            )
-        } else {
-            b.addAction(0, "Durdur", stop)
-        }
         return b.build()
-    }
-
-    // ---------------- Medya oturumu (bildirimde kumanda + ses tuşları) ----------------
-
-    private var session: MediaSessionCompat? = null
-    private var volumeProvider: VolumeProviderCompat? = null
-
-    private fun updateSession() {
-        val s = Prefs.current
-        val rs = Remote.state.value
-        if (!(s.cast && s.notifControls && rs.hasMedia)) {
-            session?.isActive = false
-            return
-        }
-        val ms = session ?: MediaSessionCompat(this, "akis").also { m ->
-            m.setCallback(object : MediaSessionCompat.Callback() {
-                override fun onPlay() = Remote.resume()
-                override fun onPause() = Remote.pause()
-                override fun onStop() = Remote.stop()
-                override fun onSeekTo(pos: Long) = Remote.seek(pos)
-                override fun onFastForward() = Remote.skip(30_000)
-                override fun onRewind() = Remote.skip(-10_000)
-            })
-            session = m
-        }
-        ms.setMetadata(
-            MediaMetadataCompat.Builder()
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, rs.title)
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, rs.device?.name ?: "TV")
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, rs.durationMs)
-                .build(),
-        )
-        val state = when {
-            rs.buffering -> PlaybackStateCompat.STATE_BUFFERING
-            rs.playing -> PlaybackStateCompat.STATE_PLAYING
-            else -> PlaybackStateCompat.STATE_PAUSED
-        }
-        ms.setPlaybackState(
-            PlaybackStateCompat.Builder()
-                .setActions(
-                    PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE or PlaybackStateCompat.ACTION_PLAY_PAUSE or
-                        PlaybackStateCompat.ACTION_STOP or PlaybackStateCompat.ACTION_SEEK_TO or
-                        PlaybackStateCompat.ACTION_FAST_FORWARD or PlaybackStateCompat.ACTION_REWIND,
-                )
-                .setState(state, rs.positionMs, if (rs.playing) 1f else 0f)
-                .build(),
-        )
-        // Telefonun ses tuşları TV'nin sesini değiştirsin
-        val vol = (rs.volume * 100).roundToInt()
-        val vp = volumeProvider ?: object : VolumeProviderCompat(VolumeProviderCompat.VOLUME_CONTROL_ABSOLUTE, 100, vol) {
-            override fun onSetVolumeTo(volume: Int) {
-                Remote.setVolume(volume / 100f)
-                currentVolume = volume
-            }
-
-            override fun onAdjustVolume(direction: Int) {
-                if (direction == 0) return
-                Remote.volumeStep(direction > 0)
-                currentVolume = (currentVolume + if (direction > 0) 5 else -5).coerceIn(0, 100)
-            }
-        }.also {
-            volumeProvider = it
-            ms.setPlaybackToRemote(it)
-        }
-        vp.currentVolume = vol
-        ms.isActive = true
     }
 
     private fun updateNotification() {
