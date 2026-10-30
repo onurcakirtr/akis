@@ -30,6 +30,8 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Password
+import androidx.compose.material.icons.rounded.VerifiedUser
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Router
 import androidx.compose.material.icons.rounded.Search
@@ -61,6 +63,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.akis.app.DeviceAccess
 import com.akis.app.Prefs
 import com.akis.app.ServerState
 import com.akis.app.WatchHistory
@@ -75,6 +78,8 @@ fun SettingsScreen() {
     var editName by remember { mutableStateOf(false) }
     var editPort by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
+    var editPin by remember { mutableStateOf(false) }
+    val devices by DeviceAccess.devices.collectAsStateWithLifecycle()
     val startedAt by ServerState.startedAt.collectAsStateWithLifecycle()
     // Sunucu açıkken port değişirse yeniden başlatma öner
     val portAtStart = remember(startedAt, running) { s.port }
@@ -176,6 +181,40 @@ fun SettingsScreen() {
                         }
                     },
                 ) { Prefs.set("history", it) }
+                FeatureRow(
+                    Icons.Rounded.VerifiedUser, "Cihaz onayı",
+                    "Yeni bir cihaz bağlanınca telefona \"İzin ver / Engelle\" sorulsun",
+                    s.deviceApproval, divider = true,
+                    extra = {
+                        if (devices.isEmpty()) {
+                            Text("Henüz kayıtlı cihaz yok", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        devices.forEach { d ->
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Column(Modifier.weight(1f)) {
+                                    Text(d.name, style = MaterialTheme.typography.bodyMedium)
+                                    Text(
+                                        "${d.ip} • ${if (d.allowed) "izinli" else "engelli"}",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = if (d.allowed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                                TextButton(onClick = { DeviceAccess.forget(d.ip) }) { Text("Unut") }
+                            }
+                        }
+                    },
+                ) { Prefs.set("deviceApproval", it) }
+                FeatureRow(
+                    Icons.Rounded.Password, "Web PIN'i",
+                    "Tarayıcıdan girenlerden 4–6 haneli PIN iste",
+                    s.webPin.isNotEmpty(), divider = true,
+                    extra = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("PIN: ${s.webPin}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            TextButton(onClick = { editPin = true }) { Text("Değiştir") }
+                        }
+                    },
+                ) { on -> if (on) editPin = true else Prefs.update { putString("webPin", "") } }
                 // FEATURES
             }
         }
@@ -234,6 +273,15 @@ fun SettingsScreen() {
             confirmButton = { TextButton(onClick = { WatchHistory.clear(); confirmClear = false }) { Text("Temizle") } },
             dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Vazgeç") } },
         )
+    }
+    if (editPin) {
+        TextDialog("Web PIN'i (4–6 rakam)", s.webPin, KeyboardType.NumberPassword, onDismiss = { editPin = false }) { v ->
+            val pin = v.trim()
+            if (pin.length in 4..6 && pin.all { it.isDigit() }) {
+                Prefs.update { putString("webPin", pin) }
+                editPin = false
+            }
+        }
     }
     if (editName) {
         TextDialog("Ağdaki adı", s.name, KeyboardType.Text, onDismiss = { editName = false }) { v ->

@@ -57,6 +57,29 @@ setInterval(function(){if(!v.paused)s();},10000);v.addEventListener('pause',s);v
 window.addEventListener('pagehide',s);})();
 </script>"""
 
+    /** PIN giriş sayfası. */
+    fun pinPage(server: String, wrong: Boolean, locked: Boolean): String {
+        val msg = when {
+            locked -> "<p class=\"s\">Çok fazla yanlış deneme. Bir dakika sonra tekrar dene.</p>"
+            wrong -> "<p class=\"s\" style=\"color:var(--acc)\">PIN yanlış.</p>"
+            else -> "<p class=\"s\">Bu sunucu PIN ile korunuyor. PIN'i telefondaki Akış uygulamasında görebilirsin.</p>"
+        }
+        val body = "<div class=\"p\" style=\"max-width:420px\"><h2>PIN gir</h2>$msg" +
+            "<form method=\"post\" action=\"/pin\" class=\"btns\"><input name=\"pin\" type=\"password\" inputmode=\"numeric\" " +
+            "autocomplete=\"off\" autofocus maxlength=\"6\" style=\"flex:1;padding:12px 18px;border-radius:999px;border:0;" +
+            "background:var(--card);color:var(--fg);font-size:18px;letter-spacing:6px\"${if (locked) " disabled" else ""}>" +
+            "<button class=\"b\"${if (locked) " disabled" else ""}>Gir</button></form></div>"
+        return page(server, "PIN", "", body)
+    }
+
+    /** Cihaz onayı beklenirken gösterilen, kendini yenileyen sayfa. */
+    fun waitPage(server: String): String {
+        val body = "<div class=\"p\" style=\"max-width:520px\"><h2>Telefondan onay bekleniyor</h2>" +
+            "<p class=\"s\">Telefona gelen bildirimden <b>İzin ver</b>'e dokun. Bu sayfa kendiliğinden yenilenecek.</p></div>" +
+            "<script>setTimeout(function(){location.reload()},3000)</script>"
+        return page(server, "Onay bekleniyor", "", body)
+    }
+
     fun list(
         server: String,
         title: String,

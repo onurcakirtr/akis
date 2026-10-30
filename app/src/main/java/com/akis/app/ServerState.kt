@@ -1,6 +1,7 @@
 package com.akis.app
 
 import com.akis.app.dlna.Kind
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
@@ -37,6 +38,8 @@ object ServerState {
     val streams = MutableStateFlow<List<StreamInfo>>(emptyList())
     val events = MutableStateFlow<List<LogEvent>>(emptyList())
     val bytesSent = MutableStateFlow(0L)
+    /** Bir cihaza izin verilince istemcilere "içerik değişti" duyurusu için. */
+    val accessChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 
     private fun now() = System.currentTimeMillis()
 

@@ -73,6 +73,7 @@ class HttpResponder(private val out: OutputStream, private val head: Boolean) {
             200 -> "OK"
             204 -> "No Content"
             206 -> "Partial Content"
+            303 -> "See Other"
             304 -> "Not Modified"
             400 -> "Bad Request"
             403 -> "Forbidden"

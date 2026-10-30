@@ -5,7 +5,9 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import com.akis.app.DeviceAccess
 import com.akis.app.Prefs
+import com.akis.app.Settings
 import com.akis.app.ServerState
 import com.akis.app.WatchHistory
 import com.akis.app.net.HttpRequest
@@ -75,6 +77,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val base = req.headers["host"]?.let { "http://$it" } ?: ServerState.address.value ?: "http://127.0.0.1:$port"
         val p = req.path
         val settings = Prefs.current
+        if (!checkAccess(req, res, settings)) return
         when (req.method) {
             "GET", "HEAD" -> when {
                 p == "/desc.xml" -> res.xml(Xml.device(settings.name, uuid, base))
@@ -119,6 +122,60 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             "OPTIONS" -> res.send(200, null, 0, mapOf("Allow" to "GET, HEAD, POST, SUBSCRIBE, UNSUBSCRIBE"))
             else -> res.text(405, "Desteklenmiyor")
         }
+    }
+
+    // ---------------- Erişim (cihaz onayı + web PIN'i) ----------------
+
+    private val openPaths = setOf("/desc.xml", "/cd.xml", "/cm.xml", "/icon.png")
+
+    private fun webPath(p: String) =
+        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle")
+
+    /** @return true ise istek işlenebilir; false ise cevap zaten verildi. */
+    private fun checkAccess(req: HttpRequest, res: HttpResponder, settings: Settings): Boolean {
+        val ip = req.remote
+        val p = req.path
+        if (ip.startsWith("127.") || ip == currentIp?.hostAddress) return true
+        if (p in openPaths) return true
+        if (p == "/pin") {
+            pinLogin(req, res, settings)
+            return false
+        }
+        val pinSet = settings.webPin.isNotEmpty()
+        val pinOk = pinSet && DeviceAccess.cookieOk(req.headers["cookie"], settings.webPin, uuid)
+        if (pinSet && webPath(p) && !pinOk) {
+            if (req.method == "GET") res.html(WebUi.pinPage(settings.name, wrong = false, locked = DeviceAccess.locked(ip)))
+            else res.text(403, "PIN gerekli")
+            return false
+        }
+        if (!settings.deviceApproval || pinOk || DeviceAccess.isAllowed(ip)) return true
+        if (DeviceAccess.isBlocked(ip)) {
+            res.text(403, "Bu cihaz engellendi")
+            return false
+        }
+        DeviceAccess.request(ip, ServerState.clientName(ip))
+        when {
+            p.startsWith("/ctl/") -> res.text(500, Xml.FAULT, "text/xml; charset=\"utf-8\"")
+            webPath(p) && req.method == "GET" -> res.html(WebUi.waitPage(settings.name))
+            else -> res.text(403, "Telefondan onay bekleniyor")
+        }
+        return false
+    }
+
+    private fun pinLogin(req: HttpRequest, res: HttpResponder, settings: Settings) {
+        val ip = req.remote
+        if (settings.webPin.isEmpty()) return res.send(303, null, 0, mapOf("Location" to "/"))
+        if (req.method != "POST") return res.html(WebUi.pinPage(settings.name, wrong = false, locked = DeviceAccess.locked(ip)))
+        if (DeviceAccess.locked(ip)) return res.html(WebUi.pinPage(settings.name, wrong = false, locked = true))
+        val pin = queryParam(String(req.body, Charsets.UTF_8).trim(), "pin")
+        val ok = pin == settings.webPin
+        DeviceAccess.recordAttempt(ip, ok)
+        if (!ok) return res.html(WebUi.pinPage(settings.name, wrong = true, locked = DeviceAccess.locked(ip)))
+        val token = DeviceAccess.token(settings.webPin, uuid)
+        res.send(
+            303, null, 0,
+            mapOf("Location" to "/", "Set-Cookie" to "akis_pin=$token; Path=/; Max-Age=31536000; SameSite=Lax; HttpOnly"),
+        )
     }
 
     // ---------------- SOAP ----------------

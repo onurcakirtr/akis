@@ -131,6 +131,7 @@ class DlnaService : Service() {
                 ServerState.prune()
             }
         }
+        sc.launch { ServerState.accessChanged.collect { server?.contentChanged() } }
         // İçerik ayarları değişince istemcilere haber ver
         sc.launch {
             Prefs.settings.map {
