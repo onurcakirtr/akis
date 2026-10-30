@@ -67,7 +67,8 @@ val MEDIA_PERMISSIONS: Array<String> =
         Manifest.permission.READ_MEDIA_VIDEO,
         Manifest.permission.READ_MEDIA_AUDIO,
         Manifest.permission.READ_MEDIA_IMAGES,
-    ) else arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE)
+        Manifest.permission.ACCESS_MEDIA_LOCATION,
+    ) else arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.ACCESS_MEDIA_LOCATION)
 
 private fun permFor(kind: Kind): String = if (android.os.Build.VERSION.SDK_INT < 33) Manifest.permission.READ_EXTERNAL_STORAGE
 else when (kind) {

@@ -44,6 +44,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             p == "/api/search" -> json(res, JSONObject().put("items", items(lib.search(param(req, "q"), limit = 300))))
             p == "/api/item" -> item(param(req, "id"), param(req, "in"))?.let { json(res, it) } ?: res.text(404, Lang.s(R.string.http_not_found))
             p == "/api/probe" -> probe(param(req, "id"), res)
+            p == "/api/info" -> info(param(req, "id"), param(req, "p"), res)
             p.startsWith("/x/") -> stream(req, res, decode(p.removePrefix("/x/")))
             p == "/api/files" -> files(param(req, "p"), res)
             p == "/raw" -> raw(req, res, param(req, "p"))
@@ -362,6 +363,106 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             } finally {
                 ServerState.addBytes(sent)
             }
+        }
+    }
+
+    /** Özellikler paneli: her öğe için ad, tür, boyut, tarih; medyada ayrıca süre, parçalar, EXIF, etiketler. */
+    private fun info(id: String, path: String, res: HttpResponder) {
+        val e = if (id.isNotEmpty()) lib.lookup(id) else null
+        val f = if (e == null && path.isNotEmpty() && filesOn()) FileAccess.resolve(path) else null
+        val o = JSONObject()
+        if (e == null && f == null) return res.text(404, Lang.s(R.string.http_not_found))
+        if (e == null) {
+            val file = f!!
+            o.put("name", file.name).put("m", file.lastModified() / 1000).put("path", file.path).put("dir", file.isDirectory)
+            if (file.isDirectory) o.put("count", FileAccess.list(file).size)
+            else o.put("size", file.length()).put("mime", MediaLibrary.mimeFor(file.name, null))
+            return json(res, o)
+        }
+        o.put("name", e.title + if (e.ext.isNotEmpty()) "." + e.ext else "").put("size", e.size).put("mime", e.mime).put("k", kindCode(e.kind))
+        if (e.dateSec > 0) o.put("m", e.dateSec)
+        if (e.id.startsWith("p:")) o.put("path", e.id.substring(2))
+        if (e.width > 0) o.put("w", e.width).put("h", e.height)
+        val uri0 = e.uri ?: return json(res, o)
+        when (e.kind) {
+            Kind.IMAGE -> exifInto(o, uri0)
+            Kind.VIDEO, Kind.AUDIO -> {
+                try {
+                    val r = android.media.MediaMetadataRetriever()
+                    try {
+                        r.setDataSource(ctx, uri0)
+                        fun m(k: Int) = r.extractMetadata(k)?.trim()?.takeIf { it.isNotEmpty() }
+                        m(android.media.MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()?.let { o.put("d", it) }
+                        m(android.media.MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toLongOrNull()?.let { o.put("br", it) }
+                        m(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull()?.let { o.put("w", it) }
+                        m(android.media.MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull()?.let { o.put("h", it) }
+                        m(android.media.MediaMetadataRetriever.METADATA_KEY_TITLE)?.let { o.put("title", it) }
+                        m(android.media.MediaMetadataRetriever.METADATA_KEY_ARTIST)?.let { o.put("artist", it) }
+                        m(android.media.MediaMetadataRetriever.METADATA_KEY_ALBUM)?.let { o.put("album", it) }
+                        m(android.media.MediaMetadataRetriever.METADATA_KEY_YEAR)?.let { o.put("year", it) }
+                        m(android.media.MediaMetadataRetriever.METADATA_KEY_GENRE)?.let { o.put("genre", it) }
+                    } finally {
+                        r.release()
+                    }
+                } catch (_: Exception) {
+                }
+                // Parçalar: biçim, çözünürlük, kanal, dil ve (MKV'de) ad
+                try {
+                    val pr = Remux.probe(ctx, uri0)
+                    val mkv = if (Mkv.isMkv(e)) Mkv.tracks(ctx, e) else emptyList()
+                    val mkvAudio = mkv.filter { it.type == Mkv.AUDIO }
+                    var ai = 0
+                    val tracks = JSONArray()
+                    for (t in pr.tracks) {
+                        val mk = if (!t.video) mkvAudio.getOrNull(ai++) else null
+                        tracks.put(
+                            JSONObject().put("v", t.video).put("mime", t.mime).put("w", t.width).put("h", t.height)
+                                .put("ch", t.channels).put("rate", t.sampleRate).put("lang", mk?.lang?.ifEmpty { null } ?: t.lang)
+                                .put("name", mk?.name ?: "").put("def", mk?.isDefault ?: false),
+                        )
+                    }
+                    o.put("tracks", tracks)
+                } catch (_: Exception) {
+                }
+                if (e.kind == Kind.VIDEO) {
+                    val subs = JSONArray()
+                    lib.subtitlesOf(e).forEach { subs.put(it.label) }
+                    o.put("subs", subs)
+                }
+            }
+            else -> {}
+        }
+        json(res, o)
+    }
+
+    /** Fotoğrafın EXIF bilgisi: tarih, kamera, çekim değerleri, konum. */
+    private fun exifInto(o: JSONObject, uri0: android.net.Uri) {
+        var uri = uri0
+        // Galeri fotoğraflarında gerçek konum için özgün dosya istenir (izin varsa)
+        if (uri.authority == android.provider.MediaStore.AUTHORITY &&
+            ctx.checkSelfPermission(android.Manifest.permission.ACCESS_MEDIA_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        ) {
+            uri = runCatching { android.provider.MediaStore.setRequireOriginal(uri) }.getOrDefault(uri)
+        }
+        try {
+            ctx.contentResolver.openInputStream(uri)?.use { input ->
+                val x = android.media.ExifInterface(input)
+                fun s(tag: String) = x.getAttribute(tag)?.trim()?.takeIf { it.isNotEmpty() }
+                (s(android.media.ExifInterface.TAG_DATETIME_ORIGINAL) ?: s(android.media.ExifInterface.TAG_DATETIME))?.let { o.put("date", it) }
+                val camera = listOfNotNull(s(android.media.ExifInterface.TAG_MAKE), s(android.media.ExifInterface.TAG_MODEL))
+                    .let { l -> if (l.size == 2 && l[1].startsWith(l[0], true)) listOf(l[1]) else l }.joinToString(" ")
+                if (camera.isNotEmpty()) o.put("camera", camera)
+                val w = x.getAttributeInt(android.media.ExifInterface.TAG_IMAGE_WIDTH, 0)
+                val h = x.getAttributeInt(android.media.ExifInterface.TAG_IMAGE_LENGTH, 0)
+                if (w > 0 && h > 0) o.put("w", w).put("h", h)
+                x.getAttributeDouble(android.media.ExifInterface.TAG_F_NUMBER, 0.0).takeIf { it > 0 }?.let { o.put("f", it) }
+                x.getAttributeDouble(android.media.ExifInterface.TAG_EXPOSURE_TIME, 0.0).takeIf { it > 0 }?.let { o.put("exp", it) }
+                x.getAttributeInt(android.media.ExifInterface.TAG_ISO_SPEED_RATINGS, 0).takeIf { it > 0 }?.let { o.put("iso", it) }
+                x.getAttributeDouble(android.media.ExifInterface.TAG_FOCAL_LENGTH, 0.0).takeIf { it > 0 }?.let { o.put("focal", it) }
+                val ll = FloatArray(2)
+                if (x.getLatLong(ll) && (ll[0] != 0f || ll[1] != 0f)) o.put("lat", ll[0].toDouble()).put("lon", ll[1].toDouble())
+            }
+        } catch (_: Exception) {
         }
     }
 

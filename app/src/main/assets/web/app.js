@@ -55,6 +55,7 @@
     queue: '<svg viewBox="0 0 24 24"><path d="M3 6h13M3 12h13M3 18h9M17 15v6l4-3z"/></svg>',
     slides: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M10 9v4l3.5-2z"/><path d="M8 21h8"/></svg>',
     dl: '<svg viewBox="0 0 24 24"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg>',
+    info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>',
     link: '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>'
   };
   var CAT_ICON = { v: ICO.v, a: ICO.a, i: ICO.i, f: ICO.folder, 'h:u': ICO.unw, 'h:c': ICO.hist, r: ICO.recent, 'pd:': ICO.drive };
@@ -308,7 +309,8 @@
         '<div class="actions">' +
         '<a class="pill nav" href="vlc://' + esc(location.origin + file) + '">' + ICO.v + esc(t('open_vlc')) + '</a>' +
         '<a class="pill nav" href="' + esc(file) + '" download>' + ICO.dl + esc(t('download')) + '</a>' +
-        '<button class="pill nav" id="copyLink">' + ICO.link + esc(t('copy_link')) + '</button></div></div>' +
+        '<button class="pill nav" id="copyLink">' + ICO.link + esc(t('copy_link')) + '</button>' +
+        '<button class="pill nav" id="propsBtn">' + ICO.info + esc(t('info')) + '</button></div></div>' +
         '<div class="side">';
       var side = [];
       if (info.next) { info.next.inFolder = inFolder; side.push(info.next); }
@@ -319,6 +321,7 @@
       }
       h += '</div></div>';
       view.innerHTML = h;
+      $('#propsBtn').addEventListener('click', function () { Props.open({ id: it.id }); });
       $('#copyLink').addEventListener('click', function () {
         var u = location.origin + file;
         if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(u).then(function () { toast(t('copied')); });
@@ -450,18 +453,115 @@
     };
   })();
 
+  // ======================= Özellikler =======================
+  var CODECS = { 'video/avc': 'H.264', 'video/hevc': 'H.265 (HEVC)', 'video/x-vnd.on2.vp9': 'VP9', 'video/x-vnd.on2.vp8': 'VP8', 'video/av01': 'AV1',
+    'video/mp4v-es': 'MPEG-4', 'video/mpeg2': 'MPEG-2', 'audio/mp4a-latm': 'AAC', 'audio/ac3': 'AC3', 'audio/eac3': 'E-AC3', 'audio/eac3-joc': 'E-AC3 Atmos',
+    'audio/vnd.dts': 'DTS', 'audio/vnd.dts.hd': 'DTS-HD', 'audio/true-hd': 'TrueHD', 'audio/opus': 'Opus', 'audio/vorbis': 'Vorbis', 'audio/mpeg': 'MP3',
+    'audio/flac': 'FLAC', 'audio/raw': 'PCM', 'audio/alac': 'ALAC' };
+  var lnames = null;
+  try { lnames = new Intl.DisplayNames([C.lang || 'en'], { type: 'language' }); } catch (e) { }
+  function lname(c) { try { var n = c && lnames && lnames.of(c); return n && n !== c ? n.charAt(0).toUpperCase() + n.slice(1) : (c || '').toUpperCase(); } catch (e) { return (c || '').toUpperCase(); } }
+  function when(sec) { return sec ? new Date(sec * 1000).toLocaleString(C.lang || undefined, { dateStyle: 'medium', timeStyle: 'short' }) : ''; }
+  function propsHtml(x) {
+    var rows = [];
+    function row(k, v) { if (v) rows.push('<div><span>' + esc(t(k)) + '</span><b>' + esc(v) + '</b></div>'); }
+    row('type', x.dir ? t('folder_t') : (x.mime || ''));
+    if (x.dir) row('contains', plural('items', x.count || 0));
+    if (x.size) row('file_size', size(x.size) + ' (' + Number(x.size).toLocaleString(C.lang || undefined) + ' B)');
+    if (x.d) row('duration', fmt(x.d / 1000));
+    if (x.w) row('resolution', x.w + ' × ' + x.h + (x.k === 'i' ? ' (' + (Math.round(x.w * x.h / 1e5) / 10) + ' MP)' : ''));
+    if (x.br) row('bitrate', x.br >= 1e6 ? (Math.round(x.br / 1e5) / 10) + ' Mbit/s' : Math.round(x.br / 1000) + ' kbit/s');
+    row('title_t', x.title); row('artist_t', x.artist); row('album_t', x.album); row('year_t', x.year); row('genre_t', x.genre);
+    if (x.date) { var m = /^(\d{4}):(\d\d):(\d\d) (\d\d):(\d\d)/.exec(x.date); row('taken', m ? new Date(+m[1], m[2] - 1, +m[3], +m[4], +m[5]).toLocaleString(C.lang || undefined, { dateStyle: 'long', timeStyle: 'short' }) : x.date); }
+    row('camera', x.camera);
+    if (x.f) row('aperture', 'ƒ/' + (Math.round(x.f * 10) / 10));
+    if (x.exp) row('shutter', x.exp >= 1 ? (Math.round(x.exp * 10) / 10) + ' s' : '1/' + Math.round(1 / x.exp) + ' s');
+    if (x.iso) row('iso', String(x.iso));
+    if (x.focal) row('focal', (Math.round(x.focal * 10) / 10) + ' mm');
+    (x.tracks || []).forEach(function (tr) {
+      var c = CODECS[tr.mime] || tr.mime.replace(/^\w+\//, '').toUpperCase();
+      if (tr.v) row('video_t', c + (tr.w ? ' · ' + tr.w + '×' + tr.h : ''));
+      else {
+        var ch = tr.ch ? (tr.ch > 2 ? (tr.ch - 1) + '.1' : tr.ch === 2 ? t('stereo') : t('mono')) : '';
+        row('audio_t', [tr.name || lname(tr.lang), c, ch, tr.rate ? Math.round(tr.rate / 100) / 10 + ' kHz' : '', tr.def ? t('default_t') : ''].filter(Boolean).join(' · '));
+      }
+    });
+    if (x.subs && x.subs.length) row('subs_t', x.subs.join(', '));
+    row('modified', when(x.m));
+    row('path', x.path);
+    var map = x.lat != null ? '<a class="pill" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=' + x.lat + '&mlon=' + x.lon + '#map=16/' + x.lat + '/' + x.lon + '">' + esc(t('open_map')) + '</a>' : '';
+    return '<b class="nm">' + esc(x.name || '') + '</b>' + (rows.length ? rows.join('') : '<div>' + esc(t('no_info')) + '</div>') + map;
+  }
+  function propsUrl(it) { return it.id ? '/api/info?id=' + enc(it.id) : '/api/info?p=' + enc(it.p || it.path || ''); }
+  /** Herhangi bir öğenin özellik penceresi (sağ tık, uzun basma, I tuşu). */
+  var Props = (function () {
+    var wrap = document.createElement('div');
+    wrap.className = 'props'; wrap.hidden = true;
+    document.body.appendChild(wrap);
+    function close() { wrap.hidden = true; wrap.innerHTML = ''; }
+    wrap.addEventListener('click', function (e) { if (e.target === wrap || e.target.closest('[data-pc]')) close(); });
+    document.addEventListener('keydown', function (e) { if (!wrap.hidden && (e.key === 'Escape' || e.key === 'Backspace')) { e.preventDefault(); e.stopImmediatePropagation(); close(); } }, true);
+    return {
+      open: function (it) {
+        wrap.hidden = false;
+        wrap.innerHTML = '<div class="box"><div class="hd"><h2>' + esc(t('info')) + '</h2><button class="pill nav" data-pc="1" aria-label="' + esc(t('close')) + '">' + ICO.x + '</button></div><div class="body"><div class="spin" style="margin:24px auto"></div></div></div>';
+        var body = $('.body', wrap);
+        api(propsUrl(it)).then(function (x) { body.innerHTML = propsHtml(x); }).catch(function () { body.textContent = t('no_info'); });
+        var c = $('[data-pc]', wrap); if (c) c.focus();
+      }
+    };
+  })();
+  function itemOf(a) {
+    var src = a.getAttribute('data-src') === 'shelf' ? shelves[a.getAttribute('data-shelf')] : list;
+    var it = src && src[+a.getAttribute('data-i')];
+    if (!it) return null;
+    return it.id ? { id: it.id } : { p: it.path || (it.raw ? decodeURIComponent(it.raw.split('p=')[1] || '') : '') };
+  }
+  // Sağ tık / uzun basma / I tuşu → Özellikler
+  view.addEventListener('contextmenu', function (e) {
+    var a = e.target.closest('[data-i]'); if (!a) return;
+    var it = itemOf(a); if (!it) return;
+    e.preventDefault(); Props.open(it);
+  });
+  var lpTimer = 0, lpFired = false;
+  view.addEventListener('pointerdown', function (e) {
+    if (e.pointerType === 'mouse') return;
+    var a = e.target.closest('[data-i]'); if (!a) return;
+    lpFired = false;
+    clearTimeout(lpTimer);
+    lpTimer = setTimeout(function () { var it = itemOf(a); if (it) { lpFired = true; Props.open(it); } }, 600);
+  });
+  ['pointerup', 'pointercancel', 'pointermove'].forEach(function (n) {
+    view.addEventListener(n, function (e) { if (n !== 'pointermove' || Math.abs(e.movementX) + Math.abs(e.movementY) > 6) clearTimeout(lpTimer); });
+  });
+  view.addEventListener('click', function (e) { if (lpFired) { e.preventDefault(); e.stopImmediatePropagation(); lpFired = false; } }, true);
+  document.addEventListener('keydown', function (e) {
+    if ((e.key === 'i' || e.key === 'I') && !player && document.activeElement && document.activeElement.hasAttribute && document.activeElement.hasAttribute('data-i')) {
+      var it = itemOf(document.activeElement); if (it) { e.preventDefault(); Props.open(it); }
+    }
+  });
+
   // ======================= Fotoğraf görüntüleyici =======================
   var Lightbox = (function () {
-    var box = $('#lightbox'), items = [], i = 0, timer = 0, startX = 0, startY = 0, active = false;
+    var box = $('#lightbox'), items = [], i = 0, timer = 0, startX = 0, startY = 0, active = false, infoOn = false;
+    function loadInfo() {
+      var panel = $('.lb-info', box); if (!panel) return;
+      var it = items[i];
+      panel.innerHTML = '<div class="spin" style="margin:16px auto"></div>';
+      api('/api/info?id=' + enc(it.id)).then(function (x) { if (items[i] === it) panel.innerHTML = propsHtml(x); }).catch(function () { panel.textContent = t('no_info'); });
+    }
     function src(it) { return '/m/' + enc(it.id) + '/file.' + (it.ext || 'jpg'); }
     function paint() {
       var it = items[i];
       box.innerHTML = '<div class="lb-top"><button data-l="close" aria-label="' + esc(t('close')) + '">' + ICO.x + '</button><span>' + esc(it.t) + '</span>' +
         '<span style="flex:none">' + (i + 1) + ' / ' + items.length + '</span>' +
         '<button data-l="show" class="' + (timer ? 'on' : '') + '" aria-label="' + esc(t('slideshow')) + '">' + ICO.slides + '</button>' +
+        '<button data-l="info" class="' + (infoOn ? 'on' : '') + '" aria-label="' + esc(t('info')) + '">' + ICO.info + '</button>' +
         '<a href="' + esc(src(it)) + '" download aria-label="' + esc(t('download')) + '"><button tabindex="-1">' + ICO.dl + '</button></a></div>' +
         '<button class="nv l" data-l="prev" aria-label="' + esc(t('prev')) + '">' + ICO.left + '</button><img alt="" src="' + esc(src(it)) + '">' +
-        '<button class="nv r" data-l="next" aria-label="' + esc(t('next')) + '">' + ICO.right + '</button>';
+        '<button class="nv r" data-l="next" aria-label="' + esc(t('next')) + '">' + ICO.right + '</button>' +
+        (infoOn ? '<div class="lb-info"></div>' : '');
+      if (infoOn) loadInfo();
       if (items[i + 1]) { var pre = new Image(); pre.src = src(items[i + 1]); }
     }
     function step(d) { i = (i + d + items.length) % items.length; paint(); }
@@ -472,6 +572,7 @@
       if (!b) { if (e.target === box) close(); return; }
       var a = b.getAttribute('data-l');
       if (a === 'close') close(); else if (a === 'prev') step(-1); else if (a === 'next') step(1); else if (a === 'show') slideshow();
+      else if (a === 'info') { infoOn = !infoOn; paint(); }
     });
     box.addEventListener('pointerdown', function (e) { startX = e.clientX; startY = e.clientY; });
     box.addEventListener('pointerup', function (e) {
@@ -482,7 +583,8 @@
     document.addEventListener('keydown', function (e) {
       if (!active) return;
       if (e.key === 'ArrowRight') step(1); else if (e.key === 'ArrowLeft') step(-1);
-      else if (e.key === 'Escape' || e.key === 'Backspace') close(); else if (e.key === ' ') slideshow(); else return;
+      else if (e.key === 'Escape' || e.key === 'Backspace') close(); else if (e.key === ' ') slideshow();
+      else if (e.key === 'i' || e.key === 'I') { infoOn = !infoOn; paint(); } else return;
       e.preventDefault(); e.stopImmediatePropagation();
     }, true);
     return { open: function (list, it) { items = list; i = Math.max(0, list.indexOf(it)); active = true; box.hidden = false; paint(); } };

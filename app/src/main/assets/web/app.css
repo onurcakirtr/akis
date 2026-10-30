@@ -264,6 +264,22 @@ body.dragging::after { content: ""; position: fixed; inset: 0; z-index: 35; back
 .lightbox .nv.l { left: 14px }
 .lightbox .nv.r { right: 14px }
 @media (hover: none) { .lightbox .nv { display: none } }
+.lightbox .lb-info { position: absolute; right: 14px; top: 70px; width: min(340px, calc(100% - 28px)); max-height: calc(100% - 90px); overflow: auto; background: rgba(20,20,24,.92); border-radius: 14px; padding: 14px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: #fff }
+.lightbox .lb-info div { display: flex; justify-content: space-between; gap: 12px }
+.lightbox .lb-info div span { color: #aaa; flex: none }
+.lightbox .lb-info div b { font-weight: 500; text-align: right; word-break: break-word }
+.lightbox .lb-info .pill { align-self: flex-start; background: rgba(255,255,255,.12); color: #fff; margin-top: 4px }
+.lb-info .nm, .props .nm { word-break: break-all }
+/* Özellikler penceresi */
+.props { position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 16px }
+.props .box { width: min(460px, 100%); max-height: 85vh; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--r); padding: 16px 18px; animation: slide .3s var(--ease) }
+.props .hd { display: flex; align-items: center; margin-bottom: 8px }
+.props .hd h2 { flex: 1; margin: 0; font-size: 18px }
+.props .body { display: flex; flex-direction: column; gap: 9px; font-size: 14px }
+.props .body div { display: flex; justify-content: space-between; gap: 14px; border-top: 1px solid var(--line); padding-top: 8px }
+.props .body div span { color: var(--mut); flex: none }
+.props .body div b { font-weight: 500; text-align: right; word-break: break-word }
+.props .body .pill { align-self: flex-start }
 
 /* ---------- Bildirim ---------- */
 .toast { position: fixed; left: 50%; bottom: 110px; transform: translate(-50%, 20px); z-index: 60; background: var(--fg); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .25s, transform .35s var(--ease); max-width: calc(100% - 32px) }
