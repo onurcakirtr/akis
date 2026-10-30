@@ -102,7 +102,24 @@
     var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload' };
     return { name: map[name] || 'home', arg: arg, p: params, key: location.hash };
   }
-  var player = null, list = [], listFolder = '0', scrolls = {}, lastKey = '';
+  var player = null, list = [], listFolder = '0', scrolls = {}, lastKey = '', softNext = false;
+
+  /** Telefonda kitaplık değişince (yeni dosya, yükleme) açık sayfayı sessizce yenile. */
+  (function watchChanges() {
+    var ver = -1;
+    function loop() {
+      fetch('/api/changes?since=' + ver, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
+        var changed = ver >= 0 && d.v !== ver;
+        ver = d.v;
+        if (changed && !player && $('#lightbox').hidden && !document.querySelector('.props:not([hidden])')) {
+          var n = route().name;
+          if (n === 'home' || n === 'folder' || n === 'search' || n === 'files') { softNext = true; scrolls[location.hash] = window.scrollY; render(); }
+        }
+        setTimeout(loop, 300);
+      }).catch(function () { setTimeout(loop, 5000); });
+    }
+    setTimeout(loop, 1000);
+  })();
   window.addEventListener('hashchange', render);
   window.addEventListener('scroll', function () { scrolls[lastKey] = window.scrollY; }, { passive: true });
 
@@ -113,8 +130,10 @@
     lastKey = r.key;
     Upload.dir = '';
     if (r.name !== 'search' && document.activeElement !== q) q.value = '';
-    view.innerHTML = '<div class="spin"></div>';
+    var soft = softNext; softNext = false;
+    if (!soft) view.innerHTML = '<div class="spin"></div>';
     var done = function () {
+      if (soft) return;
       var y = scrolls[r.key];
       window.scrollTo(0, y || 0);
       if (!player) { var f = view.querySelector('.nav'); if (f && usingKeys) f.focus({ preventScroll: true }); }

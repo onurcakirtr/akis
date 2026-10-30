@@ -43,6 +43,28 @@ object ServerState {
 
     private fun now() = System.currentTimeMillis()
 
+    // ---------------- Değişiklik sayacı (web sayfası uzun istekle bekler) ----------------
+
+    private val changeLock = java.lang.Object()
+    @Volatile var changeVersion = 0
+        private set
+
+    fun bumpChanges() = synchronized(changeLock) {
+        changeVersion++
+        changeLock.notifyAll()
+    }
+
+    /** since'ten yeni bir sürüm gelene kadar (en çok ms) bekler; güncel sürümü döndürür. */
+    fun awaitChange(since: Int, ms: Long): Int = synchronized(changeLock) {
+        val end = System.currentTimeMillis() + ms
+        while (changeVersion <= since) {
+            val left = end - System.currentTimeMillis()
+            if (left <= 0) break
+            changeLock.wait(left)
+        }
+        changeVersion
+    }
+
     /** Sunucu açıkken bir cihazın bağlantılarını kesen işlev (servis ayarlar). */
     @Volatile var kicker: ((String) -> Unit)? = null
 

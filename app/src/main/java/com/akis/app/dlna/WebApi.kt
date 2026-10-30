@@ -44,6 +44,8 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             p == "/api/search" -> json(res, JSONObject().put("items", items(lib.search(param(req, "q"), limit = 300))))
             p == "/api/item" -> item(param(req, "id"), param(req, "in"))?.let { json(res, it) } ?: res.text(404, Lang.s(R.string.http_not_found))
             p == "/api/probe" -> probe(param(req, "id"), res)
+            // Uzun istek: kitaplık değişene kadar (en çok 25 sn) bekler
+            p == "/api/changes" -> json(res, JSONObject().put("v", ServerState.awaitChange(param(req, "since").toIntOrNull() ?: -1, 25_000)))
             p == "/api/info" -> info(param(req, "id"), param(req, "p"), res)
             p.startsWith("/x/") -> stream(req, res, decode(p.removePrefix("/x/")))
             p == "/api/files" -> files(param(req, "p"), res)

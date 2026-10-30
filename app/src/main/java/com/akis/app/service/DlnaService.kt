@@ -114,6 +114,7 @@ class DlnaService : Service() {
         }
         server = srv
         ServerState.kicker = { ip -> srv.kick(ip) }
+        watchLibrary()
         if (ip == null) ServerState.error.value = Lang.s(R.string.err_no_wifi)
         acquireLocks(settings.keepAwake)
         registerNetworkCallback()
@@ -150,6 +151,26 @@ class DlnaService : Service() {
                 )
             }
                 .distinctUntilChanged().drop(1).collect { server?.contentChanged() }
+        }
+    }
+
+    // ---------------- Galeri değişince (yeni video, fotoğraf, indirme) anında duyur ----------------
+
+    private var libraryObserver: android.database.ContentObserver? = null
+    private val libraryChanged = Runnable { server?.contentChanged() }
+
+    private fun watchLibrary() {
+        val obs = object : android.database.ContentObserver(main) {
+            override fun onChange(selfChange: Boolean) {
+                // Toplu değişiklikleri birleştir
+                main.removeCallbacks(libraryChanged)
+                main.postDelayed(libraryChanged, 3000)
+            }
+        }
+        try {
+            contentResolver.registerContentObserver(android.provider.MediaStore.Files.getContentUri("external"), true, obs)
+            libraryObserver = obs
+        } catch (_: Exception) {
         }
     }
 
@@ -228,6 +249,9 @@ class DlnaService : Service() {
         val srv = server
         server = null
         ServerState.kicker = null
+        libraryObserver?.let { runCatching { contentResolver.unregisterContentObserver(it) } }
+        libraryObserver = null
+        main.removeCallbacks(libraryChanged)
         if (srv != null) {
             val t = Thread { srv.stop() }
             t.start()

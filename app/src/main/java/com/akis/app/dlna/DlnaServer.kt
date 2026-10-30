@@ -30,6 +30,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     private var ssdp: Ssdp? = null
     @Volatile private var currentIp: Inet4Address? = null
     private val updateId = AtomicInteger(1)
+    private val gena = Gena { updateId.get() }
 
     fun start(ip: Inet4Address?) {
         http.start()
@@ -61,6 +62,8 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     fun contentChanged() {
         lib.clearSearchCache()
         updateId.incrementAndGet()
+        gena.changed()
+        ServerState.bumpChanges()
         announce()
     }
 
@@ -68,6 +71,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     fun stop() {
         ssdp?.stop()
         ssdp = null
+        gena.stop()
         http.stop()
     }
 
@@ -100,8 +104,8 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             }
             "POST" -> if (p == "/h") webProgress(req, res) else control(req, res, base)
             "PUT" -> if (p.startsWith("/yukle/") && settings.upload && settings.webUi) upload(req, res) else res.text(403, Lang.s(R.string.http_upload_off))
-            "SUBSCRIBE" -> res.send(200, null, 0, mapOf("SID" to "uuid:${UUID.randomUUID()}", "TIMEOUT" to "Second-1800"))
-            "UNSUBSCRIBE" -> res.send(200, null, 0)
+            "SUBSCRIBE" -> gena.subscribe(req, res)
+            "UNSUBSCRIBE" -> gena.unsubscribe(req, res)
             "OPTIONS" -> res.send(200, null, 0, mapOf("Allow" to "GET, HEAD, POST, PUT, SUBSCRIBE, UNSUBSCRIBE"))
             else -> res.text(405, Lang.s(R.string.http_unsupported))
         }
