@@ -21,6 +21,22 @@ data class Settings(
     val darkMode: String,   // "system" | "light" | "dark"
     val folders: List<String>,
     val uuid: String,
+    // Özellikler (her biri Ayarlar → Özellikler'den açılıp kapatılır)
+    val hideFolders: Boolean,       // .nomedia ve elle gizlenen klasörler
+    val hiddenBuckets: Set<String>, // gizlenen MediaStore klasörleri (BUCKET_ID)
+    val subtitles: Boolean,         // genişletilmiş altyazı desteği
+    val subLang: String,            // tercih edilen altyazı dili ("tr", "en"…)
+    val search: Boolean,            // DLNA + web araması
+    val history: Boolean,           // izleme geçmişi / kaldığın yerden devam
+    val historyMarks: Boolean,      // izlenenlerin başına ✓
+    val deviceApproval: Boolean,    // yeni cihazlar için onay iste
+    val webPin: String,             // boşsa PIN kapalı
+    val upload: Boolean,            // web arayüzünden yükleme
+    val uploadFolder: String,       // boşsa İndirilenler/Akış
+    val cast: Boolean,              // TV'ye gönderme (Google Cast + DLNA)
+    val widget: Boolean,            // ana ekran widget'ları
+    val notifDetails: Boolean,      // bildirimde ilerleme / cihaz sayısı
+    val notifControls: Boolean,     // bildirimde medya kumandası
 )
 
 /** Basit, senkron ayar deposu. Değişiklikler StateFlow ile UI'ye ve servise yansır. */
@@ -52,11 +68,34 @@ object Prefs {
         darkMode = sp.getString("darkMode", "system") ?: "system",
         folders = (sp.getString("folders", "") ?: "").split('\n').filter { it.isNotBlank() },
         uuid = sp.getString("uuid", null) ?: UUID.randomUUID().toString(),
+        hideFolders = sp.getBoolean("hideFolders", true),
+        hiddenBuckets = sp.getStringSet("hiddenBuckets", emptySet())?.toSet() ?: emptySet(),
+        subtitles = sp.getBoolean("subtitles", true),
+        subLang = sp.getString("subLang", "tr") ?: "tr",
+        search = sp.getBoolean("search", true),
+        history = sp.getBoolean("history", true),
+        historyMarks = sp.getBoolean("historyMarks", true),
+        deviceApproval = sp.getBoolean("deviceApproval", false),
+        webPin = sp.getString("webPin", "") ?: "",
+        upload = sp.getBoolean("upload", false),
+        uploadFolder = sp.getString("uploadFolder", "") ?: "",
+        cast = sp.getBoolean("cast", true),
+        widget = sp.getBoolean("widget", true),
+        notifDetails = sp.getBoolean("notifDetails", true),
+        notifControls = sp.getBoolean("notifControls", true),
     )
 
     fun update(block: SharedPreferences.Editor.() -> Unit) {
         sp.edit().apply(block).apply()
         state.value = read()
+    }
+
+    fun set(key: String, value: Boolean) = update { putBoolean(key, value) }
+
+    fun setHidden(bucket: String, hidden: Boolean) {
+        val set = current.hiddenBuckets.toMutableSet()
+        if (hidden) set += bucket else set -= bucket
+        update { putStringSet("hiddenBuckets", set) }
     }
 
     fun addFolder(uri: String) {

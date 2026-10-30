@@ -14,11 +14,14 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material.icons.rounded.CreateNewFolder
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Folder
@@ -26,7 +29,9 @@ import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Movie
 import androidx.compose.material.icons.rounded.MusicNote
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -36,6 +41,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.Prefs
+import com.akis.app.dlna.BucketInfo
 import com.akis.app.dlna.Kind
 import com.akis.app.dlna.MediaLibrary
 import kotlinx.coroutines.Dispatchers
@@ -87,6 +94,9 @@ fun SourcesScreen() {
             }
         }
     }
+
+    var showHidden by remember { mutableStateOf(false) }
+    if (showHidden) HiddenFoldersDialog(settings.hiddenBuckets) { showHidden = false }
 
     val counts by produceState(Triple(-1, -1, -1), refresh) {
         value = withContext(Dispatchers.IO) {
@@ -163,6 +173,27 @@ fun SourcesScreen() {
             }
         }
 
+        if (settings.hideFolders) {
+            item {
+                ExpressiveCard(onClick = { showHidden = true }) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconBadge(Icons.Rounded.VisibilityOff, bg = MaterialTheme.colorScheme.secondaryContainer, tint = MaterialTheme.colorScheme.onSecondaryContainer)
+                        Spacer(Modifier.padding(start = 14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Gizli klasörler", style = MaterialTheme.typography.titleMedium)
+                            Text(
+                                if (settings.hiddenBuckets.isEmpty()) "Ağda görünmesini istemediğin klasörleri seç"
+                                else "${settings.hiddenBuckets.size} klasör gizli",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Icon(Icons.Rounded.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+        }
+
         item { SectionTitle("Klasörlerim") }
         item {
             Text(
@@ -208,6 +239,51 @@ fun SourcesScreen() {
             }
         }
     }
+}
+
+@Composable
+private fun HiddenFoldersDialog(hidden: Set<String>, onDismiss: () -> Unit) {
+    val ctx = LocalContext.current
+    val buckets by produceState<List<BucketInfo>?>(null) {
+        value = withContext(Dispatchers.IO) { MediaLibrary(ctx).allBuckets() }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Gizli klasörler") },
+        text = {
+            val list = buckets
+            when {
+                list == null -> Text("Klasörler okunuyor…")
+                list.isEmpty() -> Text("Hiç klasör bulunamadı.")
+                else -> LazyColumn(Modifier.heightIn(max = 420.dp)) {
+                    items(list, key = { it.id }) { b ->
+                        val isHidden = b.id in hidden
+                        Row(
+                            Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                when {
+                                    Kind.VIDEO in b.kinds -> Icons.Rounded.Movie
+                                    Kind.AUDIO in b.kinds -> Icons.Rounded.MusicNote
+                                    else -> Icons.Rounded.Image
+                                },
+                                null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.padding(start = 12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(b.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
+                                Text("${b.count} öğe", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(checked = isHidden, onCheckedChange = { Prefs.setHidden(b.id, it) })
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = { TextButton(onClick = onDismiss) { Text("Tamam") } },
+    )
 }
 
 private fun countText(n: Int, granted: Boolean, unit: String) = when {

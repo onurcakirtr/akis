@@ -17,6 +17,8 @@ import java.io.ByteArrayOutputStream
 
 enum class Kind { FOLDER, VIDEO, AUDIO, IMAGE, SUBTITLE }
 
+data class BucketInfo(val id: String, val name: String, val count: Int, val kinds: Set<Kind>)
+
 data class Entry(
     val id: String,
     val parentId: String,
@@ -52,6 +54,11 @@ class MediaLibrary(private val ctx: Context) {
     private val thumbCache = object : LruCache<String, ByteArray>(8 * 1024 * 1024) {
         override fun sizeOf(key: String, value: ByteArray) = value.size
     }
+
+    /** SAF klasörü için ".nomedia" var mı önbelleği (doküman URI → sonuç). */
+    private val nomediaCache = LruCache<String, Boolean>(512)
+
+    private val hiding get() = s.hideFolders
 
     private fun folder(id: String, parent: String, title: String, count: Int = -1) =
         Entry(id, parent, title, Kind.FOLDER, childCount = count)
@@ -202,7 +209,31 @@ class MediaLibrary(private val ctx: Context) {
                 map[bid] = (prev?.first ?: name) to ((prev?.second ?: 0) + 1)
             }
         }
-        return map.map { (bid, v) -> folder("$prefix:b:$bid", prefix, v.first, v.second) }
+        return map.filterKeys { !(hiding && it in s.hiddenBuckets) }
+            .map { (bid, v) -> folder("$prefix:b:$bid", prefix, v.first, v.second) }
+    }
+
+    /** Kaynaklar ekranındaki "Gizli klasörler" listesi için: gizlilerle birlikte tüm klasörler. */
+    fun allBuckets(): List<BucketInfo> {
+        val map = LinkedHashMap<String, BucketInfo>()
+        for ((uri, kind) in listOf(VIDEO to Kind.VIDEO, AUDIO to Kind.AUDIO, IMAGE to Kind.IMAGE)) {
+            try {
+                cr.query(
+                    uri,
+                    arrayOf(MediaStore.MediaColumns.BUCKET_ID, MediaStore.MediaColumns.BUCKET_DISPLAY_NAME),
+                    null, null, null,
+                )?.use { c ->
+                    while (c.moveToNext()) {
+                        val bid = c.getString(0) ?: continue
+                        val prev = map[bid]
+                        map[bid] = if (prev == null) BucketInfo(bid, c.getString(1) ?: "Diğer", 1, setOf(kind))
+                        else prev.copy(count = prev.count + 1, kinds = prev.kinds + kind)
+                    }
+                }
+            } catch (_: Exception) {
+            }
+        }
+        return map.values.sortedBy { it.name.lowercase() }
     }
 
     private fun albums(): List<Entry> {
@@ -266,8 +297,16 @@ class MediaLibrary(private val ctx: Context) {
             Kind.AUDIO -> "a"
             else -> "i"
         }
+        var where = sel
+        var whereArgs = args
+        val hidden = if (hiding) s.hiddenBuckets.toList() else emptyList()
+        if (hidden.isNotEmpty()) {
+            val clause = "${MediaStore.MediaColumns.BUCKET_ID} NOT IN (${hidden.joinToString(",") { "?" }})"
+            where = if (sel == null) clause else "($sel) AND $clause"
+            whereArgs = (args?.toList() ?: emptyList<String>()).plus(hidden).toTypedArray()
+        }
         val out = ArrayList<Entry>()
-        cr.query(base, proj.toTypedArray(), sel, args, order)?.use { c ->
+        cr.query(base, proj.toTypedArray(), where, whereArgs, order)?.use { c ->
             val iId = c.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
             val iName = c.getColumnIndexOrThrow(MediaStore.MediaColumns.DISPLAY_NAME)
             val iMime = c.getColumnIndexOrThrow(MediaStore.MediaColumns.MIME_TYPE)
@@ -335,7 +374,11 @@ class MediaLibrary(private val ctx: Context) {
                 )
             }
         }
-        val visible = rows.filter { !it.name.startsWith(".") }
+        if (hiding && rows.any { it.name == ".nomedia" }) return emptyList()
+        val visible = rows.filter { r ->
+            !r.name.startsWith(".") &&
+                !(hiding && r.mime == Document.MIME_TYPE_DIR && hasNomedia(tree, r.doc))
+        }
         val subs = visible.filter { kindOf(it.name, it.mime) == Kind.SUBTITLE }
             .associateBy { subtitleBase(it.name) }
         val dirs = visible.filter { it.mime == Document.MIME_TYPE_DIR }
@@ -360,6 +403,25 @@ class MediaLibrary(private val ctx: Context) {
             )
         }.sortedBy { it.title.lowercase() }
         return dirs + files
+    }
+
+    private fun hasNomedia(tree: Uri, doc: String): Boolean {
+        val key = "$tree|$doc"
+        nomediaCache.get(key)?.let { return it }
+        val found = try {
+            cr.query(
+                DocumentsContract.buildChildDocumentsUriUsingTree(tree, doc),
+                arrayOf(Document.COLUMN_DISPLAY_NAME), null, null, null,
+            )?.use { c ->
+                var f = false
+                while (!f && c.moveToNext()) f = c.getString(0) == ".nomedia"
+                f
+            } ?: false
+        } catch (_: Exception) {
+            false
+        }
+        nomediaCache.put(key, found)
+        return found
     }
 
     private fun lookupDocument(id: String): Entry? {

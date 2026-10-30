@@ -2,7 +2,14 @@
 
 package com.akis.app.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,6 +30,7 @@ import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Router
 import androidx.compose.material.icons.rounded.Smartphone
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -119,6 +127,18 @@ fun SettingsScreen() {
             }
         }
 
+        item { SectionTitle("Özellikler") }
+        item {
+            ExpressiveCard {
+                FeatureRow(
+                    Icons.Rounded.VisibilityOff, "Gizli klasörler",
+                    ".nomedia içeren ve Kaynaklar'da gizlediğin klasörler paylaşılmasın",
+                    s.hideFolders,
+                ) { Prefs.set("hideFolders", it) }
+                // FEATURES
+            }
+        }
+
         item { SectionTitle("Görünüm") }
         item {
             ExpressiveCard {
@@ -210,6 +230,30 @@ private fun SettingRow(
             }
             Spacer(Modifier.width(8.dp))
             trailing()
+        }
+    }
+}
+
+/** Özellik aç/kapa satırı; açıkken altındaki ek ayarlar (extra) yaylı animasyonla açılır. */
+@Composable
+private fun FeatureRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    divider: Boolean = false,
+    extra: (@Composable ColumnScope.() -> Unit)? = null,
+    onChange: (Boolean) -> Unit,
+) {
+    if (divider) Divider()
+    SettingRow(icon, title, subtitle, onClick = { onChange(!checked) }) { Switch(checked, onChange) }
+    if (extra != null) {
+        AnimatedVisibility(
+            visible = checked,
+            enter = expandVertically(spring(dampingRatio = 0.8f, stiffness = 500f)) + fadeIn(),
+            exit = shrinkVertically(spring(stiffness = 700f)) + fadeOut(),
+        ) {
+            Column(Modifier.fillMaxWidth().padding(start = 54.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp), content = extra)
         }
     }
 }
