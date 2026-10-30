@@ -55,6 +55,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     }
 
     fun contentChanged() {
+        lib.clearSearchCache()
         updateId.incrementAndGet()
         announce()
     }
@@ -76,7 +77,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         when (req.method) {
             "GET", "HEAD" -> when {
                 p == "/desc.xml" -> res.xml(Xml.device(settings.name, uuid, base))
-                p == "/cd.xml" -> res.xml(Xml.CD_SCPD)
+                p == "/cd.xml" -> res.xml(Xml.cdScpd(settings.search))
                 p == "/cm.xml" -> res.xml(Xml.CM_SCPD)
                 p == "/icon.png" -> res.bytes(200, "image/png", icon)
                 p.startsWith("/m/") -> serveMedia(req, res, decode(p.removePrefix("/m/").substringBefore('/')), base)
@@ -88,11 +89,15 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                     else res.text(404, "Küçük resim yok")
                 }
                 !settings.webUi -> res.text(403, "Web arayüzü kapalı. Akış uygulamasından açabilirsin.")
-                p == "/" || p == "/index.html" -> res.html(WebUi.list(settings.name, settings.name, lib.root(), null))
+                p == "/" || p == "/index.html" -> res.html(WebUi.list(settings.name, settings.name, lib.root(), null, search = settings.search))
+                p == "/ara" && settings.search -> {
+                    val q = queryParam(req.query, "q")
+                    res.html(WebUi.list(settings.name, "“$q” için sonuçlar", lib.search(q, limit = 200), "0", search = true, query = q))
+                }
                 p.startsWith("/w/") -> {
                     val id = decode(p.removePrefix("/w/"))
                     val title = lib.metadata(id)?.title ?: ""
-                    res.html(WebUi.list(settings.name, title, lib.children(id), lib.parentOf(id)))
+                    res.html(WebUi.list(settings.name, title, lib.children(id), lib.parentOf(id), search = settings.search))
                 }
                 p.startsWith("/p/") -> {
                     val e = lib.lookup(decode(p.removePrefix("/p/")))
@@ -118,7 +123,13 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             "/ctl/cd" -> when (action) {
                 "Browse" -> browse(body, res, base)
                 "GetSystemUpdateID" -> res.xml(Xml.soap(action, "ContentDirectory", "<Id>${updateId.get()}</Id>"))
-                "GetSearchCapabilities" -> res.xml(Xml.soap(action, "ContentDirectory", "<SearchCaps></SearchCaps>"))
+                "Search" -> if (Prefs.current.search) search(body, res, base) else res.text(500, Xml.FAULT, "text/xml; charset=\"utf-8\"")
+                "GetSearchCapabilities" -> res.xml(
+                    Xml.soap(
+                        action, "ContentDirectory",
+                        if (Prefs.current.search) "<SearchCaps>dc:title,upnp:class,upnp:artist,upnp:album</SearchCaps>" else "<SearchCaps></SearchCaps>",
+                    ),
+                )
                 "GetSortCapabilities" -> res.xml(Xml.soap(action, "ContentDirectory", "<SortCaps>dc:title</SortCaps>"))
                 else -> res.text(500, Xml.FAULT, "text/xml; charset=\"utf-8\"")
             }
@@ -133,6 +144,30 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         }
     }
 
+    private fun queryParam(query: String, name: String): String =
+        query.split('&').firstOrNull { it.substringBefore('=') == name }?.substringAfter('=', "")?.let { decode(it) } ?: ""
+
+    /** UPnP Search: SearchCriteria'dan aranan sözcüğü ve türü (video / müzik / foto) çıkarır. */
+    private fun search(body: String, res: HttpResponder, base: String) {
+        val criteria = Xml.arg(body, "SearchCriteria")
+        val start = Xml.arg(body, "StartingIndex").toIntOrNull()?.coerceAtLeast(0) ?: 0
+        val count = Xml.arg(body, "RequestedCount").toIntOrNull() ?: 0
+        val term = Regex("""contains\s*"([^"]*)"""", RegexOption.IGNORE_CASE).findAll(criteria)
+            .map { it.groupValues[1] }.firstOrNull { it.isNotBlank() } ?: ""
+        val kinds = buildSet {
+            if ("videoItem" in criteria) add(Kind.VIDEO)
+            if ("audioItem" in criteria) add(Kind.AUDIO)
+            if ("imageItem" in criteria) add(Kind.IMAGE)
+        }
+        val all = if (term.isEmpty() && kinds.isEmpty()) emptyList() else lib.search(term, kinds, limit = 1000)
+        val part = all.drop(start).let { if (count > 0) it.take(count) else it }
+        val didl = Xml.didl(part, base, Prefs.current.subtitles)
+        val out = "<Result>${Xml.esc(didl)}</Result><NumberReturned>${part.size}</NumberReturned>" +
+            "<TotalMatches>${all.size}</TotalMatches><UpdateID>${updateId.get()}</UpdateID>"
+        if (term.isNotEmpty()) ServerState.log("🔎 “$term” arandı")
+        res.xml(Xml.soap("Search", "ContentDirectory", out))
+    }
+
     private fun browse(body: String, res: HttpResponder, base: String) {
         val oid = Xml.arg(body, "ObjectID").ifEmpty { "0" }
         val flag = Xml.arg(body, "BrowseFlag").ifEmpty { "BrowseDirectChildren" }
@@ -143,7 +178,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val total: Int
         if (flag == "BrowseMetadata") {
             val list = listOfNotNull(lib.metadata(oid))
-            didl = Xml.didl(list, base, Prefs.current.subtitles)
+            didl = Xml.didl(list, base, Prefs.current.subtitles, Prefs.current.search)
             returned = list.size
             total = list.size
         } else {

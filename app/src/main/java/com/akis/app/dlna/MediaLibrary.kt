@@ -55,6 +55,9 @@ class MediaLibrary(private val ctx: Context) {
         override fun sizeOf(key: String, value: ByteArray) = value.size
     }
 
+    /** Arama için Klasörlerim'in dosya listesi önbelleği (klasör sırası → (zaman, dosyalar)). */
+    private val treeIndex = HashMap<Int, Pair<Long, List<Entry>>>()
+
     /** SAF klasörü için ".nomedia" var mı önbelleği (doküman URI → sonuç). */
     private val nomediaCache = LruCache<String, Boolean>(512)
 
@@ -160,6 +163,52 @@ class MediaLibrary(private val ctx: Context) {
     } catch (e: Exception) {
         null
     }
+
+    /**
+     * Başlık / sanatçı / albümde arar (Türkçe karakterler katlanır: "sarki" → "şarkı").
+     * @param kinds boşsa tüm türler
+     */
+    fun search(query: String, kinds: Set<Kind> = emptySet(), limit: Int = 300): List<Entry> {
+        val q = fold(query.trim())
+        val want = kinds.ifEmpty { setOf(Kind.VIDEO, Kind.AUDIO, Kind.IMAGE) }
+        fun hit(e: Entry) = q.isEmpty() || listOfNotNull(e.title, e.artist, e.album).any { q in fold(it) }
+        val out = ArrayList<Entry>()
+        try {
+            if (Kind.VIDEO in want && s.shareVideo) out += queryMedia(Kind.VIDEO, null, null, "0").filter(::hit)
+            if (Kind.AUDIO in want && s.shareAudio) {
+                out += queryMedia(Kind.AUDIO, "${MediaStore.Audio.Media.IS_MUSIC}!=0", null, "0").filter(::hit)
+            }
+            if (Kind.IMAGE in want && s.shareImage) out += queryMedia(Kind.IMAGE, null, null, "0").filter(::hit)
+        } catch (_: Exception) {
+        }
+        for (i in s.folders.indices) {
+            if (out.size >= limit) break
+            out += indexTree(i).filter { it.kind in want && hit(it) }
+        }
+        return out.take(limit)
+    }
+
+    /** Klasörlerim'deki dosyaları (en fazla 5 seviye, 5000 dosya) tarar; 5 dk önbellekte tutar. */
+    private fun indexTree(idx: Int): List<Entry> {
+        val now = System.currentTimeMillis()
+        synchronized(treeIndex) {
+            treeIndex[idx]?.let { (t, list) -> if (now - t < 5 * 60_000) return list }
+        }
+        val out = ArrayList<Entry>()
+        fun walk(docId: String?, parentId: String, depth: Int) {
+            if (depth > 5 || out.size >= 5000) return
+            val children = try { treeChildren(idx, docId, parentId) } catch (_: Exception) { emptyList() }
+            for (c in children) {
+                if (c.kind == Kind.FOLDER) walk(c.id.substringAfter(':').substringAfter(':'), c.id, depth + 1)
+                else out += c
+            }
+        }
+        walk(null, "t:$idx", 0)
+        synchronized(treeIndex) { treeIndex[idx] = now to out }
+        return out
+    }
+
+    fun clearSearchCache() = synchronized(treeIndex) { treeIndex.clear() }
 
     fun count(kind: Kind): Int = try {
         val (uri, sel) = when (kind) {
@@ -518,6 +567,18 @@ class MediaLibrary(private val ctx: Context) {
             if (given != null && given.contains('/') && given != "application/octet-stream") return given
             val ext = name.substringAfterLast('.', "").lowercase()
             return EXTRA_MIME[ext] ?: MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
+        }
+
+        /** Aramada karşılaştırma için: küçük harf + Türkçe karakter katlama. */
+        fun fold(s: String): String {
+            val sb = StringBuilder(s.length)
+            for (ch in s) sb.append(
+                when (ch) {
+                    'ç', 'Ç' -> 'c'; 'ğ', 'Ğ' -> 'g'; 'ı', 'I', 'İ' -> 'i'; 'ö', 'Ö' -> 'o'; 'ş', 'Ş' -> 's'; 'ü', 'Ü' -> 'u'
+                    else -> ch.lowercaseChar()
+                },
+            )
+            return sb.toString()
         }
 
         private fun subtitleBase(name: String): String {

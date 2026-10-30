@@ -30,6 +30,7 @@ import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Router
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Smartphone
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -149,6 +150,11 @@ fun SettingsScreen() {
                         ) { v -> Prefs.update { putString("subLang", v) } }
                     },
                 ) { Prefs.set("subtitles", it) }
+                FeatureRow(
+                    Icons.Rounded.Search, "Arama",
+                    "TV ve VLC'den başlık, sanatçı ve albüme göre ara; web arayüzüne arama kutusu",
+                    s.search, divider = true,
+                ) { Prefs.set("search", it) }
                 // FEATURES
             }
         }

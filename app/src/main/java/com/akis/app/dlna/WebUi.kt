@@ -28,11 +28,18 @@ video,audio{width:100%;max-height:78vh;border-radius:var(--r);background:#000}
 .b{padding:12px 20px;border-radius:999px;background:var(--acc);color:#fff;text-decoration:none;border:0;font-size:15px;cursor:pointer}
 .b.o{background:var(--card);color:var(--fg)}
 code{word-break:break-all;color:var(--mut);font-size:12px}
+form.q{margin-left:auto;flex:0 1 320px}
+form.q input{width:100%;padding:11px 18px;border-radius:999px;border:1px solid color-mix(in srgb,var(--mut) 35%,transparent);
+background:var(--card);color:var(--fg);font-size:15px;outline:none;transition:border-color .2s}
+form.q input:focus{border-color:var(--acc)}
 """
 
-    private fun page(server: String, title: String, crumbs: String, body: String) =
+    private fun searchBox(query: String) =
+        "<form class=\"q\" action=\"/ara\"><input name=\"q\" type=\"search\" placeholder=\"Ara…\" value=\"${h(query)}\"></form>"
+
+    private fun page(server: String, title: String, crumbs: String, body: String, header: String = "") =
         "<!doctype html><html lang=\"tr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
-            "<title>${h(title)}</title><style>$CSS</style></head><body><header><div class=\"dot\"></div><h1>${h(server)}</h1></header>" +
+            "<title>${h(title)}</title><style>$CSS</style></head><body><header><div class=\"dot\"></div><h1>${h(server)}</h1>$header</header>" +
             "<nav>$crumbs</nav>$body</body></html>"
 
     private fun sizeText(b: Long) = when {
@@ -41,7 +48,14 @@ code{word-break:break-all;color:var(--mut);font-size:12px}
         else -> String.format("%d KB", b / 1024)
     }
 
-    fun list(server: String, title: String, entries: List<Entry>, parentId: String?): String {
+    fun list(
+        server: String,
+        title: String,
+        entries: List<Entry>,
+        parentId: String?,
+        search: Boolean = false,
+        query: String = "",
+    ): String {
         val cards = StringBuilder()
         for (e in entries) {
             val id = Xml.enc(e.id)
@@ -73,7 +87,7 @@ code{word-break:break-all;color:var(--mut);font-size:12px}
             }
         }
         val body = if (entries.isEmpty()) "<div class=\"p\"><p>Burada bir şey yok.</p></div>" else "<main>$cards</main>"
-        return page(server, title, crumbs, body)
+        return page(server, title, crumbs, body, if (search) searchBox(query) else "")
     }
 
     fun player(server: String, e: Entry, absoluteUrl: String, subs: List<Sub> = emptyList()): String {

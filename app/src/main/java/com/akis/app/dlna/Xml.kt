@@ -80,7 +80,7 @@ object Xml {
   </device>
 </root>"""
 
-    fun didl(entries: List<Entry>, base: String, smartSubs: Boolean = false): String = buildString {
+    fun didl(entries: List<Entry>, base: String, smartSubs: Boolean = false, searchable: Boolean = false): String = buildString {
         append("<DIDL-Lite xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" ")
         append("xmlns:dc=\"http://purl.org/dc/elements/1.1/\" ")
         append("xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\" ")
@@ -89,7 +89,7 @@ object Xml {
         for (e in entries) {
             if (e.kind == Kind.FOLDER) {
                 append("<container id=\"").append(esc(e.id)).append("\" parentID=\"").append(esc(e.parentId))
-                append("\" restricted=\"1\" searchable=\"0\"")
+                append("\" restricted=\"1\" searchable=\"").append(if (searchable && e.id == "0") 1 else 0).append('"')
                 if (e.childCount >= 0) append(" childCount=\"").append(e.childCount).append('"')
                 append("><dc:title>").append(esc(e.title)).append("</dc:title>")
                 append("<upnp:class>object.container.storageFolder</upnp:class></container>")
@@ -139,7 +139,19 @@ object Xml {
     private fun sv(n: String, t: String, ev: Boolean = false) =
         "<stateVariable sendEvents=\"${if (ev) "yes" else "no"}\"><name>$n</name><dataType>$t</dataType></stateVariable>"
 
-    val CD_SCPD = "<?xml version=\"1.0\" encoding=\"utf-8\"?><scpd xmlns=\"urn:schemas-upnp-org:service-1-0\">" +
+    /** ContentDirectory tanımı; arama açıksa Search eylemi de listelenir. */
+    fun cdScpd(search: Boolean): String = if (!search) CD_SCPD else CD_SCPD.replace(
+        "<action><name>GetSystemUpdateID</name>",
+        "<action><name>Search</name><argumentList>" +
+            arg("ContainerID", "in", "A_ARG_TYPE_ObjectID") + arg("SearchCriteria", "in", "A_ARG_TYPE_SearchCriteria") +
+            arg("Filter", "in", "A_ARG_TYPE_Filter") + arg("StartingIndex", "in", "A_ARG_TYPE_Index") +
+            arg("RequestedCount", "in", "A_ARG_TYPE_Count") + arg("SortCriteria", "in", "A_ARG_TYPE_SortCriteria") +
+            arg("Result", "out", "A_ARG_TYPE_Result") + arg("NumberReturned", "out", "A_ARG_TYPE_Count") +
+            arg("TotalMatches", "out", "A_ARG_TYPE_Count") + arg("UpdateID", "out", "A_ARG_TYPE_UpdateID") +
+            "</argumentList></action><action><name>GetSystemUpdateID</name>",
+    ).replace("</serviceStateTable>", sv("A_ARG_TYPE_SearchCriteria", "string") + "</serviceStateTable>")
+
+    private val CD_SCPD = "<?xml version=\"1.0\" encoding=\"utf-8\"?><scpd xmlns=\"urn:schemas-upnp-org:service-1-0\">" +
         "<specVersion><major>1</major><minor>0</minor></specVersion><actionList>" +
         "<action><name>Browse</name><argumentList>" +
         arg("ObjectID", "in", "A_ARG_TYPE_ObjectID") + arg("BrowseFlag", "in", "A_ARG_TYPE_BrowseFlag") +
