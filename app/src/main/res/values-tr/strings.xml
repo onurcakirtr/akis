@@ -259,6 +259,7 @@
     <string name="web_bg_none">Yok</string>
     <string name="web_bg_semi">Gölgeli</string>
     <string name="web_bg_solid">Kutu</string>
+    <string name="web_brightness">Parlaklık {0}</string>
     <string name="web_cancel">Vazgeç</string>
     <string name="web_cant_play_audio">Bu dosya tarayıcıda çalınamıyor</string>
     <string name="web_close">Kapat</string>
@@ -270,6 +271,10 @@
     <string name="web_empty">Burada bir şey yok</string>
     <string name="web_error">Hata</string>
     <string name="web_error_load">Yüklenemedi. Telefonda Akış\'ın açık olduğundan emin ol.</string>
+    <string name="web_fit">Görüntü boyutu</string>
+    <string name="web_fit_contain">Sığdır</string>
+    <string name="web_fit_cover">Doldur (kırp)</string>
+    <string name="web_fit_fill">Uzat</string>
     <string name="web_folders_one">{0} klasör</string>
     <string name="web_folders_other">{0} klasör</string>
     <string name="web_fullscreen">Tam ekran</string>
@@ -352,6 +357,7 @@
     <string name="web_view_grid">Izgara</string>
     <string name="web_view_list">Liste</string>
     <string name="web_volume">Ses düzeyi</string>
+    <string name="web_volume_val">Ses {0}</string>
     <string name="widget_large_desc">Durum, bağlı cihazlar ve oynatılan dosya</string>
     <string name="widget_large_label">Akış • durum</string>
     <string name="widget_small_desc">Yayını tek dokunuşla aç / kapat</string>

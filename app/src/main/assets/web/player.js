@@ -41,6 +41,7 @@
     vol: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>',
     mute: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>',
     fs: '<svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>',
+    fit: '<svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 10v4M17 10v4M7 12h3M14 12h3"/></svg>',
     fsx: '<svg viewBox="0 0 24 24"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>',
     pip: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><rect x="12" y="11" width="7" height="6" rx="1" fill="currentColor"/></svg>',
     cc: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M10.5 10.5a2 2 0 1 0 0 3M16.5 10.5a2 2 0 1 0 0 3"/></svg>',
@@ -261,6 +262,7 @@
       '<span class="time">0:00 / 0:00</span><span class="grow"></span>' +
       (info.next ? '<button class="ib" data-a="next" aria-label="' + esc(t('next')) + '">' + I.next + '</button>' : '') +
       ((document.pictureInPictureEnabled) ? '<button class="ib" data-a="pip" aria-label="' + esc(t('pip')) + '">' + I.pip + '</button>' : '') +
+      '<button class="ib" data-a="fit" aria-label="' + esc(t('fit')) + '">' + I.fit + '</button>' +
       '<button class="ib" data-a="fs" aria-label="' + esc(t('fullscreen')) + '">' + I.fs + '</button>' +
       '</div></div></div>' +
       '<div class="spinner"></div><div class="flash"></div>';
@@ -293,6 +295,18 @@
     video.muted = get('muted', false);
     volIn.value = video.muted ? 0 : video.volume;
     video.playbackRate = get('rate', 1);
+    var FITS = ['contain', 'cover', 'fill'];
+    var fit = get('fit', 'contain'), bright = get('bright', 1);
+    function applyLook() {
+      video.style.objectFit = fit;
+      video.style.filter = bright === 1 ? '' : 'brightness(' + bright + ')';
+    }
+    applyLook();
+    function cycleFit() {
+      fit = FITS[(FITS.indexOf(fit) + 1) % FITS.length];
+      put('fit', fit); applyLook();
+      flash(t('fit_' + fit), 0);
+    }
 
     function dura() { return dur > 0 ? dur : (isFinite(video.duration) ? video.duration : 0); }
 
@@ -427,6 +441,7 @@
       else if (a === 'fwd') skip(10);
       else if (a === 'mute') toggleMute();
       else if (a === 'fs') toggleFs();
+      else if (a === 'fit') cycleFit();
       else if (a === 'pip') { if (document.pictureInPictureElement) document.exitPictureInPicture(); else video.requestPictureInPicture().catch(function () { }); }
       else if (a === 'next') goNext();
       else if (a === 'back') opts.onBack();
@@ -556,7 +571,7 @@
     // ---------- dokunmatik ve fare hareketleri ----------
     var down = null, lastTap = { t: 0, side: 0, n: 0 }, tapTimer = 0, longTimer = 0, boosted = false, prevRate = 1;
     tap.addEventListener('pointerdown', function (e) {
-      down = { x: e.clientX, y: e.clientY, t: Date.now(), type: e.pointerType, ct: video.currentTime, scrub: false, target: 0 };
+      down = { x: e.clientX, y: e.clientY, t: Date.now(), type: e.pointerType, ct: video.currentTime, scrub: false, target: 0, vert: '', v0: video.volume, b0: bright };
       try { tap.setPointerCapture(e.pointerId); } catch (x) { }
       clearTimeout(longTimer);
       longTimer = setTimeout(function () {
@@ -567,7 +582,26 @@
       if (e.pointerType === 'mouse' && !down) { showUI(); return; }
       if (!down) return;
       var dx = e.clientX - down.x, dy = e.clientY - down.y;
-      if (!down.scrub && down.type !== 'mouse' && Math.abs(dx) > 16 && Math.abs(dx) > Math.abs(dy) * 1.3) { down.scrub = true; clearTimeout(longTimer); }
+      if (!down.scrub && !down.vert && down.type !== 'mouse' && Math.abs(dx) > 16 && Math.abs(dx) > Math.abs(dy) * 1.3) { down.scrub = true; clearTimeout(longTimer); }
+      if (!down.scrub && !down.vert && down.type !== 'mouse' && Math.abs(dy) > 16 && Math.abs(dy) > Math.abs(dx) * 1.3) {
+        var rr = tap.getBoundingClientRect();
+        down.vert = (down.x - rr.left) < rr.width / 2 ? 'bright' : 'vol';
+        clearTimeout(longTimer);
+      }
+      if (down.vert) {
+        var hgt = tap.getBoundingClientRect().height;
+        var delta = -dy / (hgt * 0.8);
+        if (down.vert === 'bright') {
+          bright = Math.round(clamp(down.b0 + delta * 1.3, 0.3, 1.6) * 100) / 100;
+          applyLook(); put('bright', bright);
+          flash(t('brightness', Math.round(bright * 100) + '%'), -1);
+        } else {
+          var nv = clamp(down.v0 + delta, 0, 1);
+          video.volume = nv; video.muted = nv === 0; volIn.value = nv; put('vol', nv); put('muted', video.muted);
+          flash(t('volume_val', Math.round(nv * 100) + '%'), 1);
+        }
+        return;
+      }
       if (down.scrub) {
         var w = tap.getBoundingClientRect().width;
         var span = Math.min(Math.max(dura(), 60), 300);
@@ -583,6 +617,7 @@
       if (!d) return;
       if (boosted) { boosted = false; video.playbackRate = prevRate; flash(prevRate + '×', 0); return; }
       if (d.scrub) { seek(d.target); showUI(); return; }
+      if (d.vert) return;
       if (e.type === 'pointercancel' || Date.now() - d.t > 500) return;
       var r = tap.getBoundingClientRect();
       var rel = (d.x - r.left) / r.width;

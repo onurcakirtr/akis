@@ -110,6 +110,12 @@ object WebStrings {
         "sync" to R.string.web_sync,
         "sync_val" to R.string.web_sync_val,
         "reset" to R.string.web_reset,
+        "brightness" to R.string.web_brightness,
+        "volume_val" to R.string.web_volume_val,
+        "fit" to R.string.web_fit,
+        "fit_contain" to R.string.web_fit_contain,
+        "fit_cover" to R.string.web_fit_cover,
+        "fit_fill" to R.string.web_fit_fill,
     )
 
     fun json(): JSONObject = JSONObject().also { o -> for ((k, id) in KEYS) o.put(k, Lang.s(id)) }

@@ -145,7 +145,7 @@ select.pill { appearance: none; -webkit-appearance: none; border: 0; color: var(
 .pl { position: relative; width: 100%; aspect-ratio: 16/9; max-height: 78vh; background: #000; border-radius: var(--r); overflow: hidden; user-select: none; -webkit-user-select: none; outline: 0; color: #fff; touch-action: manipulation }
 .pl:fullscreen, .pl.fs { max-height: none; height: 100%; border-radius: 0; aspect-ratio: auto }
 .pl video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000 }
-.pl .tap { position: absolute; inset: 0; z-index: 1 }
+.pl .tap { position: absolute; inset: 0; z-index: 1; touch-action: none }
 .pl .subs { position: absolute; left: 6%; right: 6%; bottom: 9%; z-index: 2; text-align: center; pointer-events: none; transition: bottom .25s }
 .pl.ui .subs { bottom: 22% }
 .pl .subs[data-pos=high] { bottom: 20% }

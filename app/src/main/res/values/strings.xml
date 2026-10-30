@@ -260,6 +260,7 @@
     <string name="web_bg_none">None</string>
     <string name="web_bg_semi">Shaded</string>
     <string name="web_bg_solid">Box</string>
+    <string name="web_brightness">Brightness {0}</string>
     <string name="web_cancel">Cancel</string>
     <string name="web_cant_play_audio">This file can\'t be played in the browser</string>
     <string name="web_close">Close</string>
@@ -271,6 +272,10 @@
     <string name="web_empty">Nothing here</string>
     <string name="web_error">Error</string>
     <string name="web_error_load">Couldn\'t load. Check that Akış is still running on the phone.</string>
+    <string name="web_fit">Picture size</string>
+    <string name="web_fit_contain">Fit</string>
+    <string name="web_fit_cover">Fill (crop)</string>
+    <string name="web_fit_fill">Stretch</string>
     <string name="web_folders_one">{0} folder</string>
     <string name="web_folders_other">{0} folders</string>
     <string name="web_fullscreen">Full screen</string>
@@ -353,6 +358,7 @@
     <string name="web_view_grid">Grid</string>
     <string name="web_view_list">List</string>
     <string name="web_volume">Volume</string>
+    <string name="web_volume_val">Volume {0}</string>
     <string name="widget_large_desc">Status, connected devices and what\'s playing</string>
     <string name="widget_large_label">Akış • status</string>
     <string name="widget_small_desc">Turn sharing on or off with one tap</string>
