@@ -275,6 +275,19 @@
     var engine = null, probe = null, choice = null, alive = true, uiTimer = 0, menu = null, chip = null, nextCard = null;
     var cues = [], subIdx = -1, subs = info.subs || [], tried = {};
     var lastReport = 0, dragging = null;
+    var subSize = get('subSize', 1), subBg = get('subBg', 'semi'), subPos = get('subPos', 'low'), delay = get('delay.' + id, 0);
+    function applySubStyle() {
+      subsEl.style.setProperty('--ss', subSize);
+      subsEl.setAttribute('data-bg', subBg);
+      subsEl.setAttribute('data-pos', subPos);
+    }
+    applySubStyle();
+    function setDelay(d) {
+      delay = Math.round(d * 10) / 10;
+      put('delay.' + id, delay);
+      flash(t('sync_val', (delay > 0 ? '+' : '') + delay.toFixed(1) + ' s'), 0);
+      renderSubs();
+    }
 
     video.volume = get('vol', 1);
     video.muted = get('muted', false);
@@ -351,7 +364,7 @@
     }
     function renderSubs() {
       if (subIdx < 0 || !cues.length) { if (subsEl.innerHTML) subsEl.innerHTML = ''; return; }
-      var ct = video.currentTime, html = '';
+      var ct = video.currentTime - delay, html = '';
       for (var i = 0; i < cues.length; i++) {
         var c = cues[i];
         if (c.a > ct) break;
@@ -441,6 +454,15 @@
         h += '<h4>' + esc(t('subtitles')) + '</h4><button data-s="-1" class="' + (subIdx < 0 ? 'on' : '') + '">' + esc(t('off')) + '</button>';
         subs.forEach(function (s, i) { h += '<button data-s="' + i + '" class="' + (subIdx === i ? 'on' : '') + '">' + esc(s.l) + '</button>'; });
         if (!subs.length) h += '<h4>' + esc(t('no_subs')) + '</h4>';
+        if (subs.length) {
+          var opt = function (key, val, label, cur) { return '<button data-ss="' + key + ':' + val + '" class="' + (cur === val ? 'on' : '') + '">' + esc(label) + '</button>'; };
+          h += '<h4>' + esc(t('sub_style')) + '</h4>' +
+            '<div class="opts"><span>' + esc(t('size')) + '</span>' + opt('size', 0.85, 'S', subSize) + opt('size', 1, 'M', subSize) + opt('size', 1.25, 'L', subSize) + opt('size', 1.6, 'XL', subSize) + '</div>' +
+            '<div class="opts"><span>' + esc(t('background')) + '</span>' + opt('bg', 'none', t('bg_none'), subBg) + opt('bg', 'semi', t('bg_semi'), subBg) + opt('bg', 'solid', t('bg_solid'), subBg) + '</div>' +
+            '<div class="opts"><span>' + esc(t('position')) + '</span>' + opt('pos', 'low', t('pos_low'), subPos) + opt('pos', 'high', t('pos_high'), subPos) + '</div>' +
+            '<div class="opts"><span>' + esc(t('sync')) + '</span><button data-ss="delay:-0.1">−</button><b>' + (delay > 0 ? '+' : '') + delay.toFixed(1) + ' s</b>' +
+            '<button data-ss="delay:0.1">+</button><button data-ss="delay:0">' + esc(t('reset')) + '</button></div>';
+        }
       } else {
         h += '<h4>' + esc(t('speed')) + '</h4>';
         [0.5, 0.75, 1, 1.25, 1.5, 2].forEach(function (r) {
@@ -454,6 +476,18 @@
       menu.addEventListener('click', function (e) {
         e.stopPropagation();
         var b = e.target.closest('button'); if (!b) return;
+        if (b.hasAttribute('data-ss')) {
+          // Görünüm ayarları: menü açık kalsın
+          var kv = b.getAttribute('data-ss').split(':'), v = kv[1];
+          if (kv[0] === 'size') { subSize = +v; put('subSize', subSize); }
+          else if (kv[0] === 'bg') { subBg = v; put('subBg', subBg); }
+          else if (kv[0] === 'pos') { subPos = v; put('subPos', subPos); }
+          else if (kv[0] === 'delay') setDelay(+v === 0 ? 0 : delay + (+v));
+          applySubStyle(); renderSubs();
+          var k = menu.getAttribute('data-k'), sc = menu.scrollTop;
+          closeMenu(); openMenu(k); if (menu) menu.scrollTop = sc;
+          return;
+        }
         if (b.hasAttribute('data-s')) selectSub(+b.getAttribute('data-s'), true);
         else if (b.hasAttribute('data-r')) setRate(+b.getAttribute('data-r'));
         else if (b.hasAttribute('data-au')) switchAudio(+b.getAttribute('data-au'));
@@ -620,6 +654,8 @@
           if (subs.length) { var nx = subIdx + 1 >= subs.length ? -1 : subIdx + 1; selectSub(nx, true); flash(nx < 0 ? t('subs_off') : subs[nx].l, 0); }
           break;
         case 'n': case 'N': case 'MediaTrackNext': if (info.next) goNext(); break;
+        case 'g': case 'G': if (subIdx >= 0) setDelay(delay - 0.1); break;
+        case 'h': case 'H': if (subIdx >= 0) setDelay(delay + 0.1); break;
         case '>': setRate(Math.min(2, video.playbackRate + 0.25)); break;
         case '<': setRate(Math.max(0.25, video.playbackRate - 0.25)); break;
         case 'Escape': if (isFs()) handled = false; else opts.onBack(); break;

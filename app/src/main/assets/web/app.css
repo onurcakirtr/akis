@@ -148,7 +148,15 @@ select.pill { appearance: none; -webkit-appearance: none; border: 0; color: var(
 .pl .tap { position: absolute; inset: 0; z-index: 1 }
 .pl .subs { position: absolute; left: 6%; right: 6%; bottom: 9%; z-index: 2; text-align: center; pointer-events: none; transition: bottom .25s }
 .pl.ui .subs { bottom: 22% }
-.pl .subs span { display: inline; padding: .1em .35em; background: rgba(0,0,0,.55); border-radius: 4px; font-size: clamp(15px, 2.6vw, 30px); line-height: 1.5; box-decoration-break: clone; -webkit-box-decoration-break: clone; text-shadow: 0 1px 2px #000; white-space: pre-line }
+.pl .subs[data-pos=high] { bottom: 20% }
+.pl.ui .subs[data-pos=high] { bottom: 26% }
+.pl .subs[data-bg=none] span { background: none; text-shadow: 0 0 3px #000, 0 0 3px #000, 0 1px 3px #000 }
+.pl .subs[data-bg=solid] span { background: rgba(0,0,0,.88) }
+.pl .menu .opts { display: flex; align-items: center; gap: 4px; padding: 2px 6px }
+.pl .menu .opts > span { flex: 1; font-size: 13px; color: #bbb; padding-left: 4px }
+.pl .menu .opts button { width: auto; padding: 6px 10px; justify-content: center }
+.pl .menu .opts b { min-width: 64px; text-align: center; font-size: 13px; font-weight: 600 }
+.pl .subs span { display: inline; padding: .1em .35em; background: rgba(0,0,0,.55); border-radius: 4px; font-size: calc(clamp(15px, 2.6vw, 30px) * var(--ss, 1)); line-height: 1.5; box-decoration-break: clone; -webkit-box-decoration-break: clone; text-shadow: 0 1px 2px #000; white-space: pre-line }
 .pl .layer { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity .25s; background: linear-gradient(rgba(0,0,0,.55), transparent 25%, transparent 60%, rgba(0,0,0,.75)) }
 .pl.ui .layer { opacity: 1 }
 .pl.ui .layer .top, .pl.ui .layer .bottom, .pl.ui .layer .mid button { pointer-events: auto }

@@ -98,6 +98,18 @@ object WebStrings {
         "volume" to R.string.web_volume,
         "subs_loading" to R.string.web_subs_loading,
         "subs_failed" to R.string.web_subs_failed,
+        "sub_style" to R.string.web_sub_style,
+        "size" to R.string.web_size,
+        "background" to R.string.web_background,
+        "bg_none" to R.string.web_bg_none,
+        "bg_semi" to R.string.web_bg_semi,
+        "bg_solid" to R.string.web_bg_solid,
+        "position" to R.string.web_position,
+        "pos_low" to R.string.web_pos_low,
+        "pos_high" to R.string.web_pos_high,
+        "sync" to R.string.web_sync,
+        "sync_val" to R.string.web_sync_val,
+        "reset" to R.string.web_reset,
     )
 
     fun json(): JSONObject = JSONObject().also { o -> for ((k, id) in KEYS) o.put(k, Lang.s(id)) }
