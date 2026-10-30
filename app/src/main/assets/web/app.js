@@ -356,7 +356,7 @@
       });
       $('.mbar', bar).addEventListener('click', function (e) {
         var r = this.getBoundingClientRect();
-        if (audio.duration) audio.currentTime = (e.clientX - r.left) / r.width * audio.duration;
+        if (audio.duration) seekTo((e.clientX - r.left) / r.width * audio.duration);
       });
     }
     function reorder() {
@@ -384,10 +384,36 @@
       if (!ql) { ql = document.createElement('div'); ql.className = 'qlist'; bar.appendChild(ql); }
       ql.innerHTML = order.map(function (qi, p) { return '<button class="nav' + (p === pos ? ' on' : '') + '" data-m="q" data-q="' + qi + '">' + esc(queue[qi].t) + '</button>'; }).join('');
     }
+    var engine = null, gen = 0;
+    function stopEngine() { if (engine) { engine.destroy(); engine = null; } }
+    /** Tarayıcının çalamadığı dosya (WMA, AC3, APE, ALAC…): telefon AAC'ye çevirip akıtır, bizim motorla çalınır. */
+    function converted(it) {
+      var g = ++gen;
+      stopEngine();
+      if (!P.MS) { toast(t('cant_play_audio')); next(false); return; }
+      api('/api/probe?id=' + enc(it.id)).then(function (pr) {
+        if (g !== gen) return;
+        var tr = pr.ok ? pr.tracks.filter(function (x) { return !x.v && (x.tx || x.codec); })[0] : null;
+        if (!tr) throw new Error('codec');
+        var tx = !(tr.codec && P.MS.isTypeSupported(P.Engine.mime(null, tr.codec)));
+        engine = new P.Engine(audio, it.id, (pr.d || it.d || 0) / 1000,
+          { vcodec: null, a: tr.i, tx: tx, acodec: tx ? 'mp4a.40.2' : tr.codec },
+          function () { if (g === gen) { toast(t('cant_play_audio')); next(false); } });
+        engine.open(0);
+        audio.play().catch(function () { });
+      }).catch(function () { if (g === gen) { toast(t('cant_play_audio')); next(false); } });
+    }
+    function seekTo(x) { if (engine) engine.seek(x); else audio.currentTime = x; }
     function load() {
       var it = cur(); if (!it) return;
-      audio.src = '/m/' + enc(it.id) + '/file.' + (it.ext || 'mp3');
-      audio.play().catch(function () { });
+      gen++;
+      stopEngine();
+      if (it.mime && !audio.canPlayType(it.mime) && !/mpeg|mp3|aac|mp4|ogg|opus|flac|wav|webm/.test(it.mime)) {
+        converted(it);
+      } else {
+        audio.src = '/m/' + enc(it.id) + '/file.' + (it.ext || 'mp3');
+        audio.play().catch(function () { });
+      }
       paint();
       if ('mediaSession' in navigator) {
         try {
@@ -400,14 +426,15 @@
       }
     }
     function toggle() { if (audio.paused) audio.play().catch(function () { }); else audio.pause(); }
-    function prev() { if (audio.currentTime > 4) { audio.currentTime = 0; return; } if (pos > 0) { pos--; load(); } }
+    function prev() { if (audio.currentTime > 4) { seekTo(0); return; } if (pos > 0) { pos--; load(); } }
     function next(user) { if (pos + 1 < order.length) { pos++; load(); } else if (user) { pos = 0; load(); } }
-    function close() { audio.pause(); audio.removeAttribute('src'); bar.hidden = true; document.body.classList.remove('has-mini'); queue = []; }
+    function close() { gen++; stopEngine(); audio.pause(); audio.removeAttribute('src'); bar.hidden = true; document.body.classList.remove('has-mini'); queue = []; }
     audio.addEventListener('ended', function () { next(false); });
     audio.addEventListener('play', paint);
     audio.addEventListener('pause', paint);
     audio.addEventListener('timeupdate', function () { var i = $('.mbar i', bar); if (i && audio.duration) i.style.width = (audio.currentTime / audio.duration * 100) + '%'; });
-    audio.addEventListener('error', function () { toast(t('cant_play_audio')); next(false); });
+    // Doğrudan çalınamadıysa (ör. M4A içinde ALAC) bir de telefonda çevirerek dene
+    audio.addEventListener('error', function () { var it = cur(); if (!engine && it) converted(it); });
     return {
       play: function (items, it) {
         if (!bar.innerHTML) build();

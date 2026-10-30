@@ -888,5 +888,5 @@
     };
   }
 
-  window.AkisPlayer = { mount: mount, fmt: fmt };
+  window.AkisPlayer = { mount: mount, fmt: fmt, Engine: Engine, MS: MS };
 })();
