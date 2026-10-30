@@ -10,6 +10,7 @@ import android.content.pm.PackageManager
 import android.view.View
 import android.widget.RemoteViews
 import com.akis.app.Prefs
+import com.akis.app.Lang
 import com.akis.app.R
 import com.akis.app.ServerState
 import com.akis.app.service.DlnaService
@@ -39,9 +40,9 @@ object Widgets {
     // ---------------- Görünüm ----------------
 
     private fun statusText(running: Boolean): String {
-        if (!running) return "Kapalı"
+        if (!running) return Lang.s(R.string.status_off)
         val clients = ServerState.clients.value.size
-        return if (clients > 0) "Yayında • $clients cihaz" else "Yayında"
+        return if (clients > 0) Lang.s(R.string.status_on_devices, Lang.q(R.plurals.count_devices, clients)) else Lang.s(R.string.status_on)
     }
 
     private fun power(ctx: Context, v: RemoteViews, running: Boolean) {
@@ -76,10 +77,10 @@ object Widgets {
                     setViewVisibility(R.id.w_progress, View.VISIBLE)
                 }
                 else -> {
-                    setTextViewText(R.id.w_now, if (running) "Şu an bir şey oynatılmıyor" else "Yayın kapalı")
+                    setTextViewText(R.id.w_now, if (running) Lang.s(R.string.nothing_playing) else Lang.s(R.string.sharing_off))
                     setTextViewText(
                         R.id.w_sub,
-                        if (running) ServerState.address.value?.removePrefix("http://") ?: "Ağ bekleniyor…" else "Açmak için düğmeye dokun",
+                        if (running) ServerState.address.value?.removePrefix("http://") ?: Lang.s(R.string.waiting_network) else Lang.s(R.string.tap_to_turn_on),
                     )
                     setViewVisibility(R.id.w_progress, View.GONE)
                 }

@@ -28,7 +28,7 @@ data class LogEvent(val time: Long, val text: String)
 
 /** Servis ile arayüz arasında paylaşılan canlı durum. */
 object ServerState {
-    const val GENERIC = "UPnP cihazı"
+    val GENERIC: String get() = Lang.s(R.string.client_generic)
 
     val running = MutableStateFlow(false)
     val address = MutableStateFlow<String?>(null)
@@ -65,7 +65,7 @@ object ServerState {
                 list.toMutableList().also { it[i] = c.copy(name = better, lastSeen = now()) }
             }
         }
-        if (isNew) log("Yeni cihaz: $name ($ip)")
+        if (isNew) log(Lang.s(R.string.log_new_device, name, ip))
     }
 
     fun clientName(ip: String) = clients.value.firstOrNull { it.ip == ip }?.name ?: ip
@@ -112,7 +112,7 @@ object ServerState {
             "windows-media-player" in u || "microsoft-dlna" in u || "windows" in u && "upnp" in u -> "Windows"
             "foobar" in u -> "foobar2000"
             "bubbleupnp" in u -> "BubbleUPnP"
-            "mozilla" in u || "chrome" in u || "safari" in u -> "Tarayıcı"
+            "mozilla" in u || "chrome" in u || "safari" in u -> Lang.s(R.string.client_browser)
             else -> GENERIC
         }
     }

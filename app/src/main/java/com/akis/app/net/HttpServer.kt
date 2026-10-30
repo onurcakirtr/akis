@@ -1,6 +1,8 @@
 package com.akis.app.net
 
 import android.os.Build
+import com.akis.app.Lang
+import com.akis.app.R
 import java.io.BufferedInputStream
 import java.io.BufferedOutputStream
 import java.io.ByteArrayOutputStream
@@ -185,10 +187,10 @@ class HttpServer(
                     return // istemci bağlantıyı kesti
                 } catch (e: Exception) {
                     if (resp.committed) return
-                    try { resp.text(500, "Hata: ${e.message}") } catch (_: IOException) { return }
+                    try { resp.text(500, Lang.s(R.string.http_error, e.message ?: "")) } catch (_: IOException) { return }
                 }
                 if (!resp.committed) {
-                    try { resp.text(404, "Bulunamadı") } catch (_: IOException) { return }
+                    try { resp.text(404, Lang.s(R.string.http_not_found)) } catch (_: IOException) { return }
                 }
                 if (stream != null && stream.remaining > 0) return // gövde yarım kaldı; bağlantıyı kapat
                 val conn = headers["connection"]?.lowercase()

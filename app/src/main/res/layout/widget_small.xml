@@ -18,7 +18,7 @@
             android:id="@+id/w_power"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:contentDescription="Aç / kapat"
+            android:contentDescription="@string/power_toggle"
             android:padding="12dp"
             android:src="@drawable/ic_w_power"
             android:tint="@color/widget_fg" />
@@ -34,7 +34,7 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Akış"
+            android:text="@string/app_name"
             android:textColor="@color/widget_fg"
             android:textSize="16sp"
             android:textStyle="bold" />
@@ -45,7 +45,7 @@
             android:layout_height="wrap_content"
             android:ellipsize="end"
             android:singleLine="true"
-            android:text="Kapalı"
+            android:text="@string/status_off"
             android:textColor="@color/widget_muted"
             android:textSize="13sp" />
     </LinearLayout>

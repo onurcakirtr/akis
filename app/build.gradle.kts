@@ -32,6 +32,10 @@ android {
     buildFeatures {
         compose = true
     }
+    // Android 13+ uygulama dili menüsü res/values-<dil> klasörlerinden kendiliğinden oluşturulur
+    androidResources {
+        generateLocaleConfig = true
+    }
 }
 
 dependencies {
@@ -50,6 +54,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
     implementation("com.google.zxing:core:3.5.3")
+    // Uygulama içi dil seçimi (Android 12 ve altı dahil)
+    implementation("androidx.appcompat:appcompat:1.7.0")
 }
 
 kotlin {

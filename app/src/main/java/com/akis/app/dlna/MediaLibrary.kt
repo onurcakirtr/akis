@@ -14,6 +14,8 @@ import android.util.LruCache
 import android.util.Size
 import android.webkit.MimeTypeMap
 import com.akis.app.Prefs
+import com.akis.app.Lang
+import com.akis.app.R
 import com.akis.app.WatchHistory
 import java.io.ByteArrayOutputStream
 
@@ -95,27 +97,27 @@ class MediaLibrary(private val ctx: Context) {
 
     fun root(): List<Entry> = buildList {
         if (s.history) {
-            add(folder("h:c", "0", "Devam et"))
-            add(folder("h:u", "0", "İzlenmemiş"))
+            add(folder("h:c", "0", Lang.s(R.string.continue_watching)))
+            add(folder("h:u", "0", Lang.s(R.string.unwatched)))
         }
-        if (s.showRecent && (s.shareVideo || s.shareImage)) add(folder("r", "0", "Son eklenenler"))
-        if (s.shareVideo) add(folder("v", "0", "Videolar"))
-        if (s.shareAudio) add(folder("a", "0", "Müzik"))
-        if (s.shareImage) add(folder("i", "0", "Fotoğraflar"))
-        if (s.folders.isNotEmpty()) add(folder("f", "0", "Klasörlerim", s.folders.size))
+        if (s.showRecent && (s.shareVideo || s.shareImage)) add(folder("r", "0", Lang.s(R.string.recent)))
+        if (s.shareVideo) add(folder("v", "0", Lang.s(R.string.videos)))
+        if (s.shareAudio) add(folder("a", "0", Lang.s(R.string.music)))
+        if (s.shareImage) add(folder("i", "0", Lang.s(R.string.photos)))
+        if (s.folders.isNotEmpty()) add(folder("f", "0", Lang.s(R.string.my_folders), s.folders.size))
     }
 
     fun children(id: String): List<Entry> = try {
         when {
             id == "0" -> root()
             id == "r" -> recent()
-            id == "v" && s.shareVideo -> listOf(folder("v:all", "v", "Tüm videolar")) + buckets(VIDEO, "v")
+            id == "v" && s.shareVideo -> listOf(folder("v:all", "v", Lang.s(R.string.all_videos))) + buckets(VIDEO, "v")
             id == "a" && s.shareAudio -> listOf(
-                folder("a:all", "a", "Tüm şarkılar"),
-                folder("a:albums", "a", "Albümler"),
-                folder("a:artists", "a", "Sanatçılar"),
+                folder("a:all", "a", Lang.s(R.string.all_songs)),
+                folder("a:albums", "a", Lang.s(R.string.albums)),
+                folder("a:artists", "a", Lang.s(R.string.artists)),
             ) + buckets(AUDIO, "a")
-            id == "i" && s.shareImage -> listOf(folder("i:all", "i", "Tüm fotoğraflar")) + buckets(IMAGE, "i")
+            id == "i" && s.shareImage -> listOf(folder("i:all", "i", Lang.s(R.string.all_photos))) + buckets(IMAGE, "i")
             id == "f" -> trees()
             id == "h:c" && s.history -> WatchHistory.inProgress().take(60).mapNotNull { r ->
                 lookup(r.id)?.copy(parentId = id)
@@ -293,7 +295,7 @@ class MediaLibrary(private val ctx: Context) {
         )?.use { c ->
             while (c.moveToNext()) {
                 val bid = c.getString(0) ?: continue
-                val name = c.getString(1) ?: "Diğer"
+                val name = c.getString(1) ?: Lang.s(R.string.other)
                 val prev = map[bid]
                 map[bid] = (prev?.first ?: name) to ((prev?.second ?: 0) + 1)
             }
@@ -315,7 +317,7 @@ class MediaLibrary(private val ctx: Context) {
                     while (c.moveToNext()) {
                         val bid = c.getString(0) ?: continue
                         val prev = map[bid]
-                        map[bid] = if (prev == null) BucketInfo(bid, c.getString(1) ?: "Diğer", 1, setOf(kind))
+                        map[bid] = if (prev == null) BucketInfo(bid, c.getString(1) ?: Lang.s(R.string.other), 1, setOf(kind))
                         else prev.copy(count = prev.count + 1, kinds = prev.kinds + kind)
                     }
                 }
@@ -333,7 +335,7 @@ class MediaLibrary(private val ctx: Context) {
             null, null, "${MediaStore.Audio.Albums.ALBUM} COLLATE NOCASE ASC",
         )?.use { c ->
             while (c.moveToNext()) {
-                out += folder("a:al:${c.getLong(0)}", "a:albums", c.getString(1) ?: "Bilinmeyen albüm", c.getInt(2))
+                out += folder("a:al:${c.getLong(0)}", "a:albums", c.getString(1) ?: Lang.s(R.string.unknown_album), c.getInt(2))
             }
         }
         return out
@@ -347,7 +349,7 @@ class MediaLibrary(private val ctx: Context) {
             null, null, "${MediaStore.Audio.Artists.ARTIST} COLLATE NOCASE ASC",
         )?.use { c ->
             while (c.moveToNext()) {
-                out += folder("a:ar:${c.getLong(0)}", "a:artists", c.getString(1) ?: "Bilinmeyen sanatçı", c.getInt(2))
+                out += folder("a:ar:${c.getLong(0)}", "a:artists", c.getString(1) ?: Lang.s(R.string.unknown_artist), c.getInt(2))
             }
         }
         return out
@@ -632,7 +634,7 @@ class MediaLibrary(private val ctx: Context) {
                     if (c.moveToFirst()) c.getString(0) else null
                 } ?: DocumentsContract.getTreeDocumentId(tree).substringAfter(':')
             } catch (e: Exception) {
-                "Klasör"
+                Lang.s(R.string.folder)
             }
         }
     }

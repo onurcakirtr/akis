@@ -52,6 +52,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.akis.app.R
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -110,12 +112,12 @@ fun HomeScreen() {
             ) { on ->
                 Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        if (on) "Yayında" else "Kapalı",
+                        stringResource(if (on) R.string.status_on else R.string.status_off),
                         style = MaterialTheme.typography.headlineMedium,
                         color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                     )
                     Text(
-                        if (on) "Ağdaki cihazlar seni görebiliyor" else "Başlatmak için düğmeye dokun",
+                        stringResource(if (on) R.string.status_on_sub else R.string.status_off_sub),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -143,23 +145,23 @@ fun HomeScreen() {
             }
             item(key = "stats") {
                 Row(Modifier.fillMaxWidth().animateItem(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    StatPill(Icons.Rounded.Devices, clients.size.toString(), "Cihaz", Modifier.weight(1f))
-                    StatPill(Icons.Rounded.Upload, formatBytes(bytes), "Gönderilen", Modifier.weight(1f))
-                    StatPill(Icons.Rounded.Schedule, formatDuration((now - startedAt).coerceAtLeast(0)), "Süre", Modifier.weight(1f))
+                    StatPill(Icons.Rounded.Devices, clients.size.toString(), stringResource(R.string.stat_devices), Modifier.weight(1f))
+                    StatPill(Icons.Rounded.Upload, formatBytes(bytes), stringResource(R.string.stat_sent), Modifier.weight(1f))
+                    StatPill(Icons.Rounded.Schedule, formatDuration((now - startedAt).coerceAtLeast(0)), stringResource(R.string.stat_uptime), Modifier.weight(1f))
                 }
             }
             if (streams.isNotEmpty()) {
-                item(key = "st-title") { SectionTitle("Şu an oynatılıyor", Modifier.animateItem()) }
+                item(key = "st-title") { SectionTitle(stringResource(R.string.now_playing), Modifier.animateItem()) }
                 items(streams, key = { "s-" + it.key }) { StreamCard(it, Modifier.animateItem()) }
             }
-            item(key = "cl-title") { SectionTitle("Bağlı cihazlar", Modifier.animateItem()) }
+            item(key = "cl-title") { SectionTitle(stringResource(R.string.connected_devices), Modifier.animateItem()) }
             if (clients.isEmpty()) {
                 item(key = "cl-empty") {
                     ExpressiveCard(modifier = Modifier.animateItem()) {
-                        Text("Henüz kimse bağlanmadı", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.nobody_yet), style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "VLC'de Yerel Ağ → Universal Plug'n'Play bölümünü aç. \"${settings.name}\" listede görünecek.",
+                            stringResource(R.string.nobody_hint, settings.name),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -169,7 +171,7 @@ fun HomeScreen() {
                 items(clients, key = { "c-" + it.ip }) { ClientRow(it, now, Modifier.animateItem()) }
             }
             if (events.isNotEmpty()) {
-                item(key = "ev-title") { SectionTitle("Etkinlik", Modifier.animateItem()) }
+                item(key = "ev-title") { SectionTitle(stringResource(R.string.activity), Modifier.animateItem()) }
                 item(key = "ev") { EventsCard(events.take(8).map { it.time to it.text }, Modifier.animateItem()) }
             }
         } else {
@@ -180,15 +182,15 @@ fun HomeScreen() {
     if (showQr && address != null) {
         AlertDialog(
             onDismissRequest = { showQr = false },
-            confirmButton = { TextButton(onClick = { showQr = false }) { Text("Kapat") } },
-            title = { Text("Tarayıcıdan aç") },
+            confirmButton = { TextButton(onClick = { showQr = false }) { Text(stringResource(R.string.close)) } },
+            title = { Text(stringResource(R.string.open_in_browser)) },
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     DotQrCode(address!!, Modifier.size(240.dp))
                     Spacer(Modifier.height(14.dp))
                     Text(address!!, style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Aynı ağdaki telefon, PC ya da TV tarayıcısıyla okut.",
+                        stringResource(R.string.qr_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -218,14 +220,14 @@ private fun AddressCard(address: String, webUi: Boolean, onQr: () -> Unit, modif
             IconBadge(Icons.Rounded.Wifi, bg = MaterialTheme.colorScheme.primary, tint = MaterialTheme.colorScheme.onPrimary)
             Gap(14.dp)
             Column(Modifier.weight(1f)) {
-                Text("Ağ adresi", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
+                Text(stringResource(R.string.network_address), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
                 Text(address.removePrefix("http://"), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
             }
             FilledTonalIconButton(onClick = { clipboard.setText(AnnotatedString(address)) }) {
-                Icon(Icons.Rounded.ContentCopy, "Kopyala")
+                Icon(Icons.Rounded.ContentCopy, stringResource(R.string.copy))
             }
             if (webUi) {
-                FilledTonalIconButton(onClick = onQr) { Icon(Icons.Rounded.QrCode2, "QR kod") }
+                FilledTonalIconButton(onClick = onQr) { Icon(Icons.Rounded.QrCode2, stringResource(R.string.qr_code)) }
             }
         }
     }
@@ -272,15 +274,15 @@ private fun ClientRow(c: ClientInfo, now: Long, modifier: Modifier = Modifier) {
         c.name.contains("TV") -> Icons.Rounded.Tv
         c.name == "VLC" || c.name == "Kodi" -> Icons.Rounded.PlayArrow
         c.name == "Windows" -> Icons.Rounded.Computer
-        c.name == "Tarayıcı" -> Icons.Rounded.Language
+        c.name == stringResource(R.string.client_browser) -> Icons.Rounded.Language
         c.name == "Xbox" || c.name == "PlayStation" -> Icons.Rounded.SportsEsports
         else -> Icons.Rounded.Devices
     }
     val ago = ((now - c.lastSeen) / 1000).coerceAtLeast(0)
     val agoText = when {
-        ago < 10 -> "şimdi"
-        ago < 60 -> "$ago sn önce"
-        else -> "${ago / 60} dk önce"
+        ago < 10 -> stringResource(R.string.ago_now)
+        ago < 60 -> stringResource(R.string.ago_sec, ago.toInt())
+        else -> stringResource(R.string.ago_min, (ago / 60).toInt())
     }
     ExpressiveCard(modifier = modifier) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -312,13 +314,13 @@ private fun EventsCard(events: List<Pair<Long, String>>, modifier: Modifier = Mo
 @Composable
 private fun HowToCard(modifier: Modifier = Modifier) {
     ExpressiveCard(modifier = modifier) {
-        Text("Nasıl kullanılır?", style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.howto_title), style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(12.dp))
         listOf(
-            "Telefonla diğer cihazı aynı Wi-Fi ağına bağla (telefonun hotspot'u da olur).",
-            "Yukarıdaki düğmeye dokunup yayını başlat.",
-            "VLC'de Yerel Ağ → Universal Plug'n'Play bölümüne gir; telefonun orada görünür.",
-            "TV ya da PC tarayıcısından adrese girerek de izleyebilirsin.",
+            stringResource(R.string.howto_1),
+            stringResource(R.string.howto_2),
+            stringResource(R.string.howto_3),
+            stringResource(R.string.howto_4),
         ).forEachIndexed { i, s ->
             Row(Modifier.padding(vertical = 6.dp), verticalAlignment = Alignment.Top) {
                 androidx.compose.material3.Surface(

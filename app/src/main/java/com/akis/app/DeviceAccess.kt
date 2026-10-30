@@ -63,7 +63,7 @@ object DeviceAccess {
         synchronized(pending) { pending.remove(ip) }
         cancelNotification(ip)
         publish()
-        ServerState.log("✓ İzin verildi: $name ($ip)")
+        ServerState.log(Lang.s(R.string.log_allowed, name, ip))
         ServerState.accessChanged.tryEmit(Unit)
     }
 
@@ -73,7 +73,7 @@ object DeviceAccess {
         synchronized(pending) { pending.remove(ip) }
         cancelNotification(ip)
         publish()
-        ServerState.log("⛔ Engellendi: $name ($ip)")
+        ServerState.log(Lang.s(R.string.log_blocked, name, ip))
     }
 
     fun forget(ip: String) {
@@ -90,7 +90,7 @@ object DeviceAccess {
             if (last != null && now - last < 60_000) return
             pending[ip] = now
         }
-        ServerState.log("? Onay bekliyor: $name ($ip)")
+        ServerState.log(Lang.s(R.string.log_pending, name, ip))
         val nm = app.getSystemService(NotificationManager::class.java)
         fun action(act: String, code: Int) = PendingIntent.getBroadcast(
             app, ip.hashCode() * 2 + code,
@@ -99,14 +99,14 @@ object DeviceAccess {
         )
         val n = NotificationCompat.Builder(app, AkisApplication.CHANNEL_ACCESS)
             .setSmallIcon(R.drawable.ic_stat)
-            .setContentTitle("$name bağlanmak istiyor")
-            .setContentText("$ip adresindeki cihaz içeriklerini görmek istiyor")
+            .setContentTitle(Lang.s(R.string.access_title, name))
+            .setContentText(Lang.s(R.string.access_text, ip))
             .setColor(0xFFD71921.toInt())
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_STATUS)
             .setAutoCancel(true)
-            .addAction(0, "İzin ver", action(ACTION_ALLOW, 0))
-            .addAction(0, "Engelle", action(ACTION_BLOCK, 1))
+            .addAction(0, Lang.s(R.string.allow), action(ACTION_ALLOW, 0))
+            .addAction(0, Lang.s(R.string.block), action(ACTION_BLOCK, 1))
             .build()
         try { nm.notify(notifId(ip), n) } catch (_: SecurityException) {}
     }

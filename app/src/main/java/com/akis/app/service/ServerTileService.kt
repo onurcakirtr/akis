@@ -6,6 +6,8 @@ import android.os.Build
 import android.service.quicksettings.Tile
 import android.service.quicksettings.TileService
 import com.akis.app.Prefs
+import com.akis.app.Lang
+import com.akis.app.R
 import com.akis.app.ServerState
 import kotlinx.coroutines.flow.combine
 import com.akis.app.ui.MainActivity
@@ -62,11 +64,11 @@ class ServerTileService : TileService() {
         val stream = ServerState.streams.value.firstOrNull()
         val clients = ServerState.clients.value.size
         t.subtitle = when {
-            !on -> "Kapalı"
-            !Prefs.current.notifDetails -> "Yayında"
+            !on -> Lang.s(R.string.status_off)
+            !Prefs.current.notifDetails -> Lang.s(R.string.status_on)
             stream != null -> "▶ ${stream.title}"
-            clients > 0 -> "Yayında • $clients cihaz"
-            else -> "Yayında"
+            clients > 0 -> Lang.s(R.string.status_on_devices, Lang.q(R.plurals.count_devices, clients))
+            else -> Lang.s(R.string.status_on)
         }
         t.updateTile()
     }

@@ -18,24 +18,25 @@ class AkisApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Prefs.init(this)
+        Lang.init(this)
         WatchHistory.init(this)
         DeviceAccess.init(this)
         watchState()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_SERVER, "Yayın durumu", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Akış sunucusu çalışırken gösterilir"
+            NotificationChannel(CHANNEL_SERVER, Lang.s(R.string.ch_server), NotificationManager.IMPORTANCE_LOW).apply {
+                description = Lang.s(R.string.ch_server_desc)
                 setShowBadge(false)
             }
         )
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_ACCESS, "Cihaz onayı", NotificationManager.IMPORTANCE_HIGH).apply {
-                description = "Yeni bir cihaz bağlanmak istediğinde sorulur"
+            NotificationChannel(CHANNEL_ACCESS, Lang.s(R.string.f_approval), NotificationManager.IMPORTANCE_HIGH).apply {
+                description = Lang.s(R.string.ch_access_desc)
             }
         )
         nm.createNotificationChannel(
-            NotificationChannel(CHANNEL_FILES, "Gelen dosyalar", NotificationManager.IMPORTANCE_DEFAULT).apply {
-                description = "Web arayüzünden dosya yüklendiğinde"
+            NotificationChannel(CHANNEL_FILES, Lang.s(R.string.ch_files), NotificationManager.IMPORTANCE_DEFAULT).apply {
+                description = Lang.s(R.string.ch_files_desc)
             }
         )
     }

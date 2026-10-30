@@ -1,6 +1,8 @@
 package com.akis.app.dlna
 
 import java.net.URLEncoder
+import com.akis.app.Lang
+import com.akis.app.R
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -54,7 +56,7 @@ object Xml {
     <manufacturer>Akış</manufacturer>
     <modelName>Akış</modelName>
     <modelNumber>1.0</modelNumber>
-    <modelDescription>Telefon medya sunucusu</modelDescription>
+    <modelDescription>${esc(Lang.s(R.string.model_desc))}</modelDescription>
     <UDN>uuid:$uuid</UDN>
     <dlna:X_DLNADOC>DMS-1.50</dlna:X_DLNADOC>
     <presentationURL>$base/</presentationURL>

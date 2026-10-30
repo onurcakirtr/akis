@@ -5,7 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -40,6 +40,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.akis.app.R
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.Prefs
@@ -48,7 +50,7 @@ import com.akis.app.service.DlnaService
 import com.akis.app.ui.theme.AkisTheme
 import com.akis.app.ui.theme.LocalNothingStyle
 
-class MainActivity : ComponentActivity() {
+class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -81,12 +83,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private data class Tab(val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+private data class Tab(@androidx.annotation.StringRes val label: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
 private val tabs = listOf(
-    Tab("Yayın", Icons.Rounded.Home),
-    Tab("Kaynaklar", Icons.Rounded.VideoLibrary),
-    Tab("Ayarlar", Icons.Rounded.Settings),
+    Tab(R.string.tab_home, Icons.Rounded.Home),
+    Tab(R.string.tab_sources, Icons.Rounded.VideoLibrary),
+    Tab(R.string.settings_title, Icons.Rounded.Settings),
 )
 
 @Composable
@@ -115,7 +117,7 @@ fun AppRoot() {
                         selected = tab == i,
                         onClick = { tab = i },
                         icon = { Icon(t.icon, null) },
-                        label = { Text(t.label) },
+                        label = { Text(stringResource(t.label)) },
                     )
                 }
             }

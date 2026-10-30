@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.Settings
+import androidx.annotation.PluralsRes
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -49,6 +50,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.akis.app.R
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -113,9 +116,9 @@ fun SourcesScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Text("Kaynaklar", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(start = 4.dp))
+            Text(stringResource(R.string.tab_sources), style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(start = 4.dp))
             Text(
-                "Ağda neyin görüneceğini seç",
+                stringResource(R.string.sources_sub),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 4.dp, top = 2.dp),
@@ -129,9 +132,9 @@ fun SourcesScreen() {
                         IconBadge(Icons.Rounded.Lock, bg = MaterialTheme.colorScheme.tertiary, tint = MaterialTheme.colorScheme.onTertiary)
                         Spacer(Modifier.padding(start = 12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Medya izni gerekli", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onTertiaryContainer)
+                            Text(stringResource(R.string.perm_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onTertiaryContainer)
                             Text(
-                                "Videolarını, müziklerini ve fotoğraflarını listeleyebilmem için izin ver.",
+                                stringResource(R.string.perm_text),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onTertiaryContainer,
                             )
@@ -139,36 +142,36 @@ fun SourcesScreen() {
                     }
                     Spacer(Modifier.height(12.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { permLauncher.launch(MEDIA_PERMISSIONS) }) { Text("İzin ver") }
+                        Button(onClick = { permLauncher.launch(MEDIA_PERMISSIONS) }) { Text(stringResource(R.string.allow)) }
                         FilledTonalButton(onClick = {
                             ctx.startActivity(
                                 Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", ctx.packageName, null))
                                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
                             )
-                        }) { Text("Ayarlar") }
+                        }) { Text(stringResource(R.string.settings_title)) }
                     }
                 }
             }
         }
 
-        item { SectionTitle("Medya kitaplığı") }
+        item { SectionTitle(stringResource(R.string.media_library)) }
         item {
-            CategoryCard(Icons.Rounded.Movie, "Videolar", countText(counts.first, hasVideo, "video"), settings.shareVideo) {
+            CategoryCard(Icons.Rounded.Movie, stringResource(R.string.videos), countText(counts.first, hasVideo, R.plurals.count_videos), settings.shareVideo) {
                 Prefs.update { putBoolean("shareVideo", it) }
             }
         }
         item {
-            CategoryCard(Icons.Rounded.MusicNote, "Müzik", countText(counts.second, hasAudio, "şarkı"), settings.shareAudio) {
+            CategoryCard(Icons.Rounded.MusicNote, stringResource(R.string.music), countText(counts.second, hasAudio, R.plurals.count_songs), settings.shareAudio) {
                 Prefs.update { putBoolean("shareAudio", it) }
             }
         }
         item {
-            CategoryCard(Icons.Rounded.Image, "Fotoğraflar", countText(counts.third, hasImage, "fotoğraf"), settings.shareImage) {
+            CategoryCard(Icons.Rounded.Image, stringResource(R.string.photos), countText(counts.third, hasImage, R.plurals.count_photos), settings.shareImage) {
                 Prefs.update { putBoolean("shareImage", it) }
             }
         }
         item {
-            CategoryCard(Icons.Rounded.AutoAwesome, "Son eklenenler", "En yeni video ve fotoğraflar tek klasörde", settings.showRecent) {
+            CategoryCard(Icons.Rounded.AutoAwesome, stringResource(R.string.recent), stringResource(R.string.recent_sub), settings.showRecent) {
                 Prefs.update { putBoolean("showRecent", it) }
             }
         }
@@ -180,10 +183,10 @@ fun SourcesScreen() {
                         IconBadge(Icons.Rounded.VisibilityOff, bg = MaterialTheme.colorScheme.secondaryContainer, tint = MaterialTheme.colorScheme.onSecondaryContainer)
                         Spacer(Modifier.padding(start = 14.dp))
                         Column(Modifier.weight(1f)) {
-                            Text("Gizli klasörler", style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.f_hidden), style = MaterialTheme.typography.titleMedium)
                             Text(
-                                if (settings.hiddenBuckets.isEmpty()) "Ağda görünmesini istemediğin klasörleri seç"
-                                else "${settings.hiddenBuckets.size} klasör gizli",
+                                if (settings.hiddenBuckets.isEmpty()) stringResource(R.string.hidden_pick)
+                                else plural(R.plurals.count_hidden, settings.hiddenBuckets.size),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -194,12 +197,12 @@ fun SourcesScreen() {
             }
         }
 
-        item { SectionTitle("Klasörlerim") }
+        item { SectionTitle(stringResource(R.string.my_folders)) }
         item {
             Text(
-                "İstediğin klasörü (indirilenler, USB bellek, SD kart…) olduğu gibi paylaş. " +
-                    if (settings.subtitles) "Videoyla aynı adlı altyazılar (.srt, .vtt, .ass, .sub; film.tr.srt gibi dilliler dahil) otomatik eklenir."
-                    else "Videoyla aynı adlı .srt altyazılar da otomatik eklenir.",
+                stringResource(R.string.folders_hint) +
+                    if (settings.subtitles) stringResource(R.string.folders_subs_smart)
+                    else stringResource(R.string.folders_subs_basic),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 6.dp),
@@ -225,7 +228,7 @@ fun SourcesScreen() {
                         } catch (_: Exception) {
                         }
                         Prefs.removeFolder(uri)
-                    }) { Icon(Icons.Rounded.Delete, "Kaldır") }
+                    }) { Icon(Icons.Rounded.Delete, stringResource(R.string.remove)) }
                 }
             }
         }
@@ -237,7 +240,7 @@ fun SourcesScreen() {
             ) {
                 Icon(Icons.Rounded.CreateNewFolder, null)
                 Spacer(Modifier.padding(start = 8.dp))
-                Text("Klasör ekle")
+                Text(stringResource(R.string.add_folder))
             }
         }
     }
@@ -251,12 +254,12 @@ private fun HiddenFoldersDialog(hidden: Set<String>, onDismiss: () -> Unit) {
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Gizli klasörler") },
+        title = { Text(stringResource(R.string.f_hidden)) },
         text = {
             val list = buckets
             when {
-                list == null -> Text("Klasörler okunuyor…")
-                list.isEmpty() -> Text("Hiç klasör bulunamadı.")
+                list == null -> Text(stringResource(R.string.reading_folders))
+                list.isEmpty() -> Text(stringResource(R.string.no_folders))
                 else -> LazyColumn(Modifier.heightIn(max = 420.dp)) {
                     items(list, key = { it.id }) { b ->
                         val isHidden = b.id in hidden
@@ -276,7 +279,7 @@ private fun HiddenFoldersDialog(hidden: Set<String>, onDismiss: () -> Unit) {
                             Spacer(Modifier.padding(start = 12.dp))
                             Column(Modifier.weight(1f)) {
                                 Text(b.name, style = MaterialTheme.typography.bodyLarge, maxLines = 1)
-                                Text("${b.count} öğe", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(plural(R.plurals.count_items, b.count), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Switch(checked = isHidden, onCheckedChange = { Prefs.setHidden(b.id, it) })
                         }
@@ -284,14 +287,15 @@ private fun HiddenFoldersDialog(hidden: Set<String>, onDismiss: () -> Unit) {
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Tamam") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.ok)) } },
     )
 }
 
-private fun countText(n: Int, granted: Boolean, unit: String) = when {
-    !granted -> "İzin verilmedi"
-    n < 0 -> "Sayılıyor…"
-    else -> "$n $unit"
+@Composable
+private fun countText(n: Int, granted: Boolean, @PluralsRes unit: Int) = when {
+    !granted -> stringResource(R.string.perm_denied)
+    n < 0 -> stringResource(R.string.counting)
+    else -> plural(unit, n)
 }
 
 @Composable

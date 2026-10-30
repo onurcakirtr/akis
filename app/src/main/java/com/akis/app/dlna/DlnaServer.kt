@@ -6,6 +6,8 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
 import com.akis.app.DeviceAccess
+import com.akis.app.Lang
+import com.akis.app.R
 import com.akis.app.Prefs
 import com.akis.app.Settings
 import com.akis.app.ServerState
@@ -48,7 +50,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             try {
                 ssdp = Ssdp(uuid, "http://${ip.hostAddress}:$port/desc.xml", ip).also { it.start() }
             } catch (e: Exception) {
-                ServerState.log("Ağ duyurusu başlatılamadı: ${e.message}")
+                ServerState.log(Lang.s(R.string.log_ssdp_fail, e.message ?: ""))
             }
         }
     }
@@ -90,14 +92,14 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                     val id = decode(p.removePrefix("/t/").removeSuffix(".jpg"))
                     val b = lib.thumbnail(id)
                     if (b != null) res.bytes(200, "image/jpeg", b, mapOf("Cache-Control" to "max-age=86400"))
-                    else res.text(404, "Küçük resim yok")
+                    else res.text(404, Lang.s(R.string.http_no_thumb))
                 }
-                !settings.webUi -> res.text(403, "Web arayüzü kapalı. Akış uygulamasından açabilirsin.")
+                !settings.webUi -> res.text(403, Lang.s(R.string.http_web_off))
                 p == "/" || p == "/index.html" -> res.html(WebUi.list(settings.name, settings.name, lib.root(), null, search = settings.search, upload = settings.upload))
                 p == "/yukle" && settings.upload -> res.html(WebUi.uploadPage(settings.name, uploadTarget()))
                 p == "/ara" && settings.search -> {
                     val q = queryParam(req.query, "q")
-                    res.html(WebUi.list(settings.name, "“$q” için sonuçlar", lib.search(q, limit = 200).map(WatchHistory::mark), "0", search = true, query = q, upload = settings.upload))
+                    res.html(WebUi.list(settings.name, Lang.s(R.string.search_results, q), lib.search(q, limit = 200).map(WatchHistory::mark), "0", search = true, query = q, upload = settings.upload))
                 }
                 p.startsWith("/w/") -> {
                     val id = decode(p.removePrefix("/w/"))
@@ -106,7 +108,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 }
                 p.startsWith("/p/") -> {
                     val e = lib.lookup(decode(p.removePrefix("/p/")))
-                    if (e == null) res.text(404, "Bulunamadı")
+                    if (e == null) res.text(404, Lang.s(R.string.http_not_found))
                     else res.html(
                         WebUi.player(
                             settings.name, e, Xml.mediaUrl(base, e),
@@ -115,14 +117,14 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                         ),
                     )
                 }
-                else -> res.text(404, "Bulunamadı")
+                else -> res.text(404, Lang.s(R.string.http_not_found))
             }
             "POST" -> if (p == "/h") webProgress(req, res) else control(req, res, base)
-            "PUT" -> if (p.startsWith("/yukle/") && settings.upload && settings.webUi) upload(req, res) else res.text(403, "Yükleme kapalı")
+            "PUT" -> if (p.startsWith("/yukle/") && settings.upload && settings.webUi) upload(req, res) else res.text(403, Lang.s(R.string.http_upload_off))
             "SUBSCRIBE" -> res.send(200, null, 0, mapOf("SID" to "uuid:${UUID.randomUUID()}", "TIMEOUT" to "Second-1800"))
             "UNSUBSCRIBE" -> res.send(200, null, 0)
             "OPTIONS" -> res.send(200, null, 0, mapOf("Allow" to "GET, HEAD, POST, PUT, SUBSCRIBE, UNSUBSCRIBE"))
-            else -> res.text(405, "Desteklenmiyor")
+            else -> res.text(405, Lang.s(R.string.http_unsupported))
         }
     }
 
@@ -147,19 +149,19 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val pinOk = pinSet && DeviceAccess.cookieOk(req.headers["cookie"], settings.webPin, uuid)
         if (pinSet && webPath(p) && !pinOk) {
             if (req.method == "GET") res.html(WebUi.pinPage(settings.name, wrong = false, locked = DeviceAccess.locked(ip)))
-            else res.text(403, "PIN gerekli")
+            else res.text(403, Lang.s(R.string.http_pin_required))
             return false
         }
         if (!settings.deviceApproval || pinOk || DeviceAccess.isAllowed(ip)) return true
         if (DeviceAccess.isBlocked(ip)) {
-            res.text(403, "Bu cihaz engellendi")
+            res.text(403, Lang.s(R.string.http_blocked))
             return false
         }
         DeviceAccess.request(ip, ServerState.clientName(ip))
         when {
             p.startsWith("/ctl/") -> res.text(500, Xml.FAULT, "text/xml; charset=\"utf-8\"")
             webPath(p) && req.method == "GET" -> res.html(WebUi.waitPage(settings.name))
-            else -> res.text(403, "Telefondan onay bekleniyor")
+            else -> res.text(403, Lang.s(R.string.waiting_approval))
         }
         return false
     }
@@ -206,19 +208,19 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 "GetCurrentConnectionIDs" -> res.xml(Xml.soap(action, "ConnectionManager", "<ConnectionIDs>0</ConnectionIDs>"))
                 else -> res.text(500, Xml.FAULT, "text/xml; charset=\"utf-8\"")
             }
-            else -> res.text(404, "Bulunamadı")
+            else -> res.text(404, Lang.s(R.string.http_not_found))
         }
     }
 
     private fun uploadTarget(): String {
         val f = Prefs.current.uploadFolder
-        return if (f.isEmpty()) "İndirilenler/${Uploads.DEFAULT_DIR}" else MediaLibrary.treeName(ctx, f)
+        return if (f.isEmpty()) Lang.s(R.string.downloads_dir, Uploads.DEFAULT_DIR) else MediaLibrary.treeName(ctx, f)
     }
 
     /** PUT /yukle/<dosya adı> — gövde doğrudan hedef dosyaya akıtılır. */
     private fun upload(req: HttpRequest, res: HttpResponder) {
-        val input = req.bodyStream ?: return res.text(400, "Gövde yok")
-        if (req.contentLength <= 0) return res.text(400, "Boş dosya")
+        val input = req.bodyStream ?: return res.text(400, Lang.s(R.string.http_no_body))
+        if (req.contentLength <= 0) return res.text(400, Lang.s(R.string.http_empty_file))
         val name = Uploads.safeName(decode(req.path.removePrefix("/yukle/")))
         val uri = Uploads.receive(ctx, name, input, req.contentLength, ServerState.clientName(req.remote))
         if (uri == null) return res.text(500, "{\"ok\":false}", "application/json")
@@ -258,7 +260,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val didl = Xml.didl(part, base, Prefs.current.subtitles)
         val out = "<Result>${Xml.esc(didl)}</Result><NumberReturned>${part.size}</NumberReturned>" +
             "<TotalMatches>${all.size}</TotalMatches><UpdateID>${updateId.get()}</UpdateID>"
-        if (term.isNotEmpty()) ServerState.log("🔎 “$term” arandı")
+        if (term.isNotEmpty()) ServerState.log(Lang.s(R.string.log_search, term))
         res.xml(Xml.soap("Search", "ContentDirectory", out))
     }
 
@@ -293,7 +295,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     private fun serveSubtitle(res: HttpResponder, id: String, format: String) {
         val e = lib.lookup(id)
         val uri = e?.uri
-        if (e == null || uri == null || e.kind != Kind.SUBTITLE) return res.text(404, "Altyazı bulunamadı")
+        if (e == null || uri == null || e.kind != Kind.SUBTITLE) return res.text(404, Lang.s(R.string.http_sub_not_found))
         val bytes = try {
             ctx.contentResolver.openInputStream(uri)?.use { input ->
                 val out = ByteArrayOutputStream()
@@ -307,7 +309,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             }
         } catch (_: Exception) {
             null
-        } ?: return res.text(404, "Altyazı açılamadı")
+        } ?: return res.text(404, Lang.s(R.string.http_sub_open_fail))
         val text = Subtitles.decode(bytes, Prefs.current.subLang)
         val cors = mapOf("Access-Control-Allow-Origin" to "*", "Cache-Control" to "no-cache")
         if (format == "vtt") {
@@ -319,13 +321,13 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     }
 
     private fun serveMedia(req: HttpRequest, res: HttpResponder, id: String, base: String) {
-        val e = lib.lookup(id) ?: return res.text(404, "Dosya bulunamadı")
-        val uri = e.uri ?: return res.text(404, "Dosya bulunamadı")
+        val e = lib.lookup(id) ?: return res.text(404, Lang.s(R.string.http_file_not_found))
+        val uri = e.uri ?: return res.text(404, Lang.s(R.string.http_file_not_found))
         val pfd = try { ctx.contentResolver.openFileDescriptor(uri, "r") } catch (ex: Exception) { null }
-            ?: return res.text(404, "Dosya açılamadı")
+            ?: return res.text(404, Lang.s(R.string.http_file_open_fail))
         pfd.use { fd ->
             val size = if (e.size > 0) e.size else fd.statSize
-            if (size <= 0) return res.text(500, "Dosya boyutu okunamadı")
+            if (size <= 0) return res.text(500, Lang.s(R.string.http_file_size_fail))
             var start = 0L
             var end = size - 1
             var partial = false

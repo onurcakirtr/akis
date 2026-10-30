@@ -19,6 +19,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import com.akis.app.AkisApplication
+import com.akis.app.Lang
 import com.akis.app.Prefs
 import com.akis.app.R
 import com.akis.app.ServerState
@@ -105,19 +106,19 @@ class DlnaService : Service() {
         try {
             srv.start(ip)
         } catch (e: BindException) {
-            failAndStop("${settings.port} portu kullanımda. Ayarlardan başka bir port seç.")
+            failAndStop(Lang.s(R.string.err_port_in_use, settings.port))
             return
         } catch (e: Exception) {
-            failAndStop("Sunucu başlatılamadı: ${e.message}")
+            failAndStop(Lang.s(R.string.err_start, e.message ?: ""))
             return
         }
         server = srv
-        if (ip == null) ServerState.error.value = "Wi-Fi ağı bulunamadı. Wi-Fi'a bağlan ya da hotspot aç."
+        if (ip == null) ServerState.error.value = Lang.s(R.string.err_no_wifi)
         acquireLocks(settings.keepAwake)
         registerNetworkCallback()
         ServerState.running.value = true
         ServerState.startedAt.value = System.currentTimeMillis()
-        ServerState.log("Yayın başladı")
+        ServerState.log(Lang.s(R.string.log_started))
 
         val sc = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         scope = sc
@@ -161,7 +162,7 @@ class DlnaService : Service() {
     private fun refreshAddress() {
         val ip = NetUtil.findLanAddress(this)
         server?.setAddress(ip)
-        ServerState.error.value = if (ip == null) "Wi-Fi bağlantısı koptu, yeniden bağlanınca devam edecek." else null
+        ServerState.error.value = if (ip == null) Lang.s(R.string.err_wifi_lost) else null
     }
 
     private fun registerNetworkCallback() {
@@ -228,7 +229,7 @@ class DlnaService : Service() {
             val t = Thread { srv.stop() }
             t.start()
             if (waitForStop) t.join(2000) // aynı portu yeniden açabilmek için kapanmasını bekle
-            ServerState.log("Yayın durdu")
+            ServerState.log(Lang.s(R.string.log_stopped))
         }
         releaseLocks()
         ServerState.running.value = false
@@ -256,11 +257,11 @@ class DlnaService : Service() {
         val addr = ServerState.address.value
         val stream = ServerState.streams.value.firstOrNull()
         val clients = ServerState.clients.value.size
-        val title = if (stream != null) "▶ ${stream.title}" else "Akış yayında"
+        val title = if (stream != null) "▶ ${stream.title}" else Lang.s(R.string.notif_on)
         val text = when {
-            stream != null -> "${stream.client} cihazında oynatılıyor"
-            addr != null -> "${s.name} • $addr" + if (clients > 0) " • $clients cihaz" else ""
-            else -> "Ağ bekleniyor…"
+            stream != null -> Lang.s(R.string.notif_playing_on, stream.client)
+            addr != null -> "${s.name} • $addr" + if (clients > 0) " • " + Lang.q(R.plurals.count_devices, clients) else ""
+            else -> Lang.s(R.string.waiting_network)
         }
         val b = NotificationCompat.Builder(this, AkisApplication.CHANNEL_SERVER)
             .setSmallIcon(R.drawable.ic_stat)
@@ -274,10 +275,10 @@ class DlnaService : Service() {
             .setCategory(NotificationCompat.CATEGORY_SERVICE)
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(open)
-            .addAction(0, "Durdur", stop)
+            .addAction(0, Lang.s(R.string.stop), stop)
         if (s.notifDetails) {
             if (stream != null && stream.size > 0) b.setProgress(1000, (stream.position * 1000 / stream.size).toInt(), false)
-            if (addr != null) b.setSubText("$clients cihaz • ${formatBytes(ServerState.bytesSent.value)} gönderildi")
+            if (addr != null) b.setSubText(Lang.s(R.string.notif_sent, Lang.q(R.plurals.count_devices, clients), formatBytes(ServerState.bytesSent.value)))
         }
         return b.build()
     }

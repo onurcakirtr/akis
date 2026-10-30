@@ -25,6 +25,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.DeleteSweep
@@ -51,6 +53,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -67,10 +70,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.DeviceAccess
+import com.akis.app.Lang
+import com.akis.app.R
 import com.akis.app.Prefs
 import com.akis.app.ServerState
 import com.akis.app.WatchHistory
@@ -91,6 +97,7 @@ fun SettingsScreen() {
     var editPort by remember { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
     var editPin by remember { mutableStateOf(false) }
+    var pickLang by remember { mutableStateOf(false) }
     val devices by DeviceAccess.devices.collectAsStateWithLifecycle()
     val uploadPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
@@ -116,70 +123,70 @@ fun SettingsScreen() {
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         item {
-            Text("Ayarlar", style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(start = 4.dp))
+            Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.headlineLarge, modifier = Modifier.padding(start = 4.dp))
         }
 
         if (needsRestart) {
             item {
                 ExpressiveCard(color = MaterialTheme.colorScheme.primaryContainer) {
-                    Text("Yeni port için yeniden başlat", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
+                    Text(stringResource(R.string.restart_for_port), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onPrimaryContainer)
                     Spacer(Modifier.height(8.dp))
                     Button(onClick = { DlnaService.restart(ctx) }) {
                         Icon(Icons.Rounded.RestartAlt, null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Yeniden başlat")
+                        Text(stringResource(R.string.restart))
                     }
                 }
             }
         }
 
-        item { SectionTitle("Sunucu") }
+        item { SectionTitle(stringResource(R.string.sec_server)) }
         item {
             ExpressiveCard {
-                SettingRow(Icons.Rounded.Smartphone, "Ağdaki adı", s.name, onClick = { editName = true }) {
+                SettingRow(Icons.Rounded.Smartphone, stringResource(R.string.network_name), s.name, onClick = { editName = true }) {
                     Icon(Icons.Rounded.Edit, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Divider()
-                SettingRow(Icons.Rounded.Router, "Port", s.port.toString(), onClick = { editPort = true }) {
+                SettingRow(Icons.Rounded.Router, stringResource(R.string.port), s.port.toString(), onClick = { editPort = true }) {
                     Icon(Icons.Rounded.Edit, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 Divider()
                 SettingRow(
-                    Icons.Rounded.Language, "Web arayüzü", "Tarayıcıdan izlemeye izin ver",
+                    Icons.Rounded.Language, stringResource(R.string.web_ui), stringResource(R.string.web_ui_sub),
                     onClick = { Prefs.update { putBoolean("webUi", !s.webUi) } },
                 ) { Switch(s.webUi, { v -> Prefs.update { putBoolean("webUi", v) } }) }
             }
         }
 
-        item { SectionTitle("Davranış") }
+        item { SectionTitle(stringResource(R.string.sec_behavior)) }
         item {
             ExpressiveCard {
                 SettingRow(
-                    Icons.Rounded.Bolt, "Uyanık tut", "Ekran kapalıyken yayın kesilmesin",
+                    Icons.Rounded.Bolt, stringResource(R.string.keep_awake), stringResource(R.string.keep_awake_sub),
                     onClick = { Prefs.update { putBoolean("keepAwake", !s.keepAwake) } },
                 ) { Switch(s.keepAwake, { v -> Prefs.update { putBoolean("keepAwake", v) } }) }
                 Divider()
                 SettingRow(
-                    Icons.Rounded.RestartAlt, "Açılışta başlat", "Uygulamayı açınca yayın kendiliğinden başlasın",
+                    Icons.Rounded.RestartAlt, stringResource(R.string.auto_start), stringResource(R.string.auto_start_sub),
                     onClick = { Prefs.update { putBoolean("autoStart", !s.autoStart) } },
                 ) { Switch(s.autoStart, { v -> Prefs.update { putBoolean("autoStart", v) } }) }
             }
         }
 
-        item { SectionTitle("Özellikler") }
+        item { SectionTitle(stringResource(R.string.sec_features)) }
         item {
             ExpressiveCard {
                 FeatureRow(
-                    Icons.Rounded.VisibilityOff, "Gizli klasörler",
-                    ".nomedia içeren ve Kaynaklar'da gizlediğin klasörler paylaşılmasın",
+                    Icons.Rounded.VisibilityOff, stringResource(R.string.f_hidden),
+                    stringResource(R.string.f_hidden_sub),
                     s.hideFolders,
                 ) { Prefs.set("hideFolders", it) }
                 FeatureRow(
-                    Icons.Rounded.ClosedCaption, "Gelişmiş altyazı",
-                    ".srt, .vtt, .ass, .sub ve film.tr.srt gibi dilli adlar; Türkçe karakterler düzeltilir",
+                    Icons.Rounded.ClosedCaption, stringResource(R.string.f_subs),
+                    stringResource(R.string.f_subs_sub),
                     s.subtitles, divider = true,
                     extra = {
-                        Text("Tercih edilen dil", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.preferred_lang), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Segmented(
                             options = Subtitles.CHOICES.map { it to it.uppercase() },
                             selected = s.subLang,
@@ -187,57 +194,57 @@ fun SettingsScreen() {
                     },
                 ) { Prefs.set("subtitles", it) }
                 FeatureRow(
-                    Icons.Rounded.Search, "Arama",
-                    "TV ve VLC'den başlık, sanatçı ve albüme göre ara; web arayüzüne arama kutusu",
+                    Icons.Rounded.Search, stringResource(R.string.f_search),
+                    stringResource(R.string.f_search_sub),
                     s.search, divider = true,
                 ) { Prefs.set("search", it) }
                 FeatureRow(
-                    Icons.Rounded.History, "İzleme geçmişi",
-                    "Kaldığın yerden devam; TV'de \"Devam et\" ve \"İzlenmemiş\" klasörleri",
+                    Icons.Rounded.History, stringResource(R.string.f_history),
+                    stringResource(R.string.f_history_sub),
                     s.history, divider = true,
                     extra = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("İzlenenlere ✓ koy", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Text(stringResource(R.string.history_marks), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                             Switch(s.historyMarks, { v -> Prefs.set("historyMarks", v) })
                         }
                         FilledTonalButton(onClick = { confirmClear = true }) {
                             Icon(Icons.Rounded.DeleteSweep, null)
                             Spacer(Modifier.width(8.dp))
-                            Text("Geçmişi temizle")
+                            Text(stringResource(R.string.history_clear))
                         }
                     },
                 ) { Prefs.set("history", it) }
                 FeatureRow(
-                    Icons.Rounded.VerifiedUser, "Cihaz onayı",
-                    "Yeni bir cihaz bağlanınca telefona \"İzin ver / Engelle\" sorulsun",
+                    Icons.Rounded.VerifiedUser, stringResource(R.string.f_approval),
+                    stringResource(R.string.f_approval_sub),
                     s.deviceApproval, divider = true,
                     extra = {
                         if (devices.isEmpty()) {
-                            Text("Henüz kayıtlı cihaz yok", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.no_devices), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         devices.forEach { d ->
                             Row(verticalAlignment = Alignment.CenterVertically) {
                                 Column(Modifier.weight(1f)) {
                                     Text(d.name, style = MaterialTheme.typography.bodyMedium)
                                     Text(
-                                        "${d.ip} • ${if (d.allowed) "izinli" else "engelli"}",
+                                        "${d.ip} • " + stringResource(if (d.allowed) R.string.device_allowed else R.string.device_blocked),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = if (d.allowed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
                                     )
                                 }
-                                TextButton(onClick = { DeviceAccess.forget(d.ip) }) { Text("Unut") }
+                                TextButton(onClick = { DeviceAccess.forget(d.ip) }) { Text(stringResource(R.string.forget)) }
                             }
                         }
                     },
                 ) { Prefs.set("deviceApproval", it) }
                 FeatureRow(
-                    Icons.Rounded.Password, "Web PIN'i",
-                    "Tarayıcıdan girenlerden 4–6 haneli PIN iste",
+                    Icons.Rounded.Password, stringResource(R.string.f_pin),
+                    stringResource(R.string.f_pin_sub),
                     s.webPin.isNotEmpty(), divider = true,
                     extra = {
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("PIN: ${s.webPin}", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                            TextButton(onClick = { editPin = true }) { Text("Değiştir") }
+                            Text(stringResource(R.string.pin_value, s.webPin), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            TextButton(onClick = { editPin = true }) { Text(stringResource(R.string.change)) }
                         }
                     },
                 ) { on ->
@@ -248,50 +255,57 @@ fun SettingsScreen() {
                     }
                 }
                 FeatureRow(
-                    Icons.Rounded.Upload, "Web'den yükleme",
-                    "Bilgisayarın tarayıcısından telefona sürükle-bırak dosya gönder",
+                    Icons.Rounded.Upload, stringResource(R.string.f_upload),
+                    stringResource(R.string.f_upload_sub),
                     s.upload, divider = true,
                     extra = {
                         Text(
-                            "Hedef: ${uploadTargetName ?: "İndirilenler/${Uploads.DEFAULT_DIR}"}",
+                            stringResource(R.string.upload_target, uploadTargetName ?: stringResource(R.string.downloads_dir, Uploads.DEFAULT_DIR)),
                             style = MaterialTheme.typography.bodyMedium,
                         )
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            FilledTonalButton(onClick = { uploadPicker.launch(null) }) { Text("Klasör seç") }
+                            FilledTonalButton(onClick = { uploadPicker.launch(null) }) { Text(stringResource(R.string.choose_folder)) }
                             if (s.uploadFolder.isNotEmpty()) {
-                                TextButton(onClick = { Prefs.update { putString("uploadFolder", "") } }) { Text("Varsayılan") }
+                                TextButton(onClick = { Prefs.update { putString("uploadFolder", "") } }) { Text(stringResource(R.string.default_value)) }
                             }
                         }
                         if (!s.webUi) {
-                            Text("Web arayüzü kapalıyken yükleme yapılamaz.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.upload_needs_web), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                         } else if (s.webPin.isEmpty()) {
-                            Text("Öneri: Web PIN'ini de aç, ağdaki herkes dosya gönderemesin.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.upload_pin_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     },
                 ) { Prefs.set("upload", it) }
                 FeatureRow(
-                    Icons.Rounded.Widgets, "Ana ekran widget'ları",
-                    "Küçük: aç/kapat • Büyük: durum, bağlı cihazlar ve oynatılan dosya",
+                    Icons.Rounded.Widgets, stringResource(R.string.f_widget),
+                    stringResource(R.string.f_widget_sub),
                     s.widget, divider = true,
                 ) { on ->
                     Prefs.set("widget", on)
                     Widgets.setEnabled(ctx, on)
                 }
                 FeatureRow(
-                    Icons.Rounded.Notifications, "Bildirim paneli ayrıntıları",
-                    "Bildirimde ve hızlı ayar kutucuğunda ilerleme, cihaz sayısı, oynatılan dosya",
+                    Icons.Rounded.Notifications, stringResource(R.string.f_notif),
+                    stringResource(R.string.f_notif_sub),
                     s.notifDetails, divider = true,
                 ) { Prefs.set("notifDetails", it) }
             }
         }
 
-        item { SectionTitle("Görünüm") }
+        item { SectionTitle(stringResource(R.string.sec_appearance)) }
         item {
             ExpressiveCard {
+                SettingRow(
+                    Icons.Rounded.Translate, stringResource(R.string.language),
+                    Lang.SUPPORTED.firstOrNull { it.first == Lang.current }?.second ?: stringResource(R.string.lang_system),
+                    onClick = { pickLang = true },
+                ) { Icon(Icons.Rounded.ChevronRight, null, tint = MaterialTheme.colorScheme.onSurfaceVariant) }
+                Divider()
+                Spacer(Modifier.height(6.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconBadge(Icons.Rounded.Palette, size = 40.dp)
                     Spacer(Modifier.width(14.dp))
-                    Text("Tema", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.theme), style = MaterialTheme.typography.titleMedium)
                 }
                 Spacer(Modifier.height(12.dp))
                 Segmented(
@@ -302,17 +316,17 @@ fun SettingsScreen() {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconBadge(Icons.Rounded.DarkMode, size = 40.dp)
                     Spacer(Modifier.width(14.dp))
-                    Text("Koyu mod", style = MaterialTheme.typography.titleMedium)
+                    Text(stringResource(R.string.dark_mode), style = MaterialTheme.typography.titleMedium)
                 }
                 Spacer(Modifier.height(12.dp))
                 Segmented(
-                    options = listOf("system" to "Sistem", "light" to "Açık", "dark" to "Koyu"),
+                    options = listOf("system" to stringResource(R.string.mode_system), "light" to stringResource(R.string.mode_light), "dark" to stringResource(R.string.mode_dark)),
                     selected = s.darkMode,
                 ) { v -> Prefs.update { putString("darkMode", v) } }
             }
         }
 
-        item { SectionTitle("Hakkında") }
+        item { SectionTitle(stringResource(R.string.sec_about)) }
         item {
             ExpressiveCard {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -321,7 +335,7 @@ fun SettingsScreen() {
                     Column {
                         Text("Akış 1.0", style = MaterialTheme.typography.titleMedium)
                         Text(
-                            "Reklamsız, internetsiz UPnP/DLNA medya sunucusu. Her şey yerel ağında kalır.",
+                            stringResource(R.string.about_text),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -331,17 +345,38 @@ fun SettingsScreen() {
         }
     }
 
+    if (pickLang) {
+        AlertDialog(
+            onDismissRequest = { pickLang = false },
+            title = { Text(stringResource(R.string.language)) },
+            text = {
+                Column {
+                    (listOf("" to stringResource(R.string.lang_system)) + Lang.SUPPORTED).forEach { (tag, name) ->
+                        Row(
+                            Modifier.fillMaxWidth().padding(vertical = 2.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            RadioButton(selected = Lang.current == tag, onClick = { pickLang = false; Lang.set(tag) })
+                            Spacer(Modifier.width(8.dp))
+                            Text(name, style = MaterialTheme.typography.bodyLarge)
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { pickLang = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
     if (confirmClear) {
         AlertDialog(
             onDismissRequest = { confirmClear = false },
-            title = { Text("Geçmiş temizlensin mi?") },
-            text = { Text("Kaldığın yerler ve ✓ işaretleri silinir.") },
-            confirmButton = { TextButton(onClick = { WatchHistory.clear(); confirmClear = false }) { Text("Temizle") } },
-            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Vazgeç") } },
+            title = { Text(stringResource(R.string.clear_q)) },
+            text = { Text(stringResource(R.string.clear_text)) },
+            confirmButton = { TextButton(onClick = { WatchHistory.clear(); confirmClear = false }) { Text(stringResource(R.string.clear)) } },
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
     if (editPin) {
-        TextDialog("Web PIN'i (4–6 rakam)", s.webPin, KeyboardType.NumberPassword, onDismiss = { editPin = false }) { v ->
+        TextDialog(stringResource(R.string.pin_dialog), s.webPin, KeyboardType.NumberPassword, onDismiss = { editPin = false }) { v ->
             val pin = v.trim()
             if (pin.length in 4..6 && pin.all { it.isDigit() }) {
                 Prefs.update { putString("webPin", pin) }
@@ -350,13 +385,13 @@ fun SettingsScreen() {
         }
     }
     if (editName) {
-        TextDialog("Ağdaki adı", s.name, KeyboardType.Text, onDismiss = { editName = false }) { v ->
+        TextDialog(stringResource(R.string.network_name), s.name, KeyboardType.Text, onDismiss = { editName = false }) { v ->
             Prefs.update { putString("name", v.trim()) }
             editName = false
         }
     }
     if (editPort) {
-        TextDialog("Port (1024–65535)", s.port.toString(), KeyboardType.Number, onDismiss = { editPort = false }) { v ->
+        TextDialog(stringResource(R.string.port_dialog), s.port.toString(), KeyboardType.Number, onDismiss = { editPort = false }) { v ->
             val p = v.trim().toIntOrNull()
             if (p != null && p in 1024..65535) {
                 Prefs.update { putInt("port", p) }
@@ -457,7 +492,7 @@ private fun TextDialog(
                 modifier = Modifier.fillMaxWidth(),
             )
         },
-        confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text("Kaydet") } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Vazgeç") } },
+        confirmButton = { TextButton(onClick = { onConfirm(text) }) { Text(stringResource(R.string.save)) } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.cancel)) } },
     )
 }

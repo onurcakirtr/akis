@@ -53,6 +53,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import androidx.annotation.PluralsRes
+import com.akis.app.R
 import com.akis.app.ui.theme.LocalNothingStyle
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
@@ -134,7 +138,7 @@ fun PowerButton(running: Boolean, onClick: () -> Unit) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     Icons.Rounded.PowerSettingsNew,
-                    contentDescription = if (running) "Yayını durdur" else "Yayını başlat",
+                    contentDescription = stringResource(if (running) R.string.power_stop else R.string.power_start),
                     modifier = Modifier
                         .size(68.dp)
                         .graphicsLayer { rotationZ = -rotation },
@@ -202,6 +206,10 @@ fun StatPill(icon: ImageVector, value: String, label: String, modifier: Modifier
         }
     }
 }
+
+/** Seçili dilde çoğul metin ("1 video" / "5 videos"). */
+@Composable
+fun plural(@PluralsRes id: Int, n: Int): String = LocalContext.current.resources.getQuantityString(id, n, n)
 
 @Composable
 fun RowScope.Gap(w: Dp = 12.dp) = Spacer(Modifier.width(w))

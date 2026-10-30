@@ -5,6 +5,8 @@ import java.nio.charset.CharacterCodingException
 import java.nio.charset.Charset
 import java.nio.charset.CodingErrorAction
 import java.util.Locale
+import com.akis.app.Lang
+import com.akis.app.R
 
 /** Bir videoya bağlı altyazı dosyası. */
 data class Sub(val id: String, val lang: String, val ext: String) {
@@ -33,15 +35,15 @@ object Subtitles {
         "ko" to "ko", "kor" to "ko", "korean" to "ko",
     )
 
-    private val NAMES = mapOf(
-        "tr" to "Türkçe", "en" to "İngilizce", "de" to "Almanca", "fr" to "Fransızca", "es" to "İspanyolca",
-        "it" to "İtalyanca", "ru" to "Rusça", "ar" to "Arapça", "ja" to "Japonca", "ko" to "Korece",
-    )
-
     /** Ayarlar'daki "tercih edilen dil" seçenekleri. */
     val CHOICES = listOf("tr", "en", "de", "fr", "es")
 
-    fun langName(code: String) = NAMES[code] ?: code.ifEmpty { "Altyazı" }.replaceFirstChar { it.titlecase(Locale("tr")) }
+    /** Dil kodunun seçili arayüz dilindeki adı ("tr" → "Turkish" / "Türkçe"). */
+    fun langName(code: String): String {
+        if (code.isEmpty()) return Lang.s(R.string.subtitle_generic)
+        val name = if (code in LANGS.values) Locale.forLanguageTag(code).getDisplayLanguage(Lang.locale) else code
+        return name.replaceFirstChar { it.titlecase(Lang.locale) }
+    }
 
     /**
      * Altyazı adının (uzantısız, küçük harf) hangi videoya ait olduğunu ve dilini bulur.

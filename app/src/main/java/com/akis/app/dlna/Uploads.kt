@@ -11,6 +11,7 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import androidx.core.app.NotificationCompat
 import com.akis.app.AkisApplication
+import com.akis.app.Lang
 import com.akis.app.Prefs
 import com.akis.app.R
 import com.akis.app.ServerState
@@ -48,7 +49,7 @@ object Uploads {
                 cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v)
             }
         } catch (e: Exception) {
-            ServerState.log("Yükleme hedefi açılamadı: ${e.message}")
+            ServerState.log(Lang.s(R.string.log_upload_target_fail, e.message ?: ""))
             null
         } ?: return null
 
@@ -72,7 +73,7 @@ object Uploads {
                 if (folder.isNotEmpty()) DocumentsContract.deleteDocument(cr, uri) else cr.delete(uri, null, null)
             } catch (_: Exception) {
             }
-            ServerState.log("Yükleme yarım kaldı: $name")
+            ServerState.log(Lang.s(R.string.log_upload_partial, name))
             return null
         }
         if (folder.isEmpty()) {
@@ -81,7 +82,7 @@ object Uploads {
             } catch (_: Exception) {
             }
         }
-        ServerState.log("⬆ $name alındı ($from)")
+        ServerState.log(Lang.s(R.string.log_upload_ok, name, from))
         notify(ctx, name, mime, uri, from)
         return uri
     }
@@ -95,7 +96,7 @@ object Uploads {
         )
         val n = NotificationCompat.Builder(ctx, AkisApplication.CHANNEL_FILES)
             .setSmallIcon(R.drawable.ic_stat)
-            .setContentTitle("Dosya alındı")
+            .setContentTitle(Lang.s(R.string.file_received))
             .setContentText("$name • $from")
             .setColor(0xFFD71921.toInt())
             .setContentIntent(open)

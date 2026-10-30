@@ -1,7 +1,13 @@
 package com.akis.app.dlna
 
+import com.akis.app.Lang
+import com.akis.app.R
+
 /** Tarayıcıdan izlemek için sade, şık web arayüzü (TV tarayıcısı, PC, başka telefon). */
 object WebUi {
+    /** Tek tırnaklı JS dizesi için kaçış. */
+    private fun js(s: String) = s.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+
     private fun h(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
 
     private const val CSS = """
@@ -43,10 +49,10 @@ form.q input:focus{border-color:var(--acc)}
 """
 
     private fun searchBox(query: String) =
-        "<form class=\"q\" action=\"/ara\"><input name=\"q\" type=\"search\" placeholder=\"Ara…\" value=\"${h(query)}\"></form>"
+        "<form class=\"q\" action=\"/ara\"><input name=\"q\" type=\"search\" placeholder=\"${h(Lang.s(R.string.w_search))}\" value=\"${h(query)}\"></form>"
 
     private fun page(server: String, title: String, crumbs: String, body: String, header: String = "") =
-        "<!doctype html><html lang=\"tr\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
+        "<!doctype html><html lang=\"${Lang.locale.language}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
             "<title>${h(title)}</title><style>$CSS</style></head><body><header><div class=\"dot\"></div><h1>${h(server)}</h1>$header</header>" +
             "<nav>$crumbs</nav>$body</body></html>"
 
@@ -67,12 +73,13 @@ window.addEventListener('pagehide',s);})();
 
     /** Sürükle-bırak dosya yükleme sayfası; dosyalar sırayla PUT /yukle/<ad> ile gönderilir. */
     fun uploadPage(server: String, target: String): String {
-        val body = "<div class=\"p\" style=\"max-width:720px\"><h2>Telefona dosya gönder</h2>" +
-            "<p class=\"s\">Dosyalar telefonda <b>${h(target)}</b> klasörüne kaydedilir.</p>" +
-            "<div id=\"drop\" class=\"drop\"><p>Dosyaları buraya sürükle</p>" +
-            "<label class=\"b\">Dosya seç<input id=\"pick\" type=\"file\" multiple hidden></label></div><div id=\"list\"></div></div>" +
-            UPLOAD_JS
-        return page(server, "Yükle", "<a href=\"/\">← Geri</a>", body)
+        val body = "<div class=\"p\" style=\"max-width:720px\"><h2>${h(Lang.s(R.string.w_upload_title))}</h2>" +
+            "<p class=\"s\">${Lang.s(R.string.w_upload_dest, h(target))}</p>" +
+            "<div id=\"drop\" class=\"drop\"><p>${h(Lang.s(R.string.w_drop))}</p>" +
+            "<label class=\"b\">${h(Lang.s(R.string.w_pick))}<input id=\"pick\" type=\"file\" multiple hidden></label></div><div id=\"list\"></div></div>" +
+            "<script>var T={q:'${js(Lang.s(R.string.w_queued))}',done:'${js(Lang.s(R.string.w_sent))}'," +
+            "err:'${js(Lang.s(R.string.w_error))}',lost:'${js(Lang.s(R.string.w_lost))}'};</script>" + UPLOAD_JS
+        return page(server, Lang.s(R.string.w_upload), "<a href=\"/\">${h(Lang.s(R.string.w_back))}</a>", body)
     }
 
     private const val UPLOAD_JS = """<script>
@@ -80,12 +87,12 @@ window.addEventListener('pagehide',s);})();
 function fmt(b){return b>1073741824?(b/1073741824).toFixed(2)+' GB':b>1048576?(b/1048576).toFixed(1)+' MB':Math.ceil(b/1024)+' KB'}
 function add(fs){for(var i=0;i<fs.length;i++){var f=fs[i],e=document.createElement('div');e.className='f';
 e.innerHTML='<div class="t"></div><div class="s"></div><div class="bar"><i></i></div>';e.querySelector('.t').textContent=f.name;
-e.querySelector('.s').textContent=fmt(f.size)+' • sırada';l.appendChild(e);q.push({f:f,e:e});}next();}
+e.querySelector('.s').textContent=fmt(f.size)+' • '+T.q;l.appendChild(e);q.push({f:f,e:e});}next();}
 function next(){if(busy||!q.length)return;busy=true;var it=q.shift(),x=new XMLHttpRequest(),s=it.e.querySelector('.s'),b=it.e.querySelector('i');
 x.open('PUT','/yukle/'+encodeURIComponent(it.f.name));
 x.upload.onprogress=function(ev){if(ev.lengthComputable){var p=ev.loaded/ev.total*100;b.style.width=p+'%';s.textContent=fmt(ev.loaded)+' / '+fmt(ev.total)+' • %'+Math.floor(p);}};
-x.onload=function(){s.textContent=x.status==200?fmt(it.f.size)+' • gönderildi ✓':'Hata ('+x.status+')';b.style.width='100%';busy=false;next();};
-x.onerror=function(){s.textContent='Bağlantı koptu';busy=false;next();};x.send(it.f);}
+x.onload=function(){s.textContent=x.status==200?fmt(it.f.size)+' • '+T.done:T.err+' ('+x.status+')';b.style.width='100%';busy=false;next();};
+x.onerror=function(){s.textContent=T.lost;busy=false;next();};x.send(it.f);}
 document.getElementById('pick').onchange=function(e){add(e.target.files);e.target.value='';};
 ['dragenter','dragover'].forEach(function(n){d.addEventListener(n,function(e){e.preventDefault();d.classList.add('on')})});
 ['dragleave','drop'].forEach(function(n){d.addEventListener(n,function(e){e.preventDefault();d.classList.remove('on')})});
@@ -95,24 +102,24 @@ d.addEventListener('drop',function(e){add(e.dataTransfer.files)});})();
     /** PIN giriş sayfası. */
     fun pinPage(server: String, wrong: Boolean, locked: Boolean): String {
         val msg = when {
-            locked -> "<p class=\"s\">Çok fazla yanlış deneme. Bir dakika sonra tekrar dene.</p>"
-            wrong -> "<p class=\"s\" style=\"color:var(--acc)\">PIN yanlış.</p>"
-            else -> "<p class=\"s\">Bu sunucu PIN ile korunuyor. PIN'i telefondaki Akış uygulamasında görebilirsin.</p>"
+            locked -> "<p class=\"s\">${h(Lang.s(R.string.w_pin_locked))}</p>"
+            wrong -> "<p class=\"s\" style=\"color:var(--acc)\">${h(Lang.s(R.string.w_pin_wrong))}</p>"
+            else -> "<p class=\"s\">${h(Lang.s(R.string.w_pin_info))}</p>"
         }
-        val body = "<div class=\"p\" style=\"max-width:420px\"><h2>PIN gir</h2>$msg" +
+        val body = "<div class=\"p\" style=\"max-width:420px\"><h2>${h(Lang.s(R.string.w_pin_enter))}</h2>$msg" +
             "<form method=\"post\" action=\"/pin\" class=\"btns\"><input name=\"pin\" type=\"password\" inputmode=\"numeric\" " +
             "autocomplete=\"off\" autofocus maxlength=\"6\" style=\"flex:1;padding:12px 18px;border-radius:999px;border:0;" +
             "background:var(--card);color:var(--fg);font-size:18px;letter-spacing:6px\"${if (locked) " disabled" else ""}>" +
-            "<button class=\"b\"${if (locked) " disabled" else ""}>Gir</button></form></div>"
+            "<button class=\"b\"${if (locked) " disabled" else ""}>${h(Lang.s(R.string.w_pin_go))}</button></form></div>"
         return page(server, "PIN", "", body)
     }
 
     /** Cihaz onayı beklenirken gösterilen, kendini yenileyen sayfa. */
     fun waitPage(server: String): String {
-        val body = "<div class=\"p\" style=\"max-width:520px\"><h2>Telefondan onay bekleniyor</h2>" +
-            "<p class=\"s\">Telefona gelen bildirimden <b>İzin ver</b>'e dokun. Bu sayfa kendiliğinden yenilenecek.</p></div>" +
+        val body = "<div class=\"p\" style=\"max-width:520px\"><h2>${h(Lang.s(R.string.waiting_approval))}</h2>" +
+            "<p class=\"s\">${Lang.s(R.string.w_wait_text)}</p></div>" +
             "<script>setTimeout(function(){location.reload()},3000)</script>"
-        return page(server, "Onay bekleniyor", "", body)
+        return page(server, Lang.s(R.string.w_wait_short), "", body)
     }
 
     fun list(
@@ -133,7 +140,7 @@ d.addEventListener('drop',function(e){add(e.dataTransfer.files)});})();
                         "v" -> "🎬"; "a" -> "🎵"; "i" -> "🖼️"; "r" -> "✨"; "f" -> "🗂️"
                         else -> "📁"
                     }
-                    val sub = if (e.childCount >= 0) "<span class=\"s\">${e.childCount} öğe</span>" else ""
+                    val sub = if (e.childCount >= 0) "<span class=\"s\">${h(Lang.q(R.plurals.count_items, e.childCount))}</span>" else ""
                     cards.append("<a class=\"c\" href=\"/w/$id\"><div class=\"ic\">$icon</div><span class=\"t\">${h(e.title)}</span>$sub</a>")
                 }
                 Kind.IMAGE -> cards.append(
@@ -148,14 +155,14 @@ d.addEventListener('drop',function(e){add(e.dataTransfer.files)});})();
             }
         }
         val crumbs = buildString {
-            append("<a href=\"/\">⌂ Ana sayfa</a>")
+            append("<a href=\"/\">${h(Lang.s(R.string.w_home))}</a>")
             if (parentId != null) {
                 val back = if (parentId == "0") "/" else "/w/${Xml.enc(parentId)}"
-                append(" &nbsp;·&nbsp; <a href=\"$back\">← Geri</a> &nbsp;·&nbsp; ${h(title)}")
+                append(" &nbsp;·&nbsp; <a href=\"$back\">${h(Lang.s(R.string.w_back))}</a> &nbsp;·&nbsp; ${h(title)}")
             }
         }
-        val body = if (entries.isEmpty()) "<div class=\"p\"><p>Burada bir şey yok.</p></div>" else "<main>$cards</main>"
-        val header = (if (search) searchBox(query) else "") + (if (upload) "<a class=\"up\" href=\"/yukle\">⬆ Yükle</a>" else "")
+        val body = if (entries.isEmpty()) "<div class=\"p\"><p>${h(Lang.s(R.string.w_empty))}</p></div>" else "<main>$cards</main>"
+        val header = (if (search) searchBox(query) else "") + (if (upload) "<a class=\"up\" href=\"/yukle\">${h(Lang.s(R.string.w_upload_btn))}</a>" else "")
         return page(server, title, crumbs, body, header)
     }
 
@@ -170,11 +177,11 @@ d.addEventListener('drop',function(e){add(e.dataTransfer.files)});})();
         }.joinToString("")
         val body = "<div class=\"p\"><$tag controls autoplay playsinline src=\"$src\">$tracks</$tag>" +
             "<h2>${h(e.title)}</h2><div class=\"btns\">" +
-            "<a class=\"b\" href=\"vlc://${h(absoluteUrl)}\">VLC'de aç</a>" +
-            "<a class=\"b o\" href=\"$src\" download>İndir</a>" +
-            "<button class=\"b o\" onclick=\"navigator.clipboard.writeText('${h(absoluteUrl)}');this.textContent='Kopyalandı ✓'\">Bağlantıyı kopyala</button>" +
+            "<a class=\"b\" href=\"vlc://${h(absoluteUrl)}\">${h(Lang.s(R.string.w_open_vlc))}</a>" +
+            "<a class=\"b o\" href=\"$src\" download>${h(Lang.s(R.string.w_download))}</a>" +
+            "<button class=\"b o\" onclick=\"navigator.clipboard.writeText('${h(absoluteUrl)}');this.textContent='${h(js(Lang.s(R.string.w_copied)))}'\">${h(Lang.s(R.string.w_copy_link))}</button>" +
             "</div><p><code>${h(absoluteUrl)}</code></p></div>" +
             if (resumeMs >= 0 && e.kind == Kind.VIDEO) progressScript(e.id, resumeMs) else ""
-        return page(server, e.title, "<a href=\"$back\">← Geri</a>", body)
+        return page(server, e.title, "<a href=\"$back\">${h(Lang.s(R.string.w_back))}</a>", body)
     }
 }
