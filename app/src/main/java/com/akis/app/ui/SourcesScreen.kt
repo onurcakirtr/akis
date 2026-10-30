@@ -197,7 +197,9 @@ fun SourcesScreen() {
         item { SectionTitle("Klasörlerim") }
         item {
             Text(
-                "İstediğin klasörü (indirilenler, USB bellek, SD kart…) olduğu gibi paylaş. Videoyla aynı adlı .srt altyazılar da otomatik eklenir.",
+                "İstediğin klasörü (indirilenler, USB bellek, SD kart…) olduğu gibi paylaş. " +
+                    if (settings.subtitles) "Videoyla aynı adlı altyazılar (.srt, .vtt, .ass, .sub; film.tr.srt gibi dilliler dahil) otomatik eklenir."
+                    else "Videoyla aynı adlı .srt altyazılar da otomatik eklenir.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(horizontal = 6.dp),

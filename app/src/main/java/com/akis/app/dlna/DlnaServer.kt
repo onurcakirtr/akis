@@ -79,7 +79,8 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 p == "/cd.xml" -> res.xml(Xml.CD_SCPD)
                 p == "/cm.xml" -> res.xml(Xml.CM_SCPD)
                 p == "/icon.png" -> res.bytes(200, "image/png", icon)
-                p.startsWith("/m/") -> serveMedia(req, res, decode(p.removePrefix("/m/").substringBefore('/')))
+                p.startsWith("/m/") -> serveMedia(req, res, decode(p.removePrefix("/m/").substringBefore('/')), base)
+                p.startsWith("/s/") -> serveSubtitle(res, decode(p.removePrefix("/s/").substringBeforeLast('.')), p.substringAfterLast('.'))
                 p.startsWith("/t/") -> {
                     val id = decode(p.removePrefix("/t/").removeSuffix(".jpg"))
                     val b = lib.thumbnail(id)
@@ -96,7 +97,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 p.startsWith("/p/") -> {
                     val e = lib.lookup(decode(p.removePrefix("/p/")))
                     if (e == null) res.text(404, "Bulunamadı")
-                    else res.html(WebUi.player(settings.name, e, Xml.mediaUrl(base, e)))
+                    else res.html(WebUi.player(settings.name, e, Xml.mediaUrl(base, e), if (settings.subtitles) lib.subtitlesOf(e) else emptyList()))
                 }
                 else -> res.text(404, "Bulunamadı")
             }
@@ -142,13 +143,13 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val total: Int
         if (flag == "BrowseMetadata") {
             val list = listOfNotNull(lib.metadata(oid))
-            didl = Xml.didl(list, base)
+            didl = Xml.didl(list, base, Prefs.current.subtitles)
             returned = list.size
             total = list.size
         } else {
             val all = lib.children(oid)
             val part = all.drop(start).let { if (count > 0) it.take(count) else it }
-            didl = Xml.didl(part, base)
+            didl = Xml.didl(part, base, Prefs.current.subtitles)
             returned = part.size
             total = all.size
         }
@@ -159,7 +160,36 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
 
     // ---------------- Dosya akışı ----------------
 
-    private fun serveMedia(req: HttpRequest, res: HttpResponder, id: String) {
+    /** Altyazıyı UTF-8'e ve istenen biçime (srt / vtt) çevirerek verir. */
+    private fun serveSubtitle(res: HttpResponder, id: String, format: String) {
+        val e = lib.lookup(id)
+        val uri = e?.uri
+        if (e == null || uri == null || e.kind != Kind.SUBTITLE) return res.text(404, "Altyazı bulunamadı")
+        val bytes = try {
+            ctx.contentResolver.openInputStream(uri)?.use { input ->
+                val out = ByteArrayOutputStream()
+                val buf = ByteArray(64 * 1024)
+                while (out.size() < 8 * 1024 * 1024) {
+                    val n = input.read(buf)
+                    if (n < 0) break
+                    out.write(buf, 0, n)
+                }
+                out.toByteArray()
+            }
+        } catch (_: Exception) {
+            null
+        } ?: return res.text(404, "Altyazı açılamadı")
+        val text = Subtitles.decode(bytes, Prefs.current.subLang)
+        val cors = mapOf("Access-Control-Allow-Origin" to "*", "Cache-Control" to "no-cache")
+        if (format == "vtt") {
+            res.bytes(200, "text/vtt; charset=utf-8", Subtitles.toVtt(text, e.ext).toByteArray(Charsets.UTF_8), cors)
+        } else {
+            val body = byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) + Subtitles.toSrt(text, e.ext).toByteArray(Charsets.UTF_8)
+            res.bytes(200, "text/srt; charset=utf-8", body, cors)
+        }
+    }
+
+    private fun serveMedia(req: HttpRequest, res: HttpResponder, id: String, base: String) {
         val e = lib.lookup(id) ?: return res.text(404, "Dosya bulunamadı")
         val uri = e.uri ?: return res.text(404, "Dosya bulunamadı")
         val pfd = try { ctx.contentResolver.openFileDescriptor(uri, "r") } catch (ex: Exception) { null }
@@ -193,7 +223,12 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 "transferMode.dlna.org" to (if (e.kind == Kind.IMAGE) "Interactive" else "Streaming"),
                 "contentFeatures.dlna.org" to Xml.CONTENT_FEATURES,
                 "Cache-Control" to "no-cache",
+                "Access-Control-Allow-Origin" to "*",
             )
+            // Samsung / LG: altyazı adresini başlıkta ister
+            if (e.kind == Kind.VIDEO && req.headers["getcaptioninfo.sec"] == "1") {
+                lib.subtitlesOf(e).firstOrNull()?.let { headers["CaptionInfo.sec"] = Xml.subUrl(base, it, Prefs.current.subtitles) }
+            }
             if (partial) headers["Content-Range"] = "bytes $start-$end/$size"
             val track = e.kind == Kind.VIDEO || e.kind == Kind.AUDIO
 

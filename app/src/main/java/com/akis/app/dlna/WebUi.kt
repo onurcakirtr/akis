@@ -76,11 +76,15 @@ code{word-break:break-all;color:var(--mut);font-size:12px}
         return page(server, title, crumbs, body)
     }
 
-    fun player(server: String, e: Entry, absoluteUrl: String): String {
+    fun player(server: String, e: Entry, absoluteUrl: String, subs: List<Sub> = emptyList()): String {
         val src = "/m/${Xml.enc(e.id)}/file.${e.ext}"
         val tag = if (e.kind == Kind.VIDEO) "video" else "audio"
         val back = if (e.parentId == "0") "/" else "/w/${Xml.enc(e.parentId)}"
-        val body = "<div class=\"p\"><$tag controls autoplay playsinline src=\"$src\"></$tag>" +
+        val tracks = subs.mapIndexed { i, sub ->
+            "<track kind=\"subtitles\" src=\"/s/${Xml.enc(sub.id)}.vtt\" srclang=\"${h(sub.lang.ifEmpty { "und" })}\" " +
+                "label=\"${h(sub.label)}\"${if (i == 0) " default" else ""}>"
+        }.joinToString("")
+        val body = "<div class=\"p\"><$tag controls autoplay playsinline src=\"$src\">$tracks</$tag>" +
             "<h2>${h(e.title)}</h2><div class=\"btns\">" +
             "<a class=\"b\" href=\"vlc://${h(absoluteUrl)}\">VLC'de aç</a>" +
             "<a class=\"b o\" href=\"$src\" download>İndir</a>" +

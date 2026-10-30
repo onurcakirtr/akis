@@ -34,7 +34,7 @@ data class Entry(
     val width: Int = 0,
     val height: Int = 0,
     val childCount: Int = -1,
-    val subtitleId: String? = null,
+    val subtitles: List<Sub> = emptyList(),
     val ext: String = "",
 )
 
@@ -57,6 +57,9 @@ class MediaLibrary(private val ctx: Context) {
 
     /** SAF klasörü için ".nomedia" var mı önbelleği (doküman URI → sonuç). */
     private val nomediaCache = LruCache<String, Boolean>(512)
+
+    /** Klasör listelenirken bulunan altyazılar (video ID → altyazılar); tekil aramada (web oynatıcı) kullanılır. */
+    private val subCache = LruCache<String, List<Sub>>(256)
 
     private val hiding get() = s.hideFolders
 
@@ -379,8 +382,7 @@ class MediaLibrary(private val ctx: Context) {
             !r.name.startsWith(".") &&
                 !(hiding && r.mime == Document.MIME_TYPE_DIR && hasNomedia(tree, r.doc))
         }
-        val subs = visible.filter { kindOf(it.name, it.mime) == Kind.SUBTITLE }
-            .associateBy { subtitleBase(it.name) }
+        val subs = subtitlesFor(idx, visible.filter { kindOf(it.name, it.mime) == Kind.SUBTITLE }, visible)
         val dirs = visible.filter { it.mime == Document.MIME_TYPE_DIR }
             .sortedBy { it.name.lowercase() }
             .map { folder("d:$idx:${it.doc}", parentId, it.name) }
@@ -398,11 +400,44 @@ class MediaLibrary(private val ctx: Context) {
                 size = r.size,
                 uri = DocumentsContract.buildDocumentUriUsingTree(tree, r.doc),
                 dateSec = r.mod,
-                subtitleId = if (k == Kind.VIDEO) subs[base.lowercase()]?.let { "fd:$idx:${it.doc}" } else null,
+                subtitles = if (k == Kind.VIDEO) subs[base.lowercase()].orEmpty().also { subCache.put("fd:$idx:${r.doc}", it) } else emptyList(),
                 ext = r.name.substringAfterLast('.', "bin").lowercase(),
             )
         }.sortedBy { it.title.lowercase() }
         return dirs + files
+    }
+
+    /** Aynı klasördeki altyazıları videolara bağlar (videonun küçük harfli adı → altyazılar). */
+    private fun subtitlesFor(idx: Int, subRows: List<Row>, all: List<Row>): Map<String, List<Sub>> {
+        if (subRows.isEmpty()) return emptyMap()
+        if (!s.subtitles) {
+            // Basit mod: yalnızca aynı adlı .srt
+            return subRows.filter { it.name.endsWith(".srt", true) }
+                .associate { subtitleBase(it.name) to listOf(Sub("fd:$idx:${it.doc}", "", "srt")) }
+        }
+        val videos = all.filter { kindOf(it.name, it.mime) == Kind.VIDEO }.map { it.name.substringBeforeLast('.').lowercase() }
+        val out = HashMap<String, MutableList<Sub>>()
+        for (r in subRows) {
+            val (video, lang) = Subtitles.match(r.name.substringBeforeLast('.').lowercase(), videos) ?: continue
+            out.getOrPut(video) { ArrayList() } += Sub("fd:$idx:${r.doc}", lang, r.name.substringAfterLast('.').lowercase())
+        }
+        return out.mapValues { Subtitles.sort(it.value, s.subLang) }
+    }
+
+    /** Tek bir video için altyazılar: önce önbellek, yoksa (yerel depolamada) üst klasörü tarar. */
+    fun subtitlesOf(e: Entry): List<Sub> {
+        if (e.kind != Kind.VIDEO || !e.id.startsWith("fd:")) return e.subtitles
+        subCache.get(e.id)?.let { return it }
+        val rest = e.id.substring(3)
+        val idx = rest.substringBefore(':').toIntOrNull() ?: return emptyList()
+        val doc = rest.substringAfter(':')
+        if ('/' !in doc) return emptyList()
+        return try {
+            treeChildren(idx, doc.substringBeforeLast('/'), "")
+            subCache.get(e.id) ?: emptyList()
+        } catch (_: Exception) {
+            emptyList()
+        }
     }
 
     private fun hasNomedia(tree: Uri, doc: String): Boolean {
@@ -461,7 +496,7 @@ class MediaLibrary(private val ctx: Context) {
         private val VIDEO_EXT = setOf("mp4", "mkv", "avi", "mov", "webm", "m4v", "ts", "m2ts", "mpg", "mpeg", "wmv", "flv", "3gp")
         private val AUDIO_EXT = setOf("mp3", "flac", "m4a", "aac", "ogg", "opus", "wav", "wma", "alac", "amr")
         private val IMAGE_EXT = setOf("jpg", "jpeg", "png", "gif", "webp", "bmp", "heic", "heif")
-        private val SUB_EXT = setOf("srt", "vtt", "ass", "ssa", "sub")
+        private val SUB_EXT = Subtitles.EXT
         private val EXTRA_MIME = mapOf(
             "mkv" to "video/x-matroska", "ts" to "video/mp2t", "m2ts" to "video/mp2t", "flac" to "audio/flac",
             "opus" to "audio/ogg", "m4a" to "audio/mp4", "srt" to "application/x-subrip", "vtt" to "text/vtt",

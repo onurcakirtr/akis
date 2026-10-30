@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Info
@@ -58,6 +59,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.Prefs
 import com.akis.app.ServerState
+import com.akis.app.dlna.Subtitles
 import com.akis.app.service.DlnaService
 
 @Composable
@@ -135,6 +137,18 @@ fun SettingsScreen() {
                     ".nomedia içeren ve Kaynaklar'da gizlediğin klasörler paylaşılmasın",
                     s.hideFolders,
                 ) { Prefs.set("hideFolders", it) }
+                FeatureRow(
+                    Icons.Rounded.ClosedCaption, "Gelişmiş altyazı",
+                    ".srt, .vtt, .ass, .sub ve film.tr.srt gibi dilli adlar; Türkçe karakterler düzeltilir",
+                    s.subtitles, divider = true,
+                    extra = {
+                        Text("Tercih edilen dil", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Segmented(
+                            options = Subtitles.CHOICES.map { it to it.uppercase() },
+                            selected = s.subLang,
+                        ) { v -> Prefs.update { putString("subLang", v) } }
+                    },
+                ) { Prefs.set("subtitles", it) }
                 // FEATURES
             }
         }

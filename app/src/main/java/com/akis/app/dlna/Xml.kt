@@ -31,6 +31,10 @@ object Xml {
 
     fun mediaUrl(base: String, e: Entry) = "$base/m/${enc(e.id)}/file.${e.ext.ifEmpty { "bin" }}"
 
+    /** Altyazı adresi. smart=true ise /s/ üzerinden UTF-8'e ve istenen biçime (srt/vtt) çevrilerek verilir. */
+    fun subUrl(base: String, sub: Sub, smart: Boolean, format: String = "srt") =
+        if (smart) "$base/s/${enc(sub.id)}.$format" else "$base/m/${enc(sub.id)}/sub.srt"
+
     private const val FLAGS = "DLNA.ORG_OP=01;DLNA.ORG_CI=0;DLNA.ORG_FLAGS=01700000000000000000000000000000"
     const val CONTENT_FEATURES = FLAGS
 
@@ -76,7 +80,7 @@ object Xml {
   </device>
 </root>"""
 
-    fun didl(entries: List<Entry>, base: String): String = buildString {
+    fun didl(entries: List<Entry>, base: String, smartSubs: Boolean = false): String = buildString {
         append("<DIDL-Lite xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" ")
         append("xmlns:dc=\"http://purl.org/dc/elements/1.1/\" ")
         append("xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\" ")
@@ -108,10 +112,10 @@ object Xml {
             if (e.durationMs > 0) append(" duration=\"").append(duration(e.durationMs)).append('"')
             if (e.width > 0 && e.height > 0) append(" resolution=\"").append(e.width).append('x').append(e.height).append('"')
             append('>').append(esc(mediaUrl(base, e))).append("</res>")
-            e.subtitleId?.let { sid ->
-                val su = "$base/m/${enc(sid)}/sub.srt"
+            e.subtitles.forEachIndexed { i, sub ->
+                val su = subUrl(base, sub, smartSubs)
                 append("<res protocolInfo=\"http-get:*:text/srt:*\">").append(esc(su)).append("</res>")
-                append("<sec:CaptionInfoEx sec:type=\"srt\">").append(esc(su)).append("</sec:CaptionInfoEx>")
+                if (i == 0) append("<sec:CaptionInfoEx sec:type=\"srt\">").append(esc(su)).append("</sec:CaptionInfoEx>")
             }
             append("</item>")
         }
