@@ -85,7 +85,7 @@ fun PowerButton(running: Boolean, onClick: () -> Unit) {
     val pressed by interaction.collectIsPressedAsState()
     val bouncy = spring<Dp>(dampingRatio = 0.42f, stiffness = Spring.StiffnessLow)
 
-    val size by animateDpAsState(if (running) 188.dp else 168.dp, bouncy, label = "size")
+    val buttonSize by animateDpAsState(if (running) 188.dp else 168.dp, bouncy, label = "size")
     val corner by animateIntAsState(
         if (running) 32 else 50, spring(dampingRatio = 0.5f, stiffness = Spring.StiffnessLow), label = "corner",
     )
@@ -124,7 +124,7 @@ fun PowerButton(running: Boolean, onClick: () -> Unit) {
             interactionSource = interaction,
             shadowElevation = if (running) 10.dp else 2.dp,
             modifier = Modifier
-                .size(size)
+                .size(buttonSize)
                 .graphicsLayer {
                     scaleX = scale
                     scaleY = scale
