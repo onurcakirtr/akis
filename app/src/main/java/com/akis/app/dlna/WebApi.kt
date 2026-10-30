@@ -95,6 +95,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("history", s.history)
             .put("subtitles", s.subtitles)
             .put("files", filesOn())
+            .put("admin", s.adminOn && s.adminHash.isNotEmpty())
             .put("subLang", s.subLang)
             .put("lang", Lang.locale.language)
             .put("uploadTarget", if (s.uploadFolder.isEmpty()) Lang.s(R.string.downloads_dir, Uploads.DEFAULT_DIR) else MediaLibrary.treeName(ctx, s.uploadFolder))

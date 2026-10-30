@@ -19,6 +19,10 @@ Telefonundaki videoları, müzikleri ve fotoğrafları yerel ağdaki **VLC, akı
 - **Kendi web oynatıcısı:** telefon dosyayı tarayıcıya uygun parçalara çevirir (AC3/DTS ses → AAC); dokunmatik hareketler, klavye kısayolları, altyazı görünümü ve senkronu
 - **Özellikler:** web'de her öğe için bilgi paneli (EXIF, video/ses parçaları, etiketler); klasörü ZIP olarak indirme
 - **Cihaz yönetimi:** bağlı cihazı anında kesme, süreli yasaklama ya da kalıcı engelleme
+- **Hızlı paylaşım:** Paylaş → Akış ile herhangi bir dosya için süreli (ya da tek seferlik) indirme bağlantısı ve QR kod
+- **Anında yenileme:** yeni dosyalar TV/VLC'ye (UPnP olay bildirimi) ve açık web sayfasına kendiliğinden yansır
+- **Web'de çoklu seçim:** seçilenleri ZIP indirme, müzik sırasına ekleme
+- **Web'den yönetim:** ayrı yönetici şifresi + telefonda onay, tek ve süreli oturum; güvenlik ayarları yalnızca telefondan
 - **Web'den yükleme:** bilgisayarın tarayıcısından telefona sürükle-bırak dosya gönder
 - **Güvenlik:** yeni cihazlar için *İzin ver / Engelle* onayı, web PIN'i
 - **Gizli klasörler:** `.nomedia` içerenler ve elle gizlediklerin paylaşılmaz

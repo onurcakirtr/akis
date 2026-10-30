@@ -38,6 +38,8 @@ data class Settings(
     val allFilesWeb: Boolean,       // web arayüzünde tüm dosyalar (dosya gezgini)
     val allFilesUpnp: Boolean,      // TV / VLC / Gezgin'de "Tüm dosyalar" klasörü
     val iconStyle: String,          // sunucu simgesi: "default", renk adı, "theme" ya da "custom"
+    val adminOn: Boolean,           // web'den yönetim
+    val adminHash: String,          // yönetici şifresi "tuz:pbkdf2" (boşsa belirlenmemiş)
 )
 
 /** Basit, senkron ayar deposu. Değişiklikler StateFlow ile UI'ye ve servise yansır. */
@@ -85,6 +87,8 @@ object Prefs {
         allFilesWeb = sp.getBoolean("allFilesWeb", false),
         allFilesUpnp = sp.getBoolean("allFilesUpnp", false),
         iconStyle = sp.getString("iconStyle", "default") ?: "default",
+        adminOn = sp.getBoolean("adminOn", false),
+        adminHash = sp.getString("adminHash", "") ?: "",
     )
 
     fun update(block: SharedPreferences.Editor.() -> Unit) {

@@ -26,6 +26,7 @@ import kotlin.math.min
 class DlnaServer(private val ctx: Context, val port: Int, private val uuid: String) {
     private val lib = MediaLibrary(ctx)
     private val webApi = WebApi(ctx, lib)
+    private val adminApi = AdminApi(ctx, lib)
     private val http = HttpServer(port, ::handle)
     private var ssdp: Ssdp? = null
     @Volatile private var currentIp: Inet4Address? = null
@@ -100,12 +101,14 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 }
                 p.startsWith("/share/") -> webApi.share(req, res)
                 !settings.webUi -> res.text(403, Lang.s(R.string.http_web_off))
+                adminApi.handle(req, res) -> Unit
                 webApi.handle(req, res) -> Unit
                 else -> res.text(404, Lang.s(R.string.http_not_found))
             }
             "POST" -> when {
                 p == "/h" -> webProgress(req, res)
                 p == "/zipsel" && settings.webUi -> webApi.zipSelection(req, res)
+                p.startsWith("/admin/") && settings.webUi -> adminApi.handle(req, res)
                 else -> control(req, res, base)
             }
             "PUT" -> if (p.startsWith("/yukle/") && settings.upload && settings.webUi) upload(req, res) else res.text(403, Lang.s(R.string.http_upload_off))
@@ -121,7 +124,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     private val openPaths = setOf("/desc.xml", "/cd.xml", "/cm.xml", "/icon.png", "/icon48.png")
 
     private fun webPath(p: String) =
-        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/") || p == "/raw" || p == "/zip" || p == "/zipsel"
+        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/") || p == "/raw" || p == "/zip" || p == "/zipsel" || p.startsWith("/admin/")
 
     /** @return true ise istek işlenebilir; false ise cevap zaten verildi. */
     private fun checkAccess(req: HttpRequest, res: HttpResponder, settings: Settings): Boolean {

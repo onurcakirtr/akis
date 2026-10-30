@@ -77,6 +77,7 @@
   var q = $('#q');
   q.placeholder = t('search_ph');
   if (!C.search) $('#searchForm').hidden = true;
+  if (C.admin) { var ab = $('#adminBtn'); ab.hidden = false; ab.setAttribute('aria-label', t('ad_title')); }
   var upBtn = $('#upBtn');
   if (C.upload) { upBtn.hidden = false; $('#upLabel').textContent = t('upload'); upBtn.addEventListener('click', function () { Upload.open(); }); }
   var qTimer = 0;
@@ -103,7 +104,7 @@
     var parts = h.split('/');
     var name = parts[0] || 'home';
     var arg = decodeURIComponent(parts.slice(1).join('/'));
-    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload' };
+    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload', admin: 'admin' };
     return { name: map[name] || 'home', arg: arg, p: params, key: location.hash };
   }
   var player = null, list = [], listFolder = '0', scrolls = {}, lastKey = '', softNext = false;
@@ -171,6 +172,7 @@
     else if (r.name === 'search') { if (document.activeElement !== q) q.value = r.arg; p = renderSearch(r.arg); }
     else if (r.name === 'watch') p = renderWatch(r.arg, r.p['in'] || '');
     else if (r.name === 'files') p = renderFiles(r.arg || '');
+    else if (r.name === 'admin') p = window.AkisAdmin.render(view, { t: t, esc: esc, toast: toast, size: size, ICO: ICO });
     else p = renderHome();
     Promise.resolve(p).then(done).catch(function (e) {
       if (e && e.message === 'auth') return;

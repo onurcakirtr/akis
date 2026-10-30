@@ -96,6 +96,13 @@ class MediaLibrary(private val ctx: Context) {
     /** "Tüm dosyalar" (p: / pd: kimlikleri) yalnızca ayar açık ve izin verilmişse erişilebilir. */
     private val filesAllowed get() = (s.allFilesUpnp || s.allFilesWeb) && FileAccess.granted(ctx)
 
+    /** Yol: "Tüm dosyalar" açıksa her yer, değilse yalnızca Klasörlerim'e yol olarak eklenen klasörlerin içi. */
+    private fun pathAllowed(path: String): Boolean {
+        if (!FileAccess.granted(ctx)) return false
+        if (s.allFilesUpnp || s.allFilesWeb) return true
+        return s.folders.any { it.startsWith("/") && (path == it || path.startsWith("$it/")) }
+    }
+
     private fun folder(id: String, parent: String, title: String, count: Int = -1) =
         Entry(id, parent, title, Kind.FOLDER, childCount = count)
 
@@ -150,7 +157,7 @@ class MediaLibrary(private val ctx: Context) {
             id.startsWith("i:b:") && s.shareImage -> queryMedia(Kind.IMAGE, "${MediaStore.MediaColumns.BUCKET_ID}=?", arrayOf(id.substring(4)), id)
 
             id == "pd:" && filesAllowed -> FileAccess.roots().map { folder("pd:" + it.absolutePath, "pd:", FileAccess.rootName(ctx, it)) }
-            id.startsWith("pd:") && filesAllowed -> fileChildren(id)
+            id.startsWith("pd:") && pathAllowed(id.substring(3)) -> fileChildren(id)
             id.startsWith("t:") -> treeChildren(id.substring(2).toInt(), null, id)
             id.startsWith("d:") -> {
                 val rest = id.substring(2)
@@ -188,6 +195,7 @@ class MediaLibrary(private val ctx: Context) {
         id.startsWith("i:") -> "i"
         id.startsWith("t:") -> "f"
         id == "pd:" -> "0"
+        id.startsWith("pd:") && id.substring(3) in s.folders -> "f"
         id.startsWith("p:") || id.startsWith("pd:") -> {
             val f = java.io.File(id.substringAfter(':'))
             val parent = if (id.startsWith("p:")) f.parentFile else f.parentFile?.takeIf { _ -> FileAccess.roots().none { it.absolutePath == f.absolutePath } }
@@ -217,7 +225,7 @@ class MediaLibrary(private val ctx: Context) {
                 else queryMedia(kind, "${MediaStore.MediaColumns._ID}=?", arrayOf(parts[2]), parentOf(id)).firstOrNull()
             }
             id.startsWith("fd:") -> lookupDocument(id)
-            id.startsWith("p:") && filesAllowed -> FileAccess.resolve(id.substring(2))?.takeIf { it.isFile }?.let { f ->
+            id.startsWith("p:") && pathAllowed(id.substring(2)) -> FileAccess.resolve(id.substring(2))?.takeIf { it.isFile }?.let { f ->
                 fileEntry(f, parentOf(id), emptyMap(), allowSub = true)
             }
             else -> null
@@ -469,7 +477,7 @@ class MediaLibrary(private val ctx: Context) {
     // ---------------- Klasörlerim (SAF) ----------------
 
     private fun trees(): List<Entry> =
-        s.folders.mapIndexed { i, u -> folder("t:$i", "f", treeName(ctx, u)) }
+        s.folders.mapIndexed { i, u -> if (u.startsWith("/")) folder("pd:$u", "f", java.io.File(u).name) else folder("t:$i", "f", treeName(ctx, u)) }
 
     private data class Row(val doc: String, val name: String, val mime: String?, val size: Long, val mod: Long)
 
@@ -723,6 +731,7 @@ class MediaLibrary(private val ctx: Context) {
         }
 
         fun treeName(ctx: Context, uriStr: String): String {
+            if (uriStr.startsWith("/")) return java.io.File(uriStr).name
             return try {
                 val tree = Uri.parse(uriStr)
                 val doc = DocumentsContract.buildDocumentUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))

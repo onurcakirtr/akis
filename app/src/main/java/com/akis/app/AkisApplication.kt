@@ -26,6 +26,7 @@ class AkisApplication : Application() {
         WatchHistory.init(this)
         DeviceAccess.init(this)
         QuickShare.init(this)
+        Admin.init(this)
         watchState()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(

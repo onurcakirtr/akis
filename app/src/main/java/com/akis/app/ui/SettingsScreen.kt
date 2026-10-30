@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AdminPanelSettings
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Translate
@@ -87,7 +88,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.akis.app.Admin
 import com.akis.app.DeviceAccess
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.akis.app.FileAccess
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.akis.app.Lang
@@ -113,6 +116,8 @@ fun SettingsScreen() {
     var confirmClear by remember { mutableStateOf(false) }
     var editPin by remember { mutableStateOf(false) }
     var pickLang by remember { mutableStateOf(false) }
+    var editAdminPw by remember { mutableStateOf(false) }
+    val adminSession by Admin.active.collectAsStateWithLifecycle()
     var pickIcon by remember { mutableStateOf(false) }
     var iconTick by remember { mutableStateOf(0) }
     val iconPreview = remember(s.iconStyle, s.theme, iconTick) { ServerIcon.bitmap(ctx, 96).asImageBitmap() }
@@ -301,6 +306,29 @@ fun SettingsScreen() {
                     }
                 }
                 FeatureRow(
+                    Icons.Rounded.AdminPanelSettings, stringResource(R.string.f_admin),
+                    stringResource(R.string.f_admin_sub),
+                    s.adminOn, divider = true,
+                    extra = {
+                        Text(
+                            adminSession?.let { stringResource(R.string.admin_session, it.name, it.ip) } ?: stringResource(R.string.admin_no_session),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilledTonalButton(onClick = { editAdminPw = true }) { Text(stringResource(R.string.admin_change_pw)) }
+                            if (adminSession != null) TextButton(onClick = { Admin.endSession() }) { Text(stringResource(R.string.admin_end)) }
+                        }
+                        Text(stringResource(R.string.admin_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    },
+                ) { on ->
+                    if (on && !Admin.hasPassword) {
+                        editAdminPw = true
+                    } else {
+                        Prefs.set("adminOn", on)
+                        if (!on) Admin.endSession()
+                    }
+                }
+                FeatureRow(
                     Icons.Rounded.Upload, stringResource(R.string.f_upload),
                     stringResource(R.string.f_upload_sub),
                     s.upload, divider = true,
@@ -480,6 +508,49 @@ fun SettingsScreen() {
                 }
             },
             confirmButton = { TextButton(onClick = { pickIcon = false }) { Text(stringResource(R.string.close)) } },
+        )
+    }
+    if (editAdminPw) {
+        var pw1 by remember { mutableStateOf("") }
+        var pw2 by remember { mutableStateOf("") }
+        var errText by remember { mutableStateOf<String?>(null) }
+        val mismatch = stringResource(R.string.admin_pw_mismatch)
+        val minMsg = stringResource(R.string.admin_pw_dialog)
+        AlertDialog(
+            onDismissRequest = { editAdminPw = false },
+            title = { Text(stringResource(R.string.admin_pw_dialog)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = pw1, onValueChange = { pw1 = it; errText = null }, singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = pw2, onValueChange = { pw2 = it; errText = null }, singleLine = true,
+                        placeholder = { Text(stringResource(R.string.admin_pw_repeat)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth(),
+                    )
+                    errText?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    when {
+                        pw1.length < 6 -> errText = minMsg
+                        pw1 != pw2 -> errText = mismatch
+                        else -> {
+                            Admin.setPassword(pw1)
+                            Prefs.set("adminOn", true)
+                            editAdminPw = false
+                        }
+                    }
+                }) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = { TextButton(onClick = { editAdminPw = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
     if (pickLang) {
