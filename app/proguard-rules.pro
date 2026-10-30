@@ -1,0 +1,1 @@
+# Akış - ek kural gerekmiyor
