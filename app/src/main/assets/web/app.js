@@ -27,7 +27,10 @@
     return fetch(url, { cache: 'no-store' }).then(function (r) {
       if (r.status === 403 || r.redirected) { location.reload(); throw new Error('auth'); }
       if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.json();
+      return r.text();
+    }).then(function (body) {
+      if (typeof lastBody !== 'undefined') lastBody[url] = body;
+      return JSON.parse(body);
     });
   }
 
@@ -104,6 +107,30 @@
   }
   var player = null, list = [], listFolder = '0', scrolls = {}, lastKey = '', softNext = false;
 
+  /** Açık sayfanın verisini alır; öncekiyle aynıysa ekrana dokunmaz, farklıysa odak ve kaydırmayı koruyarak çizer. */
+  var lastBody = {};
+  function routeApi(r) {
+    if (r.name === 'home') return '/api/home';
+    if (r.name === 'folder') return '/api/list?id=' + enc(r.arg || '0');
+    if (r.name === 'search') return '/api/search?q=' + enc(r.arg);
+    if (r.name === 'files') return '/api/files?p=' + enc(r.arg || '');
+    return null;
+  }
+  function softRefresh() {
+    var r = route(), url = routeApi(r);
+    if (!url) return;
+    fetch(url, { cache: 'no-store' }).then(function (x) { return x.text(); }).then(function (body) {
+      if (lastBody[url] === body || route().key !== r.key || player) return;
+      var a = document.activeElement, idx = a && a.getAttribute && a.getAttribute('data-i'), y = window.scrollY;
+      softNext = true;
+      render();
+      setTimeout(function () {
+        window.scrollTo(0, y);
+        if (idx != null) { var el = view.querySelector('[data-i="' + idx + '"]'); if (el) el.focus({ preventScroll: true }); }
+      }, 120);
+    }).catch(function () { });
+  }
+
   /** Telefonda kitaplık değişince (yeni dosya, yükleme) açık sayfayı sessizce yenile. */
   (function watchChanges() {
     var ver = -1;
@@ -111,10 +138,7 @@
       fetch('/api/changes?since=' + ver, { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (d) {
         var changed = ver >= 0 && d.v !== ver;
         ver = d.v;
-        if (changed && !player && $('#lightbox').hidden && !document.querySelector('.props:not([hidden])')) {
-          var n = route().name;
-          if (n === 'home' || n === 'folder' || n === 'search' || n === 'files') { softNext = true; scrolls[location.hash] = window.scrollY; render(); }
-        }
+        if (changed && !player && $('#lightbox').hidden && !document.querySelector('.props:not([hidden])')) softRefresh();
         setTimeout(loop, 300);
       }).catch(function () { setTimeout(loop, 5000); });
     }

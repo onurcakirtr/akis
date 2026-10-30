@@ -157,14 +157,19 @@ class DlnaService : Service() {
     // ---------------- Galeri değişince (yeni video, fotoğraf, indirme) anında duyur ----------------
 
     private var libraryObserver: android.database.ContentObserver? = null
-    private val libraryChanged = Runnable { server?.contentChanged() }
+    private var lastLibraryNotice = 0L
+    private val libraryChanged = Runnable {
+        lastLibraryNotice = System.currentTimeMillis()
+        server?.contentChanged()
+    }
 
     private fun watchLibrary() {
         val obs = object : android.database.ContentObserver(main) {
             override fun onChange(selfChange: Boolean) {
-                // Toplu değişiklikleri birleştir
+                // Toplu değişiklikleri birleştir: 3 sn sakinlik bekle, ama en fazla 15 sn'de bir duyur
                 main.removeCallbacks(libraryChanged)
-                main.postDelayed(libraryChanged, 3000)
+                val sinceLast = System.currentTimeMillis() - lastLibraryNotice
+                main.postDelayed(libraryChanged, maxOf(3000L, 15_000L - sinceLast))
             }
         }
         try {
