@@ -64,20 +64,13 @@ class HttpResponder(private val out: OutputStream, private val head: Boolean) {
     fun stream(code: Int, type: String, headers: Map<String, String> = emptyMap(), body: (OutputStream) -> Unit) {
         committed = true
         closeAfter = true
-        val sb = StringBuilder("HTTP/1.1 ").append(code).append(' ').append(reason(code)).append("
-")
-        sb.append("Content-Type: ").append(type).append("
-")
-        sb.append("Server: Android/").append(Build.VERSION.RELEASE).append(" UPnP/1.0 Akis/1.0
-")
-        sb.append("Date: ").append(httpDate()).append("
-")
-        sb.append("Connection: close
-")
-        for ((k, v) in headers) sb.append(k).append(": ").append(v).append("
-")
-        sb.append("
-")
+        val sb = StringBuilder("HTTP/1.1 ").append(code).append(' ').append(reason(code)).append("\r\n")
+        sb.append("Content-Type: ").append(type).append("\r\n")
+        sb.append("Server: Android/").append(Build.VERSION.RELEASE).append(" UPnP/1.0 Akis/1.0\r\n")
+        sb.append("Date: ").append(httpDate()).append("\r\n")
+        sb.append("Connection: close\r\n")
+        for ((k, v) in headers) sb.append(k).append(": ").append(v).append("\r\n")
+        sb.append("\r\n")
         out.write(sb.toString().toByteArray(Charsets.UTF_8))
         out.flush()
         if (!head) body(out)

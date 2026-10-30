@@ -4,7 +4,7 @@ import com.akis.app.Lang
 import com.akis.app.R
 import org.json.JSONObject
 
-/** Web uygulamasının metinleri (res/values*/strings.xml içindeki web_* anahtarları; seçili dilde). */
+/** Web uygulamasının metinleri (res/values/strings.xml içindeki web_* anahtarları; seçili dilde). */
 object WebStrings {
     private val KEYS = mapOf(
         "all" to R.string.web_all,
