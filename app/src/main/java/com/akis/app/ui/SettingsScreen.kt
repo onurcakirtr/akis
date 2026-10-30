@@ -8,6 +8,9 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import android.content.Intent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
@@ -36,6 +39,7 @@ import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Router
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Smartphone
+import androidx.compose.material.icons.rounded.Upload
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -54,6 +58,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -67,7 +72,11 @@ import com.akis.app.DeviceAccess
 import com.akis.app.Prefs
 import com.akis.app.ServerState
 import com.akis.app.WatchHistory
+import com.akis.app.dlna.MediaLibrary
 import com.akis.app.dlna.Subtitles
+import com.akis.app.dlna.Uploads
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import com.akis.app.service.DlnaService
 
 @Composable
@@ -80,6 +89,20 @@ fun SettingsScreen() {
     var confirmClear by remember { mutableStateOf(false) }
     var editPin by remember { mutableStateOf(false) }
     val devices by DeviceAccess.devices.collectAsStateWithLifecycle()
+    val uploadPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            try {
+                ctx.contentResolver.takePersistableUriPermission(
+                    uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+                Prefs.update { putString("uploadFolder", uri.toString()) }
+            } catch (_: Exception) {
+            }
+        }
+    }
+    val uploadTargetName by produceState<String?>(null, s.uploadFolder) {
+        value = if (s.uploadFolder.isEmpty()) null else withContext(Dispatchers.IO) { MediaLibrary.treeName(ctx, s.uploadFolder) }
+    }
     val startedAt by ServerState.startedAt.collectAsStateWithLifecycle()
     // Sunucu açıkken port değişirse yeniden başlatma öner
     val portAtStart = remember(startedAt, running) { s.port }
@@ -215,6 +238,28 @@ fun SettingsScreen() {
                         }
                     },
                 ) { on -> if (on) editPin = true else Prefs.update { putString("webPin", "") } }
+                FeatureRow(
+                    Icons.Rounded.Upload, "Web'den yükleme",
+                    "Bilgisayarın tarayıcısından telefona sürükle-bırak dosya gönder",
+                    s.upload, divider = true,
+                    extra = {
+                        Text(
+                            "Hedef: ${uploadTargetName ?: "İndirilenler/${Uploads.DEFAULT_DIR}"}",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            FilledTonalButton(onClick = { uploadPicker.launch(null) }) { Text("Klasör seç") }
+                            if (s.uploadFolder.isNotEmpty()) {
+                                TextButton(onClick = { Prefs.update { putString("uploadFolder", "") } }) { Text("Varsayılan") }
+                            }
+                        }
+                        if (!s.webUi) {
+                            Text("Web arayüzü kapalıyken yükleme yapılamaz.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        } else if (s.webPin.isEmpty()) {
+                            Text("Öneri: Web PIN'ini de aç, ağdaki herkes dosya gönderemesin.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    },
+                ) { Prefs.set("upload", it) }
                 // FEATURES
             }
         }

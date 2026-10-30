@@ -93,15 +93,16 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                     else res.text(404, "Küçük resim yok")
                 }
                 !settings.webUi -> res.text(403, "Web arayüzü kapalı. Akış uygulamasından açabilirsin.")
-                p == "/" || p == "/index.html" -> res.html(WebUi.list(settings.name, settings.name, lib.root(), null, search = settings.search))
+                p == "/" || p == "/index.html" -> res.html(WebUi.list(settings.name, settings.name, lib.root(), null, search = settings.search, upload = settings.upload))
+                p == "/yukle" && settings.upload -> res.html(WebUi.uploadPage(settings.name, uploadTarget()))
                 p == "/ara" && settings.search -> {
                     val q = queryParam(req.query, "q")
-                    res.html(WebUi.list(settings.name, "“$q” için sonuçlar", lib.search(q, limit = 200).map(WatchHistory::mark), "0", search = true, query = q))
+                    res.html(WebUi.list(settings.name, "“$q” için sonuçlar", lib.search(q, limit = 200).map(WatchHistory::mark), "0", search = true, query = q, upload = settings.upload))
                 }
                 p.startsWith("/w/") -> {
                     val id = decode(p.removePrefix("/w/"))
                     val title = lib.metadata(id)?.title ?: ""
-                    res.html(WebUi.list(settings.name, title, lib.children(id).map(WatchHistory::mark), lib.parentOf(id), search = settings.search))
+                    res.html(WebUi.list(settings.name, title, lib.children(id).map(WatchHistory::mark), lib.parentOf(id), search = settings.search, upload = settings.upload))
                 }
                 p.startsWith("/p/") -> {
                     val e = lib.lookup(decode(p.removePrefix("/p/")))
@@ -117,9 +118,10 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 else -> res.text(404, "Bulunamadı")
             }
             "POST" -> if (p == "/h") webProgress(req, res) else control(req, res, base)
+            "PUT" -> if (p.startsWith("/yukle/") && settings.upload && settings.webUi) upload(req, res) else res.text(403, "Yükleme kapalı")
             "SUBSCRIBE" -> res.send(200, null, 0, mapOf("SID" to "uuid:${UUID.randomUUID()}", "TIMEOUT" to "Second-1800"))
             "UNSUBSCRIBE" -> res.send(200, null, 0)
-            "OPTIONS" -> res.send(200, null, 0, mapOf("Allow" to "GET, HEAD, POST, SUBSCRIBE, UNSUBSCRIBE"))
+            "OPTIONS" -> res.send(200, null, 0, mapOf("Allow" to "GET, HEAD, POST, PUT, SUBSCRIBE, UNSUBSCRIBE"))
             else -> res.text(405, "Desteklenmiyor")
         }
     }
@@ -206,6 +208,22 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             }
             else -> res.text(404, "Bulunamadı")
         }
+    }
+
+    private fun uploadTarget(): String {
+        val f = Prefs.current.uploadFolder
+        return if (f.isEmpty()) "İndirilenler/${Uploads.DEFAULT_DIR}" else MediaLibrary.treeName(ctx, f)
+    }
+
+    /** PUT /yukle/<dosya adı> — gövde doğrudan hedef dosyaya akıtılır. */
+    private fun upload(req: HttpRequest, res: HttpResponder) {
+        val input = req.bodyStream ?: return res.text(400, "Gövde yok")
+        if (req.contentLength <= 0) return res.text(400, "Boş dosya")
+        val name = Uploads.safeName(decode(req.path.removePrefix("/yukle/")))
+        val uri = Uploads.receive(ctx, name, input, req.contentLength, ServerState.clientName(req.remote))
+        if (uri == null) return res.text(500, "{\"ok\":false}", "application/json")
+        contentChanged()
+        res.text(200, "{\"ok\":true}", "application/json")
     }
 
     /** Web oynatıcının bildirdiği konum: /h?id=…&t=saniye&d=saniye */

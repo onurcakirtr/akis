@@ -29,6 +29,14 @@ video,audio{width:100%;max-height:78vh;border-radius:var(--r);background:#000}
 .b.o{background:var(--card);color:var(--fg)}
 code{word-break:break-all;color:var(--mut);font-size:12px}
 form.q{margin-left:auto;flex:0 1 320px}
+a.up{margin-left:auto;padding:10px 16px;border-radius:999px;background:var(--card);color:var(--fg);text-decoration:none;font-size:14px;white-space:nowrap}
+form.q+a.up{margin-left:0}
+.drop{border:2px dashed color-mix(in srgb,var(--mut) 50%,transparent);border-radius:var(--r);padding:48px 20px;text-align:center;
+transition:border-color .2s,transform .35s cubic-bezier(.3,1.7,.5,1)}
+.drop.on{border-color:var(--acc);transform:scale(1.02)}
+.f{background:var(--card);border-radius:18px;padding:12px 16px;margin-top:10px}
+.bar{height:6px;border-radius:3px;background:color-mix(in srgb,var(--mut) 25%,transparent);margin-top:8px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--acc);transition:width .2s}
 form.q input{width:100%;padding:11px 18px;border-radius:999px;border:1px solid color-mix(in srgb,var(--mut) 35%,transparent);
 background:var(--card);color:var(--fg);font-size:15px;outline:none;transition:border-color .2s}
 form.q input:focus{border-color:var(--acc)}
@@ -55,6 +63,33 @@ v.addEventListener('loadedmetadata',function(){if(r>5&&r<v.duration-10)v.current
 function s(){if(!v.duration||isNaN(v.duration))return;try{fetch('/h?id='+id+'&t='+v.currentTime+'&d='+v.duration,{method:'POST',keepalive:true});}catch(e){}}
 setInterval(function(){if(!v.paused)s();},10000);v.addEventListener('pause',s);v.addEventListener('ended',s);
 window.addEventListener('pagehide',s);})();
+</script>"""
+
+    /** Sürükle-bırak dosya yükleme sayfası; dosyalar sırayla PUT /yukle/<ad> ile gönderilir. */
+    fun uploadPage(server: String, target: String): String {
+        val body = "<div class=\"p\" style=\"max-width:720px\"><h2>Telefona dosya gönder</h2>" +
+            "<p class=\"s\">Dosyalar telefonda <b>${h(target)}</b> klasörüne kaydedilir.</p>" +
+            "<div id=\"drop\" class=\"drop\"><p>Dosyaları buraya sürükle</p>" +
+            "<label class=\"b\">Dosya seç<input id=\"pick\" type=\"file\" multiple hidden></label></div><div id=\"list\"></div></div>" +
+            UPLOAD_JS
+        return page(server, "Yükle", "<a href=\"/\">← Geri</a>", body)
+    }
+
+    private const val UPLOAD_JS = """<script>
+(function(){var q=[],busy=false,d=document.getElementById('drop'),l=document.getElementById('list');
+function fmt(b){return b>1073741824?(b/1073741824).toFixed(2)+' GB':b>1048576?(b/1048576).toFixed(1)+' MB':Math.ceil(b/1024)+' KB'}
+function add(fs){for(var i=0;i<fs.length;i++){var f=fs[i],e=document.createElement('div');e.className='f';
+e.innerHTML='<div class="t"></div><div class="s"></div><div class="bar"><i></i></div>';e.querySelector('.t').textContent=f.name;
+e.querySelector('.s').textContent=fmt(f.size)+' • sırada';l.appendChild(e);q.push({f:f,e:e});}next();}
+function next(){if(busy||!q.length)return;busy=true;var it=q.shift(),x=new XMLHttpRequest(),s=it.e.querySelector('.s'),b=it.e.querySelector('i');
+x.open('PUT','/yukle/'+encodeURIComponent(it.f.name));
+x.upload.onprogress=function(ev){if(ev.lengthComputable){var p=ev.loaded/ev.total*100;b.style.width=p+'%';s.textContent=fmt(ev.loaded)+' / '+fmt(ev.total)+' • %'+Math.floor(p);}};
+x.onload=function(){s.textContent=x.status==200?fmt(it.f.size)+' • gönderildi ✓':'Hata ('+x.status+')';b.style.width='100%';busy=false;next();};
+x.onerror=function(){s.textContent='Bağlantı koptu';busy=false;next();};x.send(it.f);}
+document.getElementById('pick').onchange=function(e){add(e.target.files);e.target.value='';};
+['dragenter','dragover'].forEach(function(n){d.addEventListener(n,function(e){e.preventDefault();d.classList.add('on')})});
+['dragleave','drop'].forEach(function(n){d.addEventListener(n,function(e){e.preventDefault();d.classList.remove('on')})});
+d.addEventListener('drop',function(e){add(e.dataTransfer.files)});})();
 </script>"""
 
     /** PIN giriş sayfası. */
@@ -87,6 +122,7 @@ window.addEventListener('pagehide',s);})();
         parentId: String?,
         search: Boolean = false,
         query: String = "",
+        upload: Boolean = false,
     ): String {
         val cards = StringBuilder()
         for (e in entries) {
@@ -119,7 +155,8 @@ window.addEventListener('pagehide',s);})();
             }
         }
         val body = if (entries.isEmpty()) "<div class=\"p\"><p>Burada bir şey yok.</p></div>" else "<main>$cards</main>"
-        return page(server, title, crumbs, body, if (search) searchBox(query) else "")
+        val header = (if (search) searchBox(query) else "") + (if (upload) "<a class=\"up\" href=\"/yukle\">⬆ Yükle</a>" else "")
+        return page(server, title, crumbs, body, header)
     }
 
     /** @param resumeMs kaldığı yer; -1 ise geçmiş kapalı (konum bildirilmez) */

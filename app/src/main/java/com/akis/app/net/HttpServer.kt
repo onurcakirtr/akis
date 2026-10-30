@@ -25,7 +25,31 @@ class HttpRequest(
     val headers: Map<String, String>, // anahtarlar küçük harf
     val body: ByteArray,
     val remote: String,
+    /** PUT isteklerinde gövde belleğe alınmaz; buradan akıtılır (contentLength bayt). */
+    val bodyStream: InputStream? = null,
+    val contentLength: Long = 0,
 )
+
+/** Alttaki akıştan en fazla [limit] bayt okutan sarmalayıcı (bağlantıyı kapatmaz). */
+class LimitedInputStream(private val input: InputStream, private var left: Long) : InputStream() {
+    val remaining: Long get() = left
+
+    override fun read(): Int {
+        if (left <= 0) return -1
+        val b = input.read()
+        if (b >= 0) left--
+        return b
+    }
+
+    override fun read(b: ByteArray, off: Int, len: Int): Int {
+        if (left <= 0) return -1
+        val n = input.read(b, off, minOf(len.toLong(), left).toInt())
+        if (n > 0) left -= n
+        return n
+    }
+
+    override fun close() {}
+}
 
 class HttpResponder(private val out: OutputStream, private val head: Boolean) {
     var committed = false
@@ -135,17 +159,24 @@ class HttpServer(
                     val i = h.indexOf(':')
                     if (i > 0) headers[h.substring(0, i).trim().lowercase()] = h.substring(i + 1).trim()
                 }
-                val len = headers["content-length"]?.toIntOrNull() ?: 0
-                val body = if (len > 0) readFully(input, len) ?: return else ByteArray(0)
+                val method = parts[0].uppercase()
+                val len = headers["content-length"]?.toLongOrNull() ?: 0
+                val streaming = method == "PUT"
+                if (streaming && headers["transfer-encoding"]?.contains("chunked", true) == true) return
+                val stream = if (streaming) LimitedInputStream(input, len) else null
+                if (!streaming && len > 4 * 1024 * 1024) return
+                val body = if (!streaming && len > 0) readFully(input, len.toInt()) ?: return else ByteArray(0)
                 val target = parts[1]
                 val q = target.indexOf('?')
                 val req = HttpRequest(
-                    method = parts[0].uppercase(),
+                    method = method,
                     path = if (q >= 0) target.substring(0, q) else target,
                     query = if (q >= 0) target.substring(q + 1) else "",
                     headers = headers,
                     body = body,
                     remote = remote,
+                    bodyStream = stream,
+                    contentLength = if (streaming) len else body.size.toLong(),
                 )
                 val resp = HttpResponder(output, req.method == "HEAD")
                 try {
@@ -159,6 +190,7 @@ class HttpServer(
                 if (!resp.committed) {
                     try { resp.text(404, "Bulunamadı") } catch (_: IOException) { return }
                 }
+                if (stream != null && stream.remaining > 0) return // gövde yarım kaldı; bağlantıyı kapat
                 val conn = headers["connection"]?.lowercase()
                 val http10 = parts.getOrNull(2) == "HTTP/1.0"
                 if (conn == "close" || (http10 && conn != "keep-alive")) return
