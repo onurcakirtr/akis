@@ -61,6 +61,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.ClientInfo
 import com.akis.app.DeviceAccess
+import com.akis.app.QuickShare
+import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.LinkOff
 import androidx.compose.material.icons.rounded.Timer
@@ -88,6 +90,8 @@ fun HomeScreen() {
     val settings by Prefs.settings.collectAsStateWithLifecycle()
     var showQr by remember { mutableStateOf(false) }
     var actFor by remember { mutableStateOf<ClientInfo?>(null) }
+    val shares by QuickShare.shares.collectAsStateWithLifecycle()
+    var qrFor by remember { mutableStateOf<String?>(null) }
 
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(running) {
@@ -159,6 +163,25 @@ fun HomeScreen() {
                 item(key = "st-title") { SectionTitle(stringResource(R.string.now_playing), Modifier.animateItem()) }
                 items(streams, key = { "s-" + it.key }) { StreamCard(it, Modifier.animateItem()) }
             }
+            if (shares.isNotEmpty()) {
+                item(key = "sh-title") { SectionTitle(stringResource(R.string.active_shares), Modifier.animateItem()) }
+                items(shares, key = { "sh-" + it.token }) { sh ->
+                    ExpressiveCard(modifier = Modifier.animateItem()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconBadge(Icons.Rounded.Link, size = 44.dp)
+                            Gap(14.dp)
+                            Column(Modifier.weight(1f)) {
+                                Text(sh.name, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                val left = formatDuration((sh.expires - now).coerceAtLeast(0))
+                                val extra = if (sh.once) stringResource(R.string.share_once_tag) else stringResource(R.string.share_downloads, sh.downloads)
+                                Text(stringResource(R.string.share_left, left, extra), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            FilledTonalIconButton(onClick = { qrFor = sh.token }) { Icon(Icons.Rounded.QrCode2, stringResource(R.string.show_qr)) }
+                            FilledTonalIconButton(onClick = { QuickShare.remove(sh.token) }) { Icon(Icons.Rounded.LinkOff, stringResource(R.string.share_stop)) }
+                        }
+                    }
+                }
+            }
             item(key = "cl-title") { SectionTitle(stringResource(R.string.connected_devices), Modifier.animateItem()) }
             if (clients.isEmpty()) {
                 item(key = "cl-empty") {
@@ -184,6 +207,25 @@ fun HomeScreen() {
         }
     }
 
+    qrFor?.let { tk ->
+        val url = QuickShare.url(tk)
+        AlertDialog(
+            onDismissRequest = { qrFor = null },
+            confirmButton = { TextButton(onClick = { qrFor = null }) { Text(stringResource(R.string.close)) } },
+            title = { Text(stringResource(R.string.share_title)) },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    if (url != null) {
+                        DotQrCode(url, Modifier.size(220.dp))
+                        Spacer(Modifier.height(12.dp))
+                        Text(url, style = MaterialTheme.typography.bodyMedium)
+                    } else {
+                        Text(stringResource(R.string.waiting_network))
+                    }
+                }
+            },
+        )
+    }
     actFor?.let { c ->
         AlertDialog(
             onDismissRequest = { actFor = null },

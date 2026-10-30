@@ -3,6 +3,7 @@ package com.akis.app.dlna
 import android.content.Context
 import com.akis.app.FileAccess
 import com.akis.app.Lang
+import com.akis.app.QuickShare
 import com.akis.app.Prefs
 import com.akis.app.R
 import com.akis.app.ServerIcon
@@ -280,6 +281,15 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
     private fun raw(req: HttpRequest, res: HttpResponder, path: String) {
         if (!filesOn()) return res.text(403, Lang.s(R.string.http_not_found))
         val f = FileAccess.resolve(path)?.takeIf { it.isFile } ?: return res.text(404, Lang.s(R.string.http_file_not_found))
+        serveFile(req, res, f, null)
+    }
+
+    /**
+     * Dosyayı HTTP Range destekli verir.
+     * @param attachment indirme adı (null ise tarayıcı kendisi açar)
+     * @return dosyanın tamamı baştan sona gönderildi mi
+     */
+    fun serveFile(req: HttpRequest, res: HttpResponder, f: java.io.File, attachment: String?): Boolean {
         val size = f.length()
         var start = 0L
         var end = size - 1
@@ -296,11 +306,19 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
                 partial = true
             }
         }
-        if (size > 0 && start >= size) return res.send(416, null, 0, mapOf("Content-Range" to "bytes */$size"))
+        if (size > 0 && start >= size) {
+            res.send(416, null, 0, mapOf("Content-Range" to "bytes */$size"))
+            return false
+        }
         val len = if (size == 0L) 0 else end - start + 1
         val headers = linkedMapOf("Accept-Ranges" to "bytes", "Cache-Control" to "no-cache")
         if (partial) headers["Content-Range"] = "bytes $start-$end/$size"
+        if (attachment != null) {
+            val ascii = attachment.replace(Regex("[^A-Za-z0-9._ -]"), "_")
+            headers["Content-Disposition"] = "attachment; filename=\"$ascii\"; filename*=UTF-8''" + Xml.enc(attachment)
+        }
         val type = MediaLibrary.mimeFor(f.name, null)
+        var sent = 0L
         java.io.RandomAccessFile(f, "r").use { raf ->
             raf.seek(start)
             res.send(if (partial) 206 else 200, type, len, headers) { out ->
@@ -312,9 +330,26 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
                     out.write(buf, 0, n)
                     left -= n
                 }
-                ServerState.addBytes(len - left)
+                sent = len - left
+                ServerState.addBytes(sent)
             }
         }
+        return start == 0L && sent == size && req.method != "HEAD"
+    }
+
+    /** /share/<anahtar> → indirme sayfası, /share/<anahtar>/dl → dosya. PIN istemez (anahtar tahmin edilemez). */
+    fun share(req: HttpRequest, res: HttpResponder) {
+        val parts = req.path.removePrefix("/share/").split('/')
+        val sh = QuickShare.get(parts[0])
+        if (sh == null) return res.html(WebUi.sharePage(Prefs.current.name, null, 0, 0, ""))
+        if (parts.getOrNull(1) == "dl") {
+            if (serveFile(req, res, sh.file, sh.name)) {
+                ServerState.log(Lang.s(R.string.log_share_dl, sh.name, ServerState.clientName(req.remote)))
+                QuickShare.downloaded(sh.token)
+            }
+            return
+        }
+        res.html(WebUi.sharePage(Prefs.current.name, sh.name, sh.size, sh.expires, "/share/${sh.token}/dl"))
     }
 
     /** Klasörü (alt klasörleriyle, gizli dosyalar hariç) telefonda geçici dosya oluşturmadan ZIP olarak akıtır. */

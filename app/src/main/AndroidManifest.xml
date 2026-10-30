@@ -43,6 +43,21 @@
             </intent-filter>
         </activity>
 
+        <!-- Paylaş → Akış: süreli indirme bağlantısı -->
+        <activity
+            android:name=".ui.ShareActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:label="@string/share_label"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Akis.Overlay">
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".service.DlnaService"
             android:exported="false"

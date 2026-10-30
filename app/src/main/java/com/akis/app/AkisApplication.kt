@@ -25,6 +25,7 @@ class AkisApplication : Application() {
         WebUi.themeCss = { webCss(this, Themes.byId(Prefs.current.theme)) }
         WatchHistory.init(this)
         DeviceAccess.init(this)
+        QuickShare.init(this)
         watchState()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
@@ -47,6 +48,12 @@ class AkisApplication : Application() {
 
     /** Sunucu / TV durumu değişince widget'ları ve hızlı ayar kutucuğunu tazeler (ilerleme 5 sn'de bir). */
     private fun watchState() {
+        CoroutineScope(SupervisorJob() + Dispatchers.Default).launch {
+            while (true) {
+                kotlinx.coroutines.delay(60_000)
+                QuickShare.cleanup()
+            }
+        }
         CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {
             combine(ServerState.running, ServerState.clients, ServerState.streams, ServerState.address, Prefs.settings) { run, c, s, a, set ->
                 val st = s.firstOrNull()

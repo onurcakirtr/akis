@@ -98,6 +98,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                     if (b != null) res.bytes(200, "image/jpeg", b, mapOf("Cache-Control" to "max-age=86400"))
                     else res.text(404, Lang.s(R.string.http_no_thumb))
                 }
+                p.startsWith("/share/") -> webApi.share(req, res)
                 !settings.webUi -> res.text(403, Lang.s(R.string.http_web_off))
                 webApi.handle(req, res) -> Unit
                 else -> res.text(404, Lang.s(R.string.http_not_found))
@@ -127,7 +128,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             res.text(403, Lang.s(R.string.http_blocked))
             return false
         }
-        if (p in openPaths || p.startsWith("/static/")) return true
+        if (p in openPaths || p.startsWith("/static/") || p.startsWith("/share/")) return true
         if (p == "/pin") {
             pinLogin(req, res, settings)
             return false

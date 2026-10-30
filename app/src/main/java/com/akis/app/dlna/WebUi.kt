@@ -54,6 +54,23 @@ form.q input:focus{border-color:var(--acc)}
             "<title>${h(title)}</title><style>${themeCss()}$CSS</style></head><body><header><div class=\"dot\"></div><h1>${h(server)}</h1>$header</header>" +
             "<nav>$crumbs</nav>$body</body></html>"
 
+    /** Hızlı paylaşım indirme sayfası. name null ise bağlantı geçersiz. */
+    fun sharePage(server: String, name: String?, size: Long, expires: Long, dl: String): String {
+        if (name == null) {
+            return page(server, Lang.s(R.string.w_share_title), "", "<div class=\"p\" style=\"max-width:520px\"><p>${h(Lang.s(R.string.w_share_gone))}</p></div>")
+        }
+        val sz = when {
+            size >= 1L shl 30 -> String.format(java.util.Locale.US, "%.2f GB", size / 1073741824.0)
+            size >= 1L shl 20 -> String.format(java.util.Locale.US, "%.1f MB", size / 1048576.0)
+            else -> "${maxOf(1, size / 1024)} KB"
+        }
+        val until = java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT, Lang.locale).format(java.util.Date(expires))
+        val body = "<div class=\"p\" style=\"max-width:560px\"><h2>${h(Lang.s(R.string.w_share_title))}</h2>" +
+            "<p style=\"font-size:18px;word-break:break-all\">${h(name)}</p><p class=\"s\">$sz • ${h(Lang.s(R.string.w_share_expires, until))}</p>" +
+            "<div class=\"btns\"><a class=\"b\" href=\"${h(dl)}\">${h(Lang.s(R.string.web_download))}</a></div></div>"
+        return page(server, name, "", body)
+    }
+
     /** PIN giriş sayfası. */
     fun pinPage(server: String, wrong: Boolean, locked: Boolean): String {
         val msg = when {
