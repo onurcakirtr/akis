@@ -286,7 +286,8 @@
         var cr = '<a class="nav" href="#/d/">' + esc(t('all_files')) + '</a>' + (d.crumbs || []).map(function (c) {
           return '<span>›</span><a class="nav" href="#/d/' + enc(c.p) + '">' + esc(c.n) + '</a>';
         }).join('');
-        view.innerHTML = toolbar(cr, {}) + itemsHtml(list);
+        var zipBtn = d.path ? '<a class="pill nav" href="/zip?p=' + enc(d.path) + '" download>' + ICO.dl + esc(t('zip')) + '</a>' : '';
+        view.innerHTML = toolbar(cr, {}).replace('<div class="seg">', zipBtn + '<div class="seg">') + itemsHtml(list);
         // Medya olmayan dosyalar indirme bağlantısıdır
         view.querySelectorAll('a[data-i]').forEach(function (a) { var it = list[+a.getAttribute('data-i')]; if (it && it.raw && !it.k) a.setAttribute('download', it.t); });
         bindToolbar(draw);

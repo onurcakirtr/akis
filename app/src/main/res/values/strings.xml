@@ -359,6 +359,7 @@
     <string name="web_view_list">List</string>
     <string name="web_volume">Volume</string>
     <string name="web_volume_val">Volume {0}</string>
+    <string name="web_zip">Download as ZIP</string>
     <string name="widget_large_desc">Status, connected devices and what\'s playing</string>
     <string name="widget_large_label">Akış • status</string>
     <string name="widget_small_desc">Turn sharing on or off with one tap</string>

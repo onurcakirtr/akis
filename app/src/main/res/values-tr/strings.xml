@@ -358,6 +358,7 @@
     <string name="web_view_list">Liste</string>
     <string name="web_volume">Ses düzeyi</string>
     <string name="web_volume_val">Ses {0}</string>
+    <string name="web_zip">ZIP olarak indir</string>
     <string name="widget_large_desc">Durum, bağlı cihazlar ve oynatılan dosya</string>
     <string name="widget_large_label">Akış • durum</string>
     <string name="widget_small_desc">Yayını tek dokunuşla aç / kapat</string>

@@ -47,6 +47,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             p.startsWith("/x/") -> stream(req, res, decode(p.removePrefix("/x/")))
             p == "/api/files" -> files(param(req, "p"), res)
             p == "/raw" -> raw(req, res, param(req, "p"))
+            p == "/zip" -> zip(req, res, param(req, "p"))
             // Eski adresler yeni uygulamaya yönlensin
             p.startsWith("/w/") -> res.send(303, null, 0, mapOf("Location" to "/#/f/" + p.removePrefix("/w/")))
             p.startsWith("/p/") -> res.send(303, null, 0, mapOf("Location" to "/#/v/" + p.removePrefix("/p/")))
@@ -309,6 +310,57 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
                     left -= n
                 }
                 ServerState.addBytes(len - left)
+            }
+        }
+    }
+
+    /** Klasörü (alt klasörleriyle, gizli dosyalar hariç) telefonda geçici dosya oluşturmadan ZIP olarak akıtır. */
+    private fun zip(req: HttpRequest, res: HttpResponder, path: String) {
+        if (!filesOn()) return res.text(403, Lang.s(R.string.http_not_found))
+        val dir = FileAccess.resolve(path)?.takeIf { it.isDirectory } ?: return res.text(404, Lang.s(R.string.http_not_found))
+        val name = dir.name.ifEmpty { "akis" } + ".zip"
+        val ascii = name.replace(Regex("[^A-Za-z0-9._ -]"), "_")
+        ServerState.log("⬇ $name → ${ServerState.clientName(req.remote)}")
+        res.stream(
+            200, "application/zip",
+            mapOf(
+                "Content-Disposition" to "attachment; filename=\"$ascii\"; filename*=UTF-8''" + Xml.enc(name),
+                "Cache-Control" to "no-store",
+            ),
+        ) { out ->
+            val z = java.util.zip.ZipOutputStream(out)
+            z.setLevel(java.util.zip.Deflater.NO_COMPRESSION) // medya zaten sıkıştırılmış; telefonu yormasın
+            val buf = ByteArray(256 * 1024)
+            var sent = 0L
+            fun add(f: java.io.File, rel: String) {
+                if (f.isDirectory) {
+                    val kids = FileAccess.list(f)
+                    if (kids.isEmpty()) { z.putNextEntry(java.util.zip.ZipEntry("$rel/")); z.closeEntry() }
+                    for (k in kids) add(k, if (rel.isEmpty()) k.name else "$rel/${k.name}")
+                    return
+                }
+                val entry = java.util.zip.ZipEntry(rel)
+                entry.time = f.lastModified()
+                z.putNextEntry(entry)
+                try {
+                    f.inputStream().use { input ->
+                        while (true) {
+                            val n = input.read(buf)
+                            if (n < 0) break
+                            z.write(buf, 0, n)
+                            sent += n
+                        }
+                    }
+                } catch (e: java.io.FileNotFoundException) {
+                    // okunamayan dosya atlanır
+                }
+                z.closeEntry()
+            }
+            try {
+                for (k in FileAccess.list(dir)) add(k, k.name)
+                z.finish()
+            } finally {
+                ServerState.addBytes(sent)
             }
         }
     }

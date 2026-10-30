@@ -110,6 +110,7 @@ object WebStrings {
         "sync" to R.string.web_sync,
         "sync_val" to R.string.web_sync_val,
         "reset" to R.string.web_reset,
+        "zip" to R.string.web_zip,
         "brightness" to R.string.web_brightness,
         "volume_val" to R.string.web_volume_val,
         "fit" to R.string.web_fit,
