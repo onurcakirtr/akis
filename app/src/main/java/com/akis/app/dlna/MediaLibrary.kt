@@ -5,6 +5,7 @@ import android.content.ContentUris
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Point
+import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
@@ -13,6 +14,7 @@ import android.util.LruCache
 import android.util.Size
 import android.webkit.MimeTypeMap
 import com.akis.app.Prefs
+import com.akis.app.WatchHistory
 import java.io.ByteArrayOutputStream
 
 enum class Kind { FOLDER, VIDEO, AUDIO, IMAGE, SUBTITLE }
@@ -55,6 +57,28 @@ class MediaLibrary(private val ctx: Context) {
         override fun sizeOf(key: String, value: ByteArray) = value.size
     }
 
+    private val durationCache = LruCache<String, Long>(512)
+
+    /** Klasörlerim'deki videoların süresi MediaStore'da yok; gerektiğinde dosyadan okunur. */
+    fun durationOf(e: Entry): Long {
+        if (e.durationMs > 0) return e.durationMs
+        val uri = e.uri ?: return 0
+        durationCache.get(e.id)?.let { return it }
+        val d = try {
+            val r = MediaMetadataRetriever()
+            try {
+                r.setDataSource(ctx, uri)
+                r.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull() ?: 0
+            } finally {
+                r.release()
+            }
+        } catch (_: Exception) {
+            0L
+        }
+        durationCache.put(e.id, d)
+        return d
+    }
+
     /** Arama için Klasörlerim'in dosya listesi önbelleği (klasör sırası → (zaman, dosyalar)). */
     private val treeIndex = HashMap<Int, Pair<Long, List<Entry>>>()
 
@@ -70,6 +94,10 @@ class MediaLibrary(private val ctx: Context) {
         Entry(id, parent, title, Kind.FOLDER, childCount = count)
 
     fun root(): List<Entry> = buildList {
+        if (s.history) {
+            add(folder("h:c", "0", "Devam et"))
+            add(folder("h:u", "0", "İzlenmemiş"))
+        }
         if (s.showRecent && (s.shareVideo || s.shareImage)) add(folder("r", "0", "Son eklenenler"))
         if (s.shareVideo) add(folder("v", "0", "Videolar"))
         if (s.shareAudio) add(folder("a", "0", "Müzik"))
@@ -89,6 +117,14 @@ class MediaLibrary(private val ctx: Context) {
             ) + buckets(AUDIO, "a")
             id == "i" && s.shareImage -> listOf(folder("i:all", "i", "Tüm fotoğraflar")) + buckets(IMAGE, "i")
             id == "f" -> trees()
+            id == "h:c" && s.history -> WatchHistory.inProgress().take(60).mapNotNull { r ->
+                lookup(r.id)?.copy(parentId = id)
+            }
+            id == "h:u" && s.history -> {
+                val videos = (if (s.shareVideo) queryMedia(Kind.VIDEO, null, null, id) else emptyList()) +
+                    s.folders.indices.flatMap { i -> indexTree(i).filter { it.kind == Kind.VIDEO }.map { it.copy(parentId = id) } }
+                videos.filter { !WatchHistory.isWatched(it.id) }
+            }
 
             id == "v:all" && s.shareVideo -> queryMedia(Kind.VIDEO, null, null, id)
             id.startsWith("v:b:") && s.shareVideo -> queryMedia(Kind.VIDEO, "${MediaStore.MediaColumns.BUCKET_ID}=?", arrayOf(id.substring(4)), id)
@@ -121,7 +157,7 @@ class MediaLibrary(private val ctx: Context) {
 
     fun metadata(id: String): Entry? = when (id) {
         "0" -> folder("0", "-1", s.name, root().size)
-        "r", "v", "a", "i", "f" -> root().firstOrNull { it.id == id }
+        "r", "v", "a", "i", "f", "h:c", "h:u" -> root().firstOrNull { it.id == id }
         else -> lookup(id) ?: folder(id, parentOf(id), id)
     }
 
@@ -135,6 +171,7 @@ class MediaLibrary(private val ctx: Context) {
         id.startsWith("a:") -> "a"
         id.startsWith("i:") -> "i"
         id.startsWith("t:") -> "f"
+        id.startsWith("h:") -> "0"
         id.startsWith("d:") || id.startsWith("fd:") -> "t:" + id.substringAfter(':').substringBefore(':')
         else -> "0"
     }

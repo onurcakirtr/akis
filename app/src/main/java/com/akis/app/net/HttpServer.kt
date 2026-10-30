@@ -71,6 +71,7 @@ class HttpResponder(private val out: OutputStream, private val head: Boolean) {
 
         fun reason(code: Int) = when (code) {
             200 -> "OK"
+            204 -> "No Content"
             206 -> "Partial Content"
             304 -> "Not Modified"
             400 -> "Bad Request"

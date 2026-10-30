@@ -8,6 +8,7 @@ class AkisApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         Prefs.init(this)
+        WatchHistory.init(this)
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(
             NotificationChannel(CHANNEL_SERVER, "Yayın durumu", NotificationManager.IMPORTANCE_LOW).apply {

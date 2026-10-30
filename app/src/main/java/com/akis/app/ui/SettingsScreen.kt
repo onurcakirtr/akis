@@ -24,7 +24,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Palette
@@ -36,6 +38,7 @@ import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -60,6 +63,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.Prefs
 import com.akis.app.ServerState
+import com.akis.app.WatchHistory
 import com.akis.app.dlna.Subtitles
 import com.akis.app.service.DlnaService
 
@@ -70,6 +74,7 @@ fun SettingsScreen() {
     val running by ServerState.running.collectAsStateWithLifecycle()
     var editName by remember { mutableStateOf(false) }
     var editPort by remember { mutableStateOf(false) }
+    var confirmClear by remember { mutableStateOf(false) }
     val startedAt by ServerState.startedAt.collectAsStateWithLifecycle()
     // Sunucu açıkken port değişirse yeniden başlatma öner
     val portAtStart = remember(startedAt, running) { s.port }
@@ -155,6 +160,22 @@ fun SettingsScreen() {
                     "TV ve VLC'den başlık, sanatçı ve albüme göre ara; web arayüzüne arama kutusu",
                     s.search, divider = true,
                 ) { Prefs.set("search", it) }
+                FeatureRow(
+                    Icons.Rounded.History, "İzleme geçmişi",
+                    "Kaldığın yerden devam; TV'de \"Devam et\" ve \"İzlenmemiş\" klasörleri",
+                    s.history, divider = true,
+                    extra = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("İzlenenlere ✓ koy", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Switch(s.historyMarks, { v -> Prefs.set("historyMarks", v) })
+                        }
+                        FilledTonalButton(onClick = { confirmClear = true }) {
+                            Icon(Icons.Rounded.DeleteSweep, null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Geçmişi temizle")
+                        }
+                    },
+                ) { Prefs.set("history", it) }
                 // FEATURES
             }
         }
@@ -205,6 +226,15 @@ fun SettingsScreen() {
         }
     }
 
+    if (confirmClear) {
+        AlertDialog(
+            onDismissRequest = { confirmClear = false },
+            title = { Text("Geçmiş temizlensin mi?") },
+            text = { Text("Kaldığın yerler ve ✓ işaretleri silinir.") },
+            confirmButton = { TextButton(onClick = { WatchHistory.clear(); confirmClear = false }) { Text("Temizle") } },
+            dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Vazgeç") } },
+        )
+    }
     if (editName) {
         TextDialog("Ağdaki adı", s.name, KeyboardType.Text, onDismiss = { editName = false }) { v ->
             Prefs.update { putString("name", v.trim()) }

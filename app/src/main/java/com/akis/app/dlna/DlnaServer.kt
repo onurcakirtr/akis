@@ -7,6 +7,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import com.akis.app.Prefs
 import com.akis.app.ServerState
+import com.akis.app.WatchHistory
 import com.akis.app.net.HttpRequest
 import com.akis.app.net.HttpResponder
 import com.akis.app.net.HttpServer
@@ -92,21 +93,27 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 p == "/" || p == "/index.html" -> res.html(WebUi.list(settings.name, settings.name, lib.root(), null, search = settings.search))
                 p == "/ara" && settings.search -> {
                     val q = queryParam(req.query, "q")
-                    res.html(WebUi.list(settings.name, "“$q” için sonuçlar", lib.search(q, limit = 200), "0", search = true, query = q))
+                    res.html(WebUi.list(settings.name, "“$q” için sonuçlar", lib.search(q, limit = 200).map(WatchHistory::mark), "0", search = true, query = q))
                 }
                 p.startsWith("/w/") -> {
                     val id = decode(p.removePrefix("/w/"))
                     val title = lib.metadata(id)?.title ?: ""
-                    res.html(WebUi.list(settings.name, title, lib.children(id), lib.parentOf(id), search = settings.search))
+                    res.html(WebUi.list(settings.name, title, lib.children(id).map(WatchHistory::mark), lib.parentOf(id), search = settings.search))
                 }
                 p.startsWith("/p/") -> {
                     val e = lib.lookup(decode(p.removePrefix("/p/")))
                     if (e == null) res.text(404, "Bulunamadı")
-                    else res.html(WebUi.player(settings.name, e, Xml.mediaUrl(base, e), if (settings.subtitles) lib.subtitlesOf(e) else emptyList()))
+                    else res.html(
+                        WebUi.player(
+                            settings.name, e, Xml.mediaUrl(base, e),
+                            subs = if (settings.subtitles) lib.subtitlesOf(e) else emptyList(),
+                            resumeMs = if (settings.history) WatchHistory.resumeMs(e.id) else -1,
+                        ),
+                    )
                 }
                 else -> res.text(404, "Bulunamadı")
             }
-            "POST" -> control(req, res, base)
+            "POST" -> if (p == "/h") webProgress(req, res) else control(req, res, base)
             "SUBSCRIBE" -> res.send(200, null, 0, mapOf("SID" to "uuid:${UUID.randomUUID()}", "TIMEOUT" to "Second-1800"))
             "UNSUBSCRIBE" -> res.send(200, null, 0)
             "OPTIONS" -> res.send(200, null, 0, mapOf("Allow" to "GET, HEAD, POST, SUBSCRIBE, UNSUBSCRIBE"))
@@ -144,6 +151,18 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         }
     }
 
+    /** Web oynatıcının bildirdiği konum: /h?id=…&t=saniye&d=saniye */
+    private fun webProgress(req: HttpRequest, res: HttpResponder) {
+        val id = queryParam(req.query, "id")
+        val t = queryParam(req.query, "t").toDoubleOrNull()
+        val d = queryParam(req.query, "d").toDoubleOrNull()
+        val e = lib.lookup(id)
+        if (e != null && t != null && d != null && d > 0 && e.kind == Kind.VIDEO) {
+            WatchHistory.report(id, e.title, (t * 1000).toLong(), (d * 1000).toLong())
+        }
+        res.send(204, null, 0)
+    }
+
     private fun queryParam(query: String, name: String): String =
         query.split('&').firstOrNull { it.substringBefore('=') == name }?.substringAfter('=', "")?.let { decode(it) } ?: ""
 
@@ -160,7 +179,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             if ("imageItem" in criteria) add(Kind.IMAGE)
         }
         val all = if (term.isEmpty() && kinds.isEmpty()) emptyList() else lib.search(term, kinds, limit = 1000)
-        val part = all.drop(start).let { if (count > 0) it.take(count) else it }
+        val part = all.drop(start).let { if (count > 0) it.take(count) else it }.map(WatchHistory::mark)
         val didl = Xml.didl(part, base, Prefs.current.subtitles)
         val out = "<Result>${Xml.esc(didl)}</Result><NumberReturned>${part.size}</NumberReturned>" +
             "<TotalMatches>${all.size}</TotalMatches><UpdateID>${updateId.get()}</UpdateID>"
@@ -177,13 +196,13 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val returned: Int
         val total: Int
         if (flag == "BrowseMetadata") {
-            val list = listOfNotNull(lib.metadata(oid))
+            val list = listOfNotNull(lib.metadata(oid)?.let(WatchHistory::mark))
             didl = Xml.didl(list, base, Prefs.current.subtitles, Prefs.current.search)
             returned = list.size
             total = list.size
         } else {
             val all = lib.children(oid)
-            val part = all.drop(start).let { if (count > 0) it.take(count) else it }
+            val part = all.drop(start).let { if (count > 0) it.take(count) else it }.map(WatchHistory::mark)
             didl = Xml.didl(part, base, Prefs.current.subtitles)
             returned = part.size
             total = all.size
@@ -266,6 +285,8 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             }
             if (partial) headers["Content-Range"] = "bytes $start-$end/$size"
             val track = e.kind == Kind.VIDEO || e.kind == Kind.AUDIO
+            val histEntry = if (e.kind == Kind.VIDEO && Prefs.current.history) e.copy(durationMs = lib.durationOf(e)) else null
+            var lastHist = 0L
 
             FileInputStream(fd.fileDescriptor).use { fis ->
                 try {
@@ -296,6 +317,11 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                                 ServerState.addBytes(acc)
                                 acc = 0
                                 if (track) ServerState.reportStream(req.remote, id, e.title, e.kind, pos, size)
+                                val now = System.currentTimeMillis()
+                                if (histEntry != null && now - lastHist > 5000) {
+                                    lastHist = now
+                                    WatchHistory.reportBytes(histEntry, start, pos, size)
+                                }
                             }
                         }
                     } finally {

@@ -48,6 +48,15 @@ form.q input:focus{border-color:var(--acc)}
         else -> String.format("%d KB", b / 1024)
     }
 
+    /** Kaldığı yerden başlatır ve 10 sn'de bir konumu telefona bildirir. */
+    private fun progressScript(id: String, resumeMs: Long) = """<script>
+(function(){var v=document.querySelector('video');if(!v)return;var id='${Xml.enc(id)}',r=${resumeMs / 1000.0};
+v.addEventListener('loadedmetadata',function(){if(r>5&&r<v.duration-10)v.currentTime=r;});
+function s(){if(!v.duration||isNaN(v.duration))return;try{fetch('/h?id='+id+'&t='+v.currentTime+'&d='+v.duration,{method:'POST',keepalive:true});}catch(e){}}
+setInterval(function(){if(!v.paused)s();},10000);v.addEventListener('pause',s);v.addEventListener('ended',s);
+window.addEventListener('pagehide',s);})();
+</script>"""
+
     fun list(
         server: String,
         title: String,
@@ -90,7 +99,8 @@ form.q input:focus{border-color:var(--acc)}
         return page(server, title, crumbs, body, if (search) searchBox(query) else "")
     }
 
-    fun player(server: String, e: Entry, absoluteUrl: String, subs: List<Sub> = emptyList()): String {
+    /** @param resumeMs kaldığı yer; -1 ise geçmiş kapalı (konum bildirilmez) */
+    fun player(server: String, e: Entry, absoluteUrl: String, subs: List<Sub> = emptyList(), resumeMs: Long = -1): String {
         val src = "/m/${Xml.enc(e.id)}/file.${e.ext}"
         val tag = if (e.kind == Kind.VIDEO) "video" else "audio"
         val back = if (e.parentId == "0") "/" else "/w/${Xml.enc(e.parentId)}"
@@ -103,7 +113,8 @@ form.q input:focus{border-color:var(--acc)}
             "<a class=\"b\" href=\"vlc://${h(absoluteUrl)}\">VLC'de aç</a>" +
             "<a class=\"b o\" href=\"$src\" download>İndir</a>" +
             "<button class=\"b o\" onclick=\"navigator.clipboard.writeText('${h(absoluteUrl)}');this.textContent='Kopyalandı ✓'\">Bağlantıyı kopyala</button>" +
-            "</div><p><code>${h(absoluteUrl)}</code></p></div>"
+            "</div><p><code>${h(absoluteUrl)}</code></p></div>" +
+            if (resumeMs >= 0 && e.kind == Kind.VIDEO) progressScript(e.id, resumeMs) else ""
         return page(server, e.title, "<a href=\"$back\">← Geri</a>", body)
     }
 }
