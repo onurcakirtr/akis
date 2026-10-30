@@ -82,7 +82,7 @@ class MainActivity : AppCompatActivity() {
     }
 }
 
-private data class Tab(@androidx.annotation.StringRes val label: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+private data class Tab(@param:androidx.annotation.StringRes val label: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
 private val tabs = listOf(
     Tab(R.string.tab_home, Icons.Rounded.Home),

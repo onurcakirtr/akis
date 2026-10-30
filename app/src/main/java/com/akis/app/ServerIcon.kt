@@ -21,7 +21,7 @@ import kotlin.math.min
  * Hazır renkler, seçili temanın renkleri ya da galeriden seçilen bir resim.
  */
 object ServerIcon {
-    class Preset(val id: String, @StringRes val name: Int, val bg: Int, val fg: Int, val dot: Int)
+    class Preset(val id: String, @param:StringRes val name: Int, val bg: Int, val fg: Int, val dot: Int)
 
     val PRESETS = listOf(
         Preset("default", R.string.icon_default, 0xFF0A0A0A.toInt(), 0xFFFFFFFF.toInt(), 0xFFD71921.toInt()),

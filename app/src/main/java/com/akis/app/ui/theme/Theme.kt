@@ -35,7 +35,7 @@ enum class Backdrop { NONE, DOTS, GRID, SCANLINES }
  */
 data class AppTheme(
     val id: String,
-    @StringRes val name: Int,
+    @param:StringRes val name: Int,
     /** null ise tema yalnızca koyu. */
     val light: ColorScheme?,
     val dark: ColorScheme,

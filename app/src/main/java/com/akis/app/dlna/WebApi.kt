@@ -244,7 +244,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             if (f.isFile) {
                 j.put("sz", f.length()).put("ext", f.name.substringAfterLast('.', "").lowercase())
                 val k = MediaLibrary.kindOf(f.name, null)
-                if (k == Kind.VIDEO || k == Kind.AUDIO || k == Kind.IMAGE) j.put("k", kindCode(k!!)).put("id", "p:" + f.path)
+                if (k == Kind.VIDEO || k == Kind.AUDIO || k == Kind.IMAGE) j.put("k", kindCode(k)).put("id", "p:" + f.path)
             }
             items.put(j)
         }
