@@ -11,7 +11,13 @@ import androidx.compose.animation.shrinkVertically
 import android.content.Intent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.draw.clip
+import com.akis.app.ui.theme.Themes
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -308,10 +314,7 @@ fun SettingsScreen() {
                     Text(stringResource(R.string.theme), style = MaterialTheme.typography.titleMedium)
                 }
                 Spacer(Modifier.height(12.dp))
-                Segmented(
-                    options = listOf("material" to "Material You", "nothing" to "Nothing"),
-                    selected = s.theme,
-                ) { v -> Prefs.update { putString("theme", v) } }
+                ThemeGrid(s.theme, s.darkMode) { v -> Prefs.update { putString("theme", v) } }
                 Spacer(Modifier.height(18.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     IconBadge(Icons.Rounded.DarkMode, size = 40.dp)
@@ -319,10 +322,18 @@ fun SettingsScreen() {
                     Text(stringResource(R.string.dark_mode), style = MaterialTheme.typography.titleMedium)
                 }
                 Spacer(Modifier.height(12.dp))
-                Segmented(
-                    options = listOf("system" to stringResource(R.string.mode_system), "light" to stringResource(R.string.mode_light), "dark" to stringResource(R.string.mode_dark)),
-                    selected = s.darkMode,
-                ) { v -> Prefs.update { putString("darkMode", v) } }
+                if (Themes.byId(s.theme).darkOnly) {
+                    Text(
+                        stringResource(R.string.theme_dark_only),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Segmented(
+                        options = listOf("system" to stringResource(R.string.mode_system), "light" to stringResource(R.string.mode_light), "dark" to stringResource(R.string.mode_dark)),
+                        selected = s.darkMode,
+                    ) { v -> Prefs.update { putString("darkMode", v) } }
+                }
             }
         }
 
@@ -453,6 +464,59 @@ private fun FeatureRow(
             exit = shrinkVertically(spring(stiffness = 700f)) + fadeOut(),
         ) {
             Column(Modifier.fillMaxWidth().padding(start = 54.dp, bottom = 6.dp), verticalArrangement = Arrangement.spacedBy(6.dp), content = extra)
+        }
+    }
+}
+
+/** Tema seçimi: her tema kendi renkleriyle küçük bir önizleme kartı olarak, 3 sütunda. */
+@Composable
+private fun ThemeGrid(selected: String, darkMode: String, onSelect: (String) -> Unit) {
+    val ctx = LocalContext.current
+    val systemDark = isSystemInDarkTheme()
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Themes.ALL.chunked(3).forEach { row ->
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                row.forEach { t ->
+                    val cs = t.scheme(ctx, t.isDark(darkMode, systemDark))
+                    val on = t.id == selected
+                    Column(
+                        Modifier.weight(1f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        androidx.compose.material3.Surface(
+                            onClick = { onSelect(t.id) },
+                            shape = t.shapes.medium,
+                            color = cs.background,
+                            border = androidx.compose.foundation.BorderStroke(
+                                if (on) 3.dp else 1.dp,
+                                if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                            ),
+                            modifier = Modifier.fillMaxWidth().height(84.dp),
+                        ) {
+                            Column(Modifier.padding(10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Box(Modifier.size(14.dp).clip(t.badge).background(cs.primary))
+                                    Spacer(Modifier.width(6.dp))
+                                    Box(Modifier.height(6.dp).weight(1f).clip(t.shapes.extraSmall).background(cs.onSurface.copy(alpha = 0.7f)))
+                                }
+                                Box(Modifier.fillMaxWidth().height(20.dp).clip(t.shapes.small).background(cs.surfaceContainerHigh))
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Box(Modifier.height(12.dp).weight(1f).clip(t.shapes.extraSmall).background(cs.primaryContainer))
+                                    Box(Modifier.height(12.dp).weight(1f).clip(t.shapes.extraSmall).background(cs.tertiaryContainer))
+                                }
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            stringResource(t.name),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
+                repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
+            }
         }
     }
 }

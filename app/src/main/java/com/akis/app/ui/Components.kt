@@ -57,12 +57,37 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.annotation.PluralsRes
 import com.akis.app.R
-import com.akis.app.ui.theme.LocalNothingStyle
+import com.akis.app.ui.theme.Backdrop
+import com.akis.app.ui.theme.LocalAppTheme
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.PowerSettingsNew
+
+/** Temanın arka plan deseni (nokta ızgarası, çizgi ızgarası, tarama çizgileri ya da hiçbiri). */
+fun Modifier.backdrop(kind: Backdrop, color: Color): Modifier = when (kind) {
+    Backdrop.NONE -> this
+    Backdrop.DOTS -> dotGrid(color)
+    Backdrop.GRID -> drawWithCache {
+        val step = 28.dp.toPx()
+        val w = 1.dp.toPx()
+        onDrawBehind {
+            var x = 0f
+            while (x < size.width) { drawLine(color, Offset(x, 0f), Offset(x, size.height), w); x += step }
+            var y = 0f
+            while (y < size.height) { drawLine(color, Offset(0f, y), Offset(size.width, y), w); y += step }
+        }
+    }
+    Backdrop.SCANLINES -> drawWithCache {
+        val step = 4.dp.toPx()
+        val w = 1.dp.toPx()
+        onDrawBehind {
+            var y = 0f
+            while (y < size.height) { drawLine(color, Offset(0f, y), Offset(size.width, y), w); y += step }
+        }
+    }
+}
 
 /** Nothing tarzı nokta ızgarası arka planı. */
 fun Modifier.dotGrid(color: Color, spacing: Dp = 18.dp, dot: Dp = 2.dp): Modifier = drawWithCache {
@@ -159,9 +184,9 @@ fun LiveDot(active: Boolean, size: Dp = 12.dp) {
 
 @Composable
 fun SectionTitle(text: String, modifier: Modifier = Modifier) {
-    val nothing = LocalNothingStyle.current
+    val upper = LocalAppTheme.current.uppercaseTitles
     Text(
-        if (nothing) text.uppercase() else text,
+        if (upper) text.uppercase() else text,
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = modifier.padding(start = 6.dp, top = 10.dp, bottom = 2.dp),
@@ -175,8 +200,7 @@ fun ExpressiveCard(
     onClick: (() -> Unit)? = null,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    val nothing = LocalNothingStyle.current
-    val border = if (nothing) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
+    val border = if (LocalAppTheme.current.cardBorder) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant) else null
     if (onClick != null) {
         Surface(onClick = onClick, modifier = modifier.fillMaxWidth(), shape = MaterialTheme.shapes.large, color = color, border = border) {
             Column(Modifier.padding(18.dp), content = content)
@@ -191,7 +215,7 @@ fun ExpressiveCard(
 /** Yuvarlatılmış kare içinde ikon — expressive "şekilli" ikon kabı. */
 @Composable
 fun IconBadge(icon: ImageVector, tint: Color = MaterialTheme.colorScheme.onPrimaryContainer, bg: Color = MaterialTheme.colorScheme.primaryContainer, size: Dp = 48.dp) {
-    Surface(shape = RoundedCornerShape(percent = 34), color = bg, contentColor = tint, modifier = Modifier.size(size)) {
+    Surface(shape = LocalAppTheme.current.badge, color = bg, contentColor = tint, modifier = Modifier.size(size)) {
         Box(contentAlignment = Alignment.Center) { Icon(icon, null, Modifier.size(size * 0.5f)) }
     }
 }

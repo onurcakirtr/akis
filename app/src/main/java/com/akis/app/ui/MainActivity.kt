@@ -48,7 +48,9 @@ import com.akis.app.Prefs
 import com.akis.app.ServerState
 import com.akis.app.service.DlnaService
 import com.akis.app.ui.theme.AkisTheme
-import com.akis.app.ui.theme.LocalNothingStyle
+import com.akis.app.ui.theme.Backdrop
+import com.akis.app.ui.theme.LocalAppTheme
+import com.akis.app.ui.theme.Themes
 
 class MainActivity : AppCompatActivity() {
 
@@ -58,18 +60,15 @@ class MainActivity : AppCompatActivity() {
         handleIntent(intent)
         setContent {
             val s by Prefs.settings.collectAsStateWithLifecycle()
-            val dark = when (s.darkMode) {
-                "light" -> false
-                "dark" -> true
-                else -> isSystemInDarkTheme()
-            }
+            val theme = Themes.byId(s.theme)
+            val dark = theme.isDark(s.darkMode, isSystemInDarkTheme())
             DisposableEffect(dark) {
                 val t = android.graphics.Color.TRANSPARENT
                 val style = if (dark) SystemBarStyle.dark(t) else SystemBarStyle.light(t, t)
                 enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
                 onDispose { }
             }
-            AkisTheme(theme = s.theme, dark = dark) { AppRoot() }
+            AkisTheme(theme = theme, dark = dark) { AppRoot() }
         }
     }
 
@@ -95,7 +94,7 @@ private val tabs = listOf(
 fun AppRoot() {
     val ctx = LocalContext.current
     var tab by rememberSaveable { mutableIntStateOf(0) }
-    val nothing = LocalNothingStyle.current
+    val theme = LocalAppTheme.current
     val cs = MaterialTheme.colorScheme
 
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { }
@@ -111,7 +110,7 @@ fun AppRoot() {
     Scaffold(
         containerColor = cs.background,
         bottomBar = {
-            NavigationBar(containerColor = if (nothing) cs.background else cs.surfaceContainer) {
+            NavigationBar(containerColor = if (theme.flatNav) cs.background else cs.surfaceContainer) {
                 tabs.forEachIndexed { i, t ->
                     NavigationBarItem(
                         selected = tab == i,
@@ -126,7 +125,7 @@ fun AppRoot() {
         Box(
             Modifier
                 .fillMaxSize()
-                .dotGrid(cs.onSurface.copy(alpha = if (nothing) 0.13f else 0.05f))
+                .backdrop(theme.backdrop, (if (theme.backdrop == Backdrop.DOTS) cs.onSurface else cs.primary).copy(alpha = theme.backdropAlpha))
                 .padding(pad),
         ) {
             AnimatedContent(

@@ -6,6 +6,9 @@ import android.app.NotificationManager
 import android.content.ComponentName
 import android.service.quicksettings.TileService
 import com.akis.app.service.ServerTileService
+import com.akis.app.dlna.WebUi
+import com.akis.app.ui.theme.Themes
+import com.akis.app.ui.theme.webCss
 import com.akis.app.widget.Widgets
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +22,7 @@ class AkisApplication : Application() {
         super.onCreate()
         Prefs.init(this)
         Lang.init(this)
+        WebUi.themeCss = { webCss(this, Themes.byId(Prefs.current.theme)) }
         WatchHistory.init(this)
         DeviceAccess.init(this)
         watchState()

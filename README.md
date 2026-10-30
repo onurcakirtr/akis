@@ -20,7 +20,8 @@ Telefonundaki videoları, müzikleri ve fotoğrafları yerel ağdaki **VLC, akı
 - **Gizli klasörler:** `.nomedia` içerenler ve elle gizlediklerin paylaşılmaz
 - **Widget'lar ve bildirim:** aç/kapat widget'ı, durum widget'ı, bildirimde ve kutucukta ilerleme ile oynatılan dosya
 - Her özellik *Ayarlar → Özellikler*'den açılıp kapatılabilir
-- **İki tema:** Material You (duvar kâğıdına göre renk alır) ve **Nothing** (siyah-beyaz, kırmızı vurgu, nokta ızgarası, mono yazı); açık / koyu / sistem modu
+- **12 tema:** Material You, Nothing, Samsung, Cyberpunk, iOS, Terminal, Dracula, Okyanus, Gün batımı, Sakura, Orman, Kağıt; açık / koyu / sistem modu (web arayüzü de temayı izler)
+- **Dil:** Türkçe ve İngilizce; uygulama içinden ya da Android 13+ sistem dil menüsünden seçilir
 
 ## Derleme
 ### Android Studio
@@ -40,6 +41,13 @@ Projeyi bir GitHub reposuna yükle. `Actions` sekmesinde **APK derle** iş akı�
 - Misafir ağlarında ve bazı modemlerde **AP/istemci izolasyonu** açık olur, cihazlar birbirini göremez. Modem ayarlarından kapat ya da telefonun hotspot'unu kullan.
 - VLC'de listeyi yenile, olmazsa Akış'ı kapatıp tekrar aç.
 - Nothing OS'ta pil optimizasyonu: *Ayarlar → Uygulamalar → Akış → Pil → Kısıtlanmamış*
+
+## Yeni dil eklemek
+1. `app/src/main/res/values/strings.xml` (İngilizce) dosyasını `values-<kod>/strings.xml` olarak kopyalayıp çevir
+2. `Lang.kt` içindeki `SUPPORTED` listesine bir satır ekle
+
+## Yeni tema eklemek
+`ui/theme/Theme.kt` içindeki `Themes.ALL` listesine bir `AppTheme` kaydı, `strings.xml` dosyalarına da `theme_<id>` adını ekle.
 
 ## Kod yapısı
 ```

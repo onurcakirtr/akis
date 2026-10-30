@@ -17,7 +17,7 @@ data class Settings(
     val webUi: Boolean,
     val keepAwake: Boolean,
     val autoStart: Boolean,
-    val theme: String,      // "material" | "nothing"
+    val theme: String,      // Themes.ALL içindeki id ("material", "nothing", "cyberpunk"…)
     val darkMode: String,   // "system" | "light" | "dark"
     val folders: List<String>,
     val uuid: String,

@@ -10,11 +10,12 @@ object WebUi {
 
     private fun h(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
 
+    /** Seçili temanın renkleri (Ayarlar → Görünüm → Tema). */
+    @Volatile var themeCss: () -> String = { "" }
+
     private const val CSS = """
-:root{--bg:#0d0d10;--card:#19191e;--fg:#f3f3f6;--mut:#9b9ba6;--acc:#d71921;--r:24px}
-@media(prefers-color-scheme:light){:root{--bg:#f4f4f6;--card:#fff;--fg:#111;--mut:#666}}
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui,Roboto,sans-serif;background:var(--bg);color:var(--fg);
+body{margin:0;font-family:var(--font);background:var(--bg);color:var(--fg);
 background-image:radial-gradient(color-mix(in srgb,var(--mut) 45%,transparent) .7px,transparent .7px);background-size:18px 18px;background-attachment:fixed}
 header{position:sticky;top:0;z-index:2;padding:18px 22px;display:flex;align-items:center;gap:12px;
 backdrop-filter:blur(16px);background:color-mix(in srgb,var(--bg) 78%,transparent)}
@@ -31,7 +32,7 @@ a.c:hover,a.c:focus{transform:scale(1.04);border-radius:34px;outline:2px solid v
 .p{padding:8px 22px 40px;max-width:1100px;margin:auto}
 video,audio{width:100%;max-height:78vh;border-radius:var(--r);background:#000}
 .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
-.b{padding:12px 20px;border-radius:999px;background:var(--acc);color:#fff;text-decoration:none;border:0;font-size:15px;cursor:pointer}
+.b{padding:12px 20px;border-radius:999px;background:var(--acc);color:var(--onacc);text-decoration:none;border:0;font-size:15px;cursor:pointer}
 .b.o{background:var(--card);color:var(--fg)}
 code{word-break:break-all;color:var(--mut);font-size:12px}
 form.q{margin-left:auto;flex:0 1 320px}
@@ -53,7 +54,7 @@ form.q input:focus{border-color:var(--acc)}
 
     private fun page(server: String, title: String, crumbs: String, body: String, header: String = "") =
         "<!doctype html><html lang=\"${Lang.locale.language}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
-            "<title>${h(title)}</title><style>$CSS</style></head><body><header><div class=\"dot\"></div><h1>${h(server)}</h1>$header</header>" +
+            "<title>${h(title)}</title><style>${themeCss()}$CSS</style></head><body><header><div class=\"dot\"></div><h1>${h(server)}</h1>$header</header>" +
             "<nav>$crumbs</nav>$body</body></html>"
 
     private fun sizeText(b: Long) = when {
