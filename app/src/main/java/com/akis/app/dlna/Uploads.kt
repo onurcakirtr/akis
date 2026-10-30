@@ -87,8 +87,46 @@ object Uploads {
         return uri
     }
 
-    private fun notify(ctx: Context, name: String, mime: String, uri: Uri, from: String) {
-        val open = PendingIntent.getActivity(
+    /** "Tüm dosyalar" açıkken web'de bulunulan klasöre doğrudan yazar; aynı ad varsa "ad (1).uzantı". */
+    fun receiveToDir(ctx: Context, dir: java.io.File, name: String, input: InputStream, length: Long, from: String): Uri? {
+        var f = java.io.File(dir, name)
+        var n = 1
+        while (f.exists()) {
+            val base = name.substringBeforeLast('.', name)
+            val ext = name.substringAfterLast('.', "").let { if (it.isEmpty() || it == name) "" else ".$it" }
+            f = java.io.File(dir, "$base ($n)$ext")
+            n++
+        }
+        var written = 0L
+        val ok = try {
+            java.io.FileOutputStream(f).use { out ->
+                val buf = ByteArray(256 * 1024)
+                while (true) {
+                    val r = input.read(buf)
+                    if (r < 0) break
+                    out.write(buf, 0, r)
+                    written += r
+                }
+            }
+            written == length
+        } catch (_: Exception) {
+            false
+        }
+        if (!ok) {
+            f.delete()
+            ServerState.log(Lang.s(R.string.log_upload_partial, name))
+            return null
+        }
+        android.media.MediaScannerConnection.scanFile(ctx, arrayOf(f.path), null, null)
+        ServerState.log(Lang.s(R.string.log_upload_ok, f.name, from))
+        val uri = Uri.fromFile(f)
+        notify(ctx, f.name, MediaLibrary.mimeFor(f.name, null), uri, from, openable = false)
+        return uri
+    }
+
+    /** @param openable false ise dosya yolu (file://) başka uygulamaya verilemeyeceği için dokununca bir şey açılmaz */
+    private fun notify(ctx: Context, name: String, mime: String, uri: Uri, from: String, openable: Boolean = true) {
+        val open = if (!openable) null else PendingIntent.getActivity(
             ctx, uri.hashCode(),
             Intent(Intent.ACTION_VIEW).setDataAndType(uri, mime)
                 .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK),

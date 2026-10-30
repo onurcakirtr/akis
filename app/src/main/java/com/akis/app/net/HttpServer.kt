@@ -56,6 +56,33 @@ class LimitedInputStream(private val input: InputStream, private var left: Long)
 class HttpResponder(private val out: OutputStream, private val head: Boolean) {
     var committed = false
         private set
+    /** Uzunluğu belirsiz akıştan sonra bağlantı kapatılır. */
+    var closeAfter = false
+        private set
+
+    /** Content-Length olmadan akıtır (HTTP/1.1 "Connection: close"); istemci koparsa IOException fırlar. */
+    fun stream(code: Int, type: String, headers: Map<String, String> = emptyMap(), body: (OutputStream) -> Unit) {
+        committed = true
+        closeAfter = true
+        val sb = StringBuilder("HTTP/1.1 ").append(code).append(' ').append(reason(code)).append("
+")
+        sb.append("Content-Type: ").append(type).append("
+")
+        sb.append("Server: Android/").append(Build.VERSION.RELEASE).append(" UPnP/1.0 Akis/1.0
+")
+        sb.append("Date: ").append(httpDate()).append("
+")
+        sb.append("Connection: close
+")
+        for ((k, v) in headers) sb.append(k).append(": ").append(v).append("
+")
+        sb.append("
+")
+        out.write(sb.toString().toByteArray(Charsets.UTF_8))
+        out.flush()
+        if (!head) body(out)
+        out.flush()
+    }
 
     fun send(
         code: Int,
@@ -193,6 +220,7 @@ class HttpServer(
                     try { resp.text(404, Lang.s(R.string.http_not_found)) } catch (_: IOException) { return }
                 }
                 if (stream != null && stream.remaining > 0) return // gövde yarım kaldı; bağlantıyı kapat
+                if (resp.closeAfter) return
                 val conn = headers["connection"]?.lowercase()
                 val http10 = parts.getOrNull(2) == "HTTP/1.0"
                 if (conn == "close" || (http10 && conn != "keep-alive")) return

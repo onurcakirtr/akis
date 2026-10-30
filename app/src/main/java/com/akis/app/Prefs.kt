@@ -35,6 +35,9 @@ data class Settings(
     val uploadFolder: String,       // boşsa İndirilenler/Akış
     val widget: Boolean,            // ana ekran widget'ları
     val notifDetails: Boolean,      // bildirimde ilerleme / cihaz sayısı
+    val allFilesWeb: Boolean,       // web arayüzünde tüm dosyalar (dosya gezgini)
+    val allFilesUpnp: Boolean,      // TV / VLC / Gezgin'de "Tüm dosyalar" klasörü
+    val iconStyle: String,          // sunucu simgesi: "default", renk adı, "theme" ya da "custom"
 )
 
 /** Basit, senkron ayar deposu. Değişiklikler StateFlow ile UI'ye ve servise yansır. */
@@ -79,6 +82,9 @@ object Prefs {
         uploadFolder = sp.getString("uploadFolder", "") ?: "",
         widget = sp.getBoolean("widget", true),
         notifDetails = sp.getBoolean("notifDetails", true),
+        allFilesWeb = sp.getBoolean("allFilesWeb", false),
+        allFilesUpnp = sp.getBoolean("allFilesUpnp", false),
+        iconStyle = sp.getString("iconStyle", "default") ?: "default",
     )
 
     fun update(block: SharedPreferences.Editor.() -> Unit) {

@@ -145,6 +145,7 @@ class DlnaService : Service() {
                 listOf(
                     it.shareVideo, it.shareAudio, it.shareImage, it.showRecent, it.folders, it.name,
                     it.hideFolders, it.hiddenBuckets, it.subtitles, it.subLang, it.search, it.history, it.historyMarks,
+                    it.allFilesUpnp, it.iconStyle,
                 )
             }
                 .distinctUntilChanged().drop(1).collect { server?.contentChanged() }

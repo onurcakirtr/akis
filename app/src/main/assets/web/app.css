@@ -1,0 +1,262 @@
+/* Akış web uygulaması. Renkler, köşe ve yazı tipi seçili temadan gelir (index.html içindeki :root değişkenleri). */
+:root {
+  --line: color-mix(in srgb, var(--mut) 22%, transparent);
+  --soft: color-mix(in srgb, var(--fg) 7%, transparent);
+  --soft2: color-mix(in srgb, var(--fg) 12%, transparent);
+  --tint: color-mix(in srgb, var(--acc) 18%, transparent);
+  --rs: calc(var(--r) * .6);
+  --ease: cubic-bezier(.3, 1.4, .5, 1);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent }
+html { scroll-padding-top: 80px }
+body {
+  margin: 0; font-family: var(--font); background: var(--bg); color: var(--fg); font-size: 15px; line-height: 1.45;
+  min-height: 100vh; padding-bottom: env(safe-area-inset-bottom);
+}
+body.has-mini { padding-bottom: 96px }
+a { color: inherit; text-decoration: none }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; padding: 0 }
+svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none }
+[hidden] { display: none !important }
+:focus-visible { outline: 3px solid var(--acc); outline-offset: 3px; border-radius: var(--rs) }
+
+/* ---------- Üst çubuk ---------- */
+#top {
+  position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 12px;
+  padding: 12px max(16px, env(safe-area-inset-left)); background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 17px; white-space: nowrap; min-width: 0 }
+.brand span:last-child { overflow: hidden; text-overflow: ellipsis }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 10px var(--acc); flex: none }
+.search {
+  flex: 1; display: flex; align-items: center; gap: 8px; max-width: 560px; margin-left: auto;
+  background: var(--soft); border-radius: 999px; padding: 0 14px; height: 40px; color: var(--mut);
+  transition: background .2s, box-shadow .2s;
+}
+.search:focus-within { background: var(--soft2); box-shadow: 0 0 0 2px var(--acc) }
+.search input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--fg); font: inherit; height: 100% }
+.search input::-webkit-search-cancel-button { display: none }
+.search kbd { font: 12px var(--font); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px }
+.pill {
+  display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; border-radius: 999px;
+  background: var(--soft); white-space: nowrap; transition: background .2s, transform .3s var(--ease);
+}
+.pill:hover { background: var(--soft2) }
+.pill:active { transform: scale(.95) }
+.pill.acc { background: var(--acc); color: var(--onacc) }
+@media (max-width: 640px) {
+  #top { flex-wrap: wrap; gap: 10px }
+  .search { order: 3; flex-basis: 100%; max-width: none }
+  .search kbd { display: none }
+  #upLabel { display: none }
+  #upBtn { margin-left: auto; padding: 0 12px }
+}
+
+/* ---------- Sayfa ---------- */
+main { padding: 8px max(16px, env(safe-area-inset-left)) 40px; max-width: 1500px; margin: 0 auto; outline: 0 }
+.sec { display: flex; align-items: center; gap: 10px; margin: 22px 2px 10px; color: var(--mut); font-size: 13px; letter-spacing: .3px }
+.sec h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--fg); letter-spacing: 0 }
+.sec .sp { flex: 1 }
+.chips { display: flex; gap: 6px; flex-wrap: wrap }
+.chip { height: 30px; padding: 0 12px; border-radius: 999px; background: var(--soft); font-size: 13px; color: var(--mut) }
+.chip.on { background: var(--acc); color: var(--onacc) }
+
+/* raf: yatay kaydırılan kartlar */
+.shelf { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(220px, 1fr); gap: 12px; overflow-x: auto; padding: 4px 2px 10px; scroll-snap-type: x mandatory; scrollbar-width: none }
+.shelf::-webkit-scrollbar { display: none }
+.shelf > * { scroll-snap-align: start }
+@media (min-width: 1100px) { .shelf { grid-auto-columns: calc((100% - 36px) / 4) } }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px }
+@media (max-width: 520px) { .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px } }
+
+/* kart */
+.card {
+  position: relative; display: flex; flex-direction: column; background: var(--card); border-radius: var(--r); overflow: hidden;
+  transition: transform .35s var(--ease), box-shadow .2s; cursor: pointer; min-width: 0;
+}
+.card:hover { transform: translateY(-3px) }
+.card:focus-visible { outline: 3px solid var(--acc); outline-offset: 2px; transform: scale(1.03); border-radius: var(--r) }
+.thumb { position: relative; aspect-ratio: 16/10; background: var(--soft); display: grid; place-items: center; color: var(--mut); overflow: hidden }
+.thumb img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; transition: opacity .3s }
+.thumb img.ok { opacity: 1 }
+.thumb svg { width: 32px; height: 32px; opacity: .7 }
+.badge { position: absolute; right: 8px; bottom: 8px; padding: 2px 7px; border-radius: 6px; background: rgba(0,0,0,.65); color: #fff; font-size: 12px }
+.badge.l { left: 8px; right: auto }
+.prog { height: 4px; background: var(--soft2) }
+.prog i { display: block; height: 100%; background: var(--acc) }
+.meta { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.title { font-size: 14px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; word-break: break-word }
+.sub { font-size: 12px; color: var(--mut); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.card.folder .thumb { aspect-ratio: auto; height: 76px; place-items: center start; padding-left: 14px; background: none }
+.icon-badge { width: 46px; height: 46px; border-radius: 34%; background: var(--tint); color: var(--acc); display: grid; place-items: center }
+.icon-badge svg { width: 24px; height: 24px; opacity: 1 }
+.card.sq .thumb { aspect-ratio: 1 }
+
+/* kategori kutuları */
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px }
+@media (max-width: 520px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px } }
+.tile { background: var(--card); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 10px; transition: transform .35s var(--ease) }
+.tile:hover { transform: translateY(-3px) }
+.tile:focus-visible { transform: scale(1.03) }
+.tile b { font-size: 16px; font-weight: 600 }
+
+/* liste görünümü */
+.list { display: flex; flex-direction: column; gap: 6px }
+.list .card { flex-direction: row; align-items: center; border-radius: var(--rs) }
+.list .card:hover { transform: none; background: color-mix(in srgb, var(--card) 80%, var(--fg) 6%) }
+.list .thumb { width: 96px; flex: none; aspect-ratio: 16/10 }
+.list .card.folder .thumb { width: 72px; height: 56px; padding-left: 12px }
+.list .prog { position: absolute; left: 0; bottom: 0; width: 96px }
+.list .meta { flex: 1 }
+.list .title { -webkit-line-clamp: 1 }
+
+/* klasör araç çubuğu */
+.bar { display: flex; align-items: center; gap: 8px; margin: 14px 2px 12px; flex-wrap: wrap }
+.crumbs { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; color: var(--mut); font-size: 14px; overflow: hidden; white-space: nowrap }
+.crumbs a { padding: 4px 6px; border-radius: 6px; overflow: hidden; text-overflow: ellipsis }
+.crumbs a:hover { background: var(--soft) }
+.crumbs a:last-child { color: var(--fg); font-weight: 600 }
+@media (max-width: 640px) { .crumbs { flex-basis: 100%; } .bar .seg { margin-left: auto } }
+.seg { display: inline-flex; background: var(--soft); border-radius: 999px; padding: 3px }
+.seg button { height: 32px; min-width: 36px; padding: 0 10px; border-radius: 999px; display: grid; place-items: center; color: var(--mut) }
+.seg button.on { background: var(--card); color: var(--fg) }
+select.pill { appearance: none; -webkit-appearance: none; border: 0; color: var(--fg); font: inherit; padding-right: 16px }
+.empty { padding: 60px 10px; text-align: center; color: var(--mut) }
+.spin { width: 34px; height: 34px; border: 3px solid var(--soft2); border-top-color: var(--acc); border-radius: 50%; animation: sp .8s linear infinite; margin: 60px auto }
+@keyframes sp { to { transform: rotate(360deg) } }
+
+/* fotoğraf ızgarası (döşeme) */
+.masonry { columns: 4 220px; column-gap: 10px }
+.masonry .ph { break-inside: avoid; margin-bottom: 10px; border-radius: var(--rs); overflow: hidden; background: var(--soft); cursor: zoom-in; display: block; position: relative }
+.masonry .ph img { width: 100%; display: block; min-height: 90px }
+@media (max-width: 520px) { .masonry { columns: 2; column-gap: 6px } .masonry .ph { margin-bottom: 6px } }
+
+/* ---------- Video sayfası ---------- */
+.watch { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; margin-top: 14px }
+@media (max-width: 1000px) { .watch { grid-template-columns: 1fr } }
+.watch h1 { font-size: 20px; margin: 14px 0 4px; font-weight: 600 }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px }
+.side h3 { font-size: 14px; color: var(--mut); font-weight: 500; margin: 0 0 10px }
+.side .list .thumb { width: 120px }
+
+/* ---------- Oynatıcı ---------- */
+.pl { position: relative; width: 100%; aspect-ratio: 16/9; max-height: 78vh; background: #000; border-radius: var(--r); overflow: hidden; user-select: none; -webkit-user-select: none; outline: 0; color: #fff; touch-action: manipulation }
+.pl:fullscreen, .pl.fs { max-height: none; height: 100%; border-radius: 0; aspect-ratio: auto }
+.pl video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000 }
+.pl .tap { position: absolute; inset: 0; z-index: 1 }
+.pl .subs { position: absolute; left: 6%; right: 6%; bottom: 9%; z-index: 2; text-align: center; pointer-events: none; transition: bottom .25s }
+.pl.ui .subs { bottom: 22% }
+.pl .subs span { display: inline; padding: .1em .35em; background: rgba(0,0,0,.55); border-radius: 4px; font-size: clamp(15px, 2.6vw, 30px); line-height: 1.5; box-decoration-break: clone; -webkit-box-decoration-break: clone; text-shadow: 0 1px 2px #000; white-space: pre-line }
+.pl .layer { position: absolute; inset: 0; z-index: 3; pointer-events: none; opacity: 0; transition: opacity .25s; background: linear-gradient(rgba(0,0,0,.55), transparent 25%, transparent 60%, rgba(0,0,0,.75)) }
+.pl.ui .layer { opacity: 1 }
+.pl.ui .layer .top, .pl.ui .layer .bottom, .pl.ui .layer .mid button { pointer-events: auto }
+.pl .top { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 8px; padding: 12px 14px }
+.pl .top .t { flex: 1; font-size: 15px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.pl .mid { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 12vw; pointer-events: none }
+.pl .big { width: 76px; height: 76px; border-radius: 50%; background: rgba(0,0,0,.45); display: grid; place-items: center; transition: transform .35s var(--ease) }
+.pl .big:active { transform: scale(.9) }
+.pl .big svg { width: 38px; height: 38px; fill: #fff; stroke: none }
+.pl .skip { width: 54px; height: 54px; border-radius: 50%; background: rgba(0,0,0,.35); display: grid; place-items: center }
+@media (hover: hover) and (pointer: fine) { .pl .skip { display: none } }
+.pl .bottom { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 14px 10px }
+.pl .row { display: flex; align-items: center; gap: 4px }
+.pl .row .time { font-size: 13px; font-variant-numeric: tabular-nums; margin: 0 8px; white-space: nowrap }
+.pl .row .grow { flex: 1 }
+.pl .ib { width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; position: relative }
+.pl .ib:hover { background: rgba(255,255,255,.14) }
+.pl .ib svg { width: 22px; height: 22px }
+.pl .ib.fill svg { fill: #fff; stroke: none }
+.pl .ib b { position: absolute; font-size: 9px; bottom: 6px; right: 5px; background: var(--acc); color: var(--onacc); border-radius: 3px; padding: 0 2px; line-height: 12px }
+.pl .vol { width: 0; overflow: hidden; transition: width .25s; display: flex; align-items: center }
+.pl .volw:hover .vol, .pl .vol:focus-within { width: 90px }
+.pl input[type=range] { -webkit-appearance: none; appearance: none; width: 80px; height: 4px; background: rgba(255,255,255,.35); border-radius: 2px; accent-color: var(--acc) }
+.pl input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: #fff }
+.seek { position: relative; height: 22px; display: flex; align-items: center; cursor: pointer; touch-action: none }
+.seek .tr { position: relative; flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.25); transition: height .15s }
+.seek:hover .tr, .seek.drag .tr { height: 6px }
+.seek .bf, .seek .pg { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 2px }
+.seek .bf { background: rgba(255,255,255,.4) }
+.seek .pg { background: var(--acc) }
+.seek .kn { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--acc); transform: scale(0); transition: transform .15s }
+.seek:hover .kn, .seek.drag .kn, .pl:focus-visible .seek .kn { transform: scale(1) }
+.seek .tip { position: absolute; bottom: 24px; transform: translateX(-50%); background: rgba(0,0,0,.8); padding: 3px 8px; border-radius: 6px; font-size: 12px; display: none; pointer-events: none }
+.seek:hover .tip, .seek.drag .tip { display: block }
+.pl .spinner { position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px; border: 4px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: sp .8s linear infinite; z-index: 4; pointer-events: none }
+.pl .flash { position: absolute; top: 50%; transform: translate(-50%, -50%); z-index: 4; pointer-events: none; padding: 14px 18px; border-radius: 999px; background: rgba(0,0,0,.55); font-size: 15px; font-weight: 600; opacity: 0; transition: opacity .3s }
+.pl .flash.on { opacity: 1; transition: none }
+.pl .menu { position: absolute; right: 12px; bottom: 70px; z-index: 6; min-width: 200px; max-height: 60%; overflow: auto; background: rgba(20,20,24,.94); border-radius: 14px; padding: 6px }
+.pl .menu h4 { margin: 6px 10px; font-size: 12px; color: #aaa; font-weight: 500 }
+.pl .menu button { display: flex; width: 100%; gap: 10px; align-items: center; padding: 9px 12px; border-radius: 9px; text-align: left; font-size: 14px }
+.pl .menu button:hover, .pl .menu button:focus-visible { background: rgba(255,255,255,.1) }
+.pl .menu button.on::after { content: ""; margin-left: auto; width: 8px; height: 8px; border-radius: 50%; background: var(--acc) }
+.pl .chip2 { position: absolute; left: 14px; top: 60px; z-index: 5; display: flex; gap: 8px; align-items: center; background: rgba(0,0,0,.6); padding: 8px 12px; border-radius: 999px; font-size: 13px }
+.pl .chip2 button { color: var(--acc); font-weight: 600 }
+.pl .nextc { position: absolute; right: 14px; bottom: 80px; z-index: 5; width: min(320px, 70%); background: rgba(20,20,24,.94); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 8px }
+.pl .nextc .r { display: flex; gap: 8px }
+.pl .msg { position: absolute; inset: 0; z-index: 7; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 20px; background: rgba(0,0,0,.85) }
+.pl .msg p { max-width: 460px; color: #ccc; margin: 0 }
+.pl .msg .actions { justify-content: center }
+.pl .msg .pill { background: rgba(255,255,255,.12); color: #fff }
+.pl .msg .pill.acc { background: var(--acc); color: var(--onacc) }
+.pl.hide-cursor { cursor: none }
+
+/* ---------- Müzik çubuğu ---------- */
+.mini {
+  position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30;
+  width: min(900px, calc(100% - 24px)); background: color-mix(in srgb, var(--card) 92%, var(--bg)); border: 1px solid var(--line);
+  border-radius: calc(var(--r) * .8); padding: 10px 14px; display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.35); animation: up .4s var(--ease);
+}
+@keyframes up { from { transform: translate(-50%, 30px); opacity: 0 } }
+.mini .art { width: 48px; height: 48px; border-radius: 10px; background: var(--soft) center/cover; flex: none; display: grid; place-items: center; color: var(--mut) }
+.mini .info { flex: 1; min-width: 0 }
+.mini .info .title { -webkit-line-clamp: 1 }
+.mini .mbar { height: 4px; background: var(--soft2); border-radius: 2px; margin-top: 6px; cursor: pointer; position: relative }
+.mini .mbar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--acc); border-radius: 2px }
+.mini .ctl { display: flex; align-items: center; gap: 2px }
+.mini .ctl button { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center }
+.mini .ctl button:hover { background: var(--soft) }
+.mini .ctl .pp { background: var(--acc); color: var(--onacc) }
+.mini .ctl .pp svg { fill: currentColor; stroke: none }
+.mini .ctl .on { color: var(--acc) }
+.mini .qlist { position: absolute; right: 0; bottom: calc(100% + 8px); width: min(360px, 100%); max-height: 50vh; overflow: auto; background: var(--card); border: 1px solid var(--line); border-radius: var(--rs); padding: 6px }
+.mini .qlist button { display: block; width: 100%; text-align: left; padding: 8px 10px; border-radius: 8px; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.mini .qlist button:hover { background: var(--soft) }
+.mini .qlist button.on { color: var(--acc); font-weight: 600 }
+@media (max-width: 560px) { .mini .ctl .opt { display: none } }
+
+/* ---------- Yükleme paneli ---------- */
+.upload {
+  position: fixed; top: 0; right: 0; bottom: 0; z-index: 40; width: min(420px, 100%); background: var(--card);
+  border-left: 1px solid var(--line); padding: 18px; display: flex; flex-direction: column; gap: 12px; overflow: auto;
+  box-shadow: -10px 0 40px rgba(0,0,0,.3); animation: slide .35s var(--ease);
+}
+@keyframes slide { from { transform: translateX(40px); opacity: 0 } }
+.upload .hd { display: flex; align-items: center; gap: 10px }
+.upload .hd h2 { flex: 1; margin: 0; font-size: 18px }
+.drop { border: 2px dashed var(--line); border-radius: var(--r); padding: 36px 16px; text-align: center; color: var(--mut); transition: border-color .2s, transform .35s var(--ease) }
+.drop.on { border-color: var(--acc); transform: scale(1.02); color: var(--fg) }
+.drop label { color: var(--acc); cursor: pointer; font-weight: 600 }
+.uf { background: var(--soft); border-radius: var(--rs); padding: 10px 12px }
+.uf .bar2 { height: 5px; background: var(--soft2); border-radius: 3px; margin-top: 8px; overflow: hidden }
+.uf .bar2 i { display: block; height: 100%; width: 0; background: var(--acc); transition: width .2s }
+body.dragging::after { content: ""; position: fixed; inset: 0; z-index: 35; background: color-mix(in srgb, var(--acc) 12%, transparent); border: 3px dashed var(--acc); pointer-events: none }
+
+/* ---------- Fotoğraf görüntüleyici ---------- */
+.lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.94); display: flex; align-items: center; justify-content: center; touch-action: none; color: #fff }
+.lightbox img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform .3s var(--ease), opacity .2s; user-select: none; -webkit-user-drag: none }
+.lightbox .lb-top { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: linear-gradient(rgba(0,0,0,.6), transparent) }
+.lightbox .lb-top span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.lightbox button { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.08) }
+.lightbox button:hover { background: rgba(255,255,255,.18) }
+.lightbox button.on { background: var(--acc); color: var(--onacc) }
+.lightbox .nv { position: absolute; top: 50%; transform: translateY(-50%) }
+.lightbox .nv.l { left: 14px }
+.lightbox .nv.r { right: 14px }
+@media (hover: none) { .lightbox .nv { display: none } }
+
+/* ---------- Bildirim ---------- */
+.toast { position: fixed; left: 50%; bottom: 110px; transform: translate(-50%, 20px); z-index: 60; background: var(--fg); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .25s, transform .35s var(--ease); max-width: calc(100% - 32px) }
+.toast.on { opacity: 1; transform: translate(-50%, 0) }

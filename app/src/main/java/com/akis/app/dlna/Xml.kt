@@ -47,7 +47,7 @@ object Xml {
 
     private fun iso(sec: Long) = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).format(Date(sec * 1000))
 
-    fun device(name: String, uuid: String, base: String) = """<?xml version="1.0" encoding="utf-8"?>
+    fun device(name: String, uuid: String, base: String, iconVersion: String) = """<?xml version="1.0" encoding="utf-8"?>
 <root xmlns="urn:schemas-upnp-org:device-1-0" xmlns:dlna="urn:schemas-dlna-org:device-1-0">
   <specVersion><major>1</major><minor>0</minor></specVersion>
   <device>
@@ -61,7 +61,8 @@ object Xml {
     <dlna:X_DLNADOC>DMS-1.50</dlna:X_DLNADOC>
     <presentationURL>$base/</presentationURL>
     <iconList>
-      <icon><mimetype>image/png</mimetype><width>120</width><height>120</height><depth>24</depth><url>/icon.png</url></icon>
+      <icon><mimetype>image/png</mimetype><width>48</width><height>48</height><depth>24</depth><url>/icon48.png?v=$iconVersion</url></icon>
+      <icon><mimetype>image/png</mimetype><width>120</width><height>120</height><depth>24</depth><url>/icon.png?v=$iconVersion</url></icon>
     </iconList>
     <serviceList>
       <service>

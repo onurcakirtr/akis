@@ -1,14 +1,12 @@
 package com.akis.app.dlna
 
 import android.content.Context
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Paint
-import android.graphics.RectF
 import com.akis.app.DeviceAccess
+import com.akis.app.FileAccess
 import com.akis.app.Lang
 import com.akis.app.R
 import com.akis.app.Prefs
+import com.akis.app.ServerIcon
 import com.akis.app.Settings
 import com.akis.app.ServerState
 import com.akis.app.WatchHistory
@@ -27,12 +25,11 @@ import kotlin.math.min
 /** HTTP + SSDP + ContentDirectory'yi bir araya getiren UPnP/DLNA medya sunucusu. */
 class DlnaServer(private val ctx: Context, val port: Int, private val uuid: String) {
     private val lib = MediaLibrary(ctx)
+    private val webApi = WebApi(ctx, lib)
     private val http = HttpServer(port, ::handle)
     private var ssdp: Ssdp? = null
     @Volatile private var currentIp: Inet4Address? = null
     private val updateId = AtomicInteger(1)
-
-    private val icon: ByteArray by lazy { makeIcon() }
 
     fun start(ip: Inet4Address?) {
         http.start()
@@ -82,10 +79,11 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         if (!checkAccess(req, res, settings)) return
         when (req.method) {
             "GET", "HEAD" -> when {
-                p == "/desc.xml" -> res.xml(Xml.device(settings.name, uuid, base))
+                p == "/desc.xml" -> res.xml(Xml.device(settings.name, uuid, base, ServerIcon.version(ctx)))
                 p == "/cd.xml" -> res.xml(Xml.cdScpd(settings.search))
                 p == "/cm.xml" -> res.xml(Xml.CM_SCPD)
-                p == "/icon.png" -> res.bytes(200, "image/png", icon)
+                p == "/icon.png" -> res.bytes(200, "image/png", ServerIcon.png(ctx, 120), mapOf("Cache-Control" to "max-age=300"))
+                p == "/icon48.png" -> res.bytes(200, "image/png", ServerIcon.png(ctx, 48), mapOf("Cache-Control" to "max-age=300"))
                 p.startsWith("/m/") -> serveMedia(req, res, decode(p.removePrefix("/m/").substringBefore('/')), base)
                 p.startsWith("/s/") -> serveSubtitle(res, decode(p.removePrefix("/s/").substringBeforeLast('.')), p.substringAfterLast('.'))
                 p.startsWith("/t/") -> {
@@ -95,28 +93,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                     else res.text(404, Lang.s(R.string.http_no_thumb))
                 }
                 !settings.webUi -> res.text(403, Lang.s(R.string.http_web_off))
-                p == "/" || p == "/index.html" -> res.html(WebUi.list(settings.name, settings.name, lib.root(), null, search = settings.search, upload = settings.upload))
-                p == "/yukle" && settings.upload -> res.html(WebUi.uploadPage(settings.name, uploadTarget()))
-                p == "/ara" && settings.search -> {
-                    val q = queryParam(req.query, "q")
-                    res.html(WebUi.list(settings.name, Lang.s(R.string.search_results, q), lib.search(q, limit = 200).map(WatchHistory::mark), "0", search = true, query = q, upload = settings.upload))
-                }
-                p.startsWith("/w/") -> {
-                    val id = decode(p.removePrefix("/w/"))
-                    val title = lib.metadata(id)?.title ?: ""
-                    res.html(WebUi.list(settings.name, title, lib.children(id).map(WatchHistory::mark), lib.parentOf(id), search = settings.search, upload = settings.upload))
-                }
-                p.startsWith("/p/") -> {
-                    val e = lib.lookup(decode(p.removePrefix("/p/")))
-                    if (e == null) res.text(404, Lang.s(R.string.http_not_found))
-                    else res.html(
-                        WebUi.player(
-                            settings.name, e, Xml.mediaUrl(base, e),
-                            subs = if (settings.subtitles) lib.subtitlesOf(e) else emptyList(),
-                            resumeMs = if (settings.history) WatchHistory.resumeMs(e.id) else -1,
-                        ),
-                    )
-                }
+                webApi.handle(req, res) -> Unit
                 else -> res.text(404, Lang.s(R.string.http_not_found))
             }
             "POST" -> if (p == "/h") webProgress(req, res) else control(req, res, base)
@@ -130,17 +107,17 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
 
     // ---------------- Erişim (cihaz onayı + web PIN'i) ----------------
 
-    private val openPaths = setOf("/desc.xml", "/cd.xml", "/cm.xml", "/icon.png")
+    private val openPaths = setOf("/desc.xml", "/cd.xml", "/cm.xml", "/icon.png", "/icon48.png")
 
     private fun webPath(p: String) =
-        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle")
+        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/")
 
     /** @return true ise istek işlenebilir; false ise cevap zaten verildi. */
     private fun checkAccess(req: HttpRequest, res: HttpResponder, settings: Settings): Boolean {
         val ip = req.remote
         val p = req.path
         if (ip.startsWith("127.") || ip == currentIp?.hostAddress) return true
-        if (p in openPaths) return true
+        if (p in openPaths || p.startsWith("/static/")) return true
         if (p == "/pin") {
             pinLogin(req, res, settings)
             return false
@@ -212,17 +189,16 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         }
     }
 
-    private fun uploadTarget(): String {
-        val f = Prefs.current.uploadFolder
-        return if (f.isEmpty()) Lang.s(R.string.downloads_dir, Uploads.DEFAULT_DIR) else MediaLibrary.treeName(ctx, f)
-    }
-
     /** PUT /yukle/<dosya adı> — gövde doğrudan hedef dosyaya akıtılır. */
     private fun upload(req: HttpRequest, res: HttpResponder) {
         val input = req.bodyStream ?: return res.text(400, Lang.s(R.string.http_no_body))
         if (req.contentLength <= 0) return res.text(400, Lang.s(R.string.http_empty_file))
         val name = Uploads.safeName(decode(req.path.removePrefix("/yukle/")))
-        val uri = Uploads.receive(ctx, name, input, req.contentLength, ServerState.clientName(req.remote))
+        val dirParam = queryParam(req.query, "dir")
+        val dir = if (dirParam.isNotEmpty() && webApi.filesOn()) FileAccess.resolve(dirParam)?.takeIf { it.isDirectory } else null
+        if (dirParam.isNotEmpty() && dir == null) return res.text(403, Lang.s(R.string.http_upload_off))
+        val uri = if (dir != null) Uploads.receiveToDir(ctx, dir, name, input, req.contentLength, ServerState.clientName(req.remote))
+        else Uploads.receive(ctx, name, input, req.contentLength, ServerState.clientName(req.remote))
         if (uri == null) return res.text(500, "{\"ok\":false}", "application/json")
         contentChanged()
         res.text(200, "{\"ok\":true}", "application/json")
@@ -409,24 +385,4 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         }
     }
 
-    private fun makeIcon(): ByteArray {
-        val bmp = Bitmap.createBitmap(120, 120, Bitmap.Config.ARGB_8888)
-        val c = Canvas(bmp)
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.color = 0xFF0A0A0A.toInt()
-        c.drawRoundRect(RectF(0f, 0f, 120f, 120f), 34f, 34f, paint)
-        paint.style = Paint.Style.STROKE
-        paint.strokeWidth = 7f
-        paint.color = 0xFFFFFFFF.toInt()
-        c.drawRoundRect(RectF(24f, 30f, 96f, 82f), 12f, 12f, paint)
-        paint.strokeCap = Paint.Cap.ROUND
-        c.drawLine(42f, 96f, 78f, 96f, paint)
-        paint.style = Paint.Style.FILL
-        paint.color = 0xFFD71921.toInt()
-        c.drawCircle(60f, 56f, 12f, paint)
-        val out = ByteArrayOutputStream()
-        bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
-        bmp.recycle()
-        return out.toByteArray()
-    }
 }

@@ -17,6 +17,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.activity.result.PickVisualMediaRequest
+import com.akis.app.ServerIcon
 import com.akis.app.ui.theme.Themes
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
@@ -37,6 +42,8 @@ import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Image
+import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
@@ -81,6 +88,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.DeviceAccess
+import com.akis.app.FileAccess
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.akis.app.Lang
 import com.akis.app.R
 import com.akis.app.Prefs
@@ -104,6 +113,29 @@ fun SettingsScreen() {
     var confirmClear by remember { mutableStateOf(false) }
     var editPin by remember { mutableStateOf(false) }
     var pickLang by remember { mutableStateOf(false) }
+    var pickIcon by remember { mutableStateOf(false) }
+    var iconTick by remember { mutableStateOf(0) }
+    val iconPreview = remember(s.iconStyle, s.theme, iconTick) { ServerIcon.bitmap(ctx, 96).asImageBitmap() }
+    val galleryIcon = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null && ServerIcon.saveCustom(ctx, uri)) {
+            Prefs.update { putString("iconStyle", "custom") }
+            iconTick++
+            pickIcon = false
+        }
+    }
+    var filesGranted by remember { mutableStateOf(FileAccess.granted(ctx)) }
+    LifecycleResumeEffect(Unit) {
+        filesGranted = FileAccess.granted(ctx)
+        onPauseOrDispose { }
+    }
+    val legacyPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { filesGranted = FileAccess.granted(ctx) }
+    fun askFiles() {
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            try { ctx.startActivity(FileAccess.settingsIntent(ctx)) } catch (_: Exception) { }
+        } else {
+            legacyPerm.launch(android.Manifest.permission.READ_EXTERNAL_STORAGE)
+        }
+    }
     val devices by DeviceAccess.devices.collectAsStateWithLifecycle()
     val uploadPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
         if (uri != null) {
@@ -151,6 +183,13 @@ fun SettingsScreen() {
             ExpressiveCard {
                 SettingRow(Icons.Rounded.Smartphone, stringResource(R.string.network_name), s.name, onClick = { editName = true }) {
                     Icon(Icons.Rounded.Edit, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+                Divider()
+                SettingRow(
+                    Icons.Rounded.Image, stringResource(R.string.icon_title), stringResource(R.string.icon_sub),
+                    onClick = { pickIcon = true },
+                ) {
+                    Image(iconPreview, null, Modifier.size(40.dp).clip(RoundedCornerShape(percent = 28)))
                 }
                 Divider()
                 SettingRow(Icons.Rounded.Router, stringResource(R.string.port), s.port.toString(), onClick = { editPort = true }) {
@@ -283,6 +322,33 @@ fun SettingsScreen() {
                     },
                 ) { Prefs.set("upload", it) }
                 FeatureRow(
+                    Icons.Rounded.FolderOpen, stringResource(R.string.f_allfiles),
+                    stringResource(R.string.f_allfiles_sub),
+                    s.allFilesWeb || s.allFilesUpnp, divider = true,
+                    extra = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.allfiles_web), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Switch(s.allFilesWeb, { v -> Prefs.set("allFilesWeb", v) })
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.allfiles_upnp), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Switch(s.allFilesUpnp, { v -> Prefs.set("allFilesUpnp", v) })
+                        }
+                        if (filesGranted) {
+                            Text(stringResource(R.string.allfiles_granted), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
+                        } else {
+                            Text(stringResource(R.string.allfiles_need), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                            FilledTonalButton(onClick = { askFiles() }) { Text(stringResource(R.string.allfiles_grant)) }
+                        }
+                        if (!s.deviceApproval && s.webPin.isEmpty()) {
+                            Text(stringResource(R.string.allfiles_warn), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    },
+                ) { on ->
+                    Prefs.update { putBoolean("allFilesWeb", on); putBoolean("allFilesUpnp", on) }
+                    if (on && !filesGranted) askFiles()
+                }
+                FeatureRow(
                     Icons.Rounded.Widgets, stringResource(R.string.f_widget),
                     stringResource(R.string.f_widget_sub),
                     s.widget, divider = true,
@@ -356,6 +422,43 @@ fun SettingsScreen() {
         }
     }
 
+    if (pickIcon) {
+        AlertDialog(
+            onDismissRequest = { pickIcon = false },
+            title = { Text(stringResource(R.string.icon_title)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    val presets = ServerIcon.PRESETS
+                    presets.chunked(4).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            row.forEach { pr ->
+                                val img = remember(pr.id, s.theme) { ServerIcon.draw(ctx, pr.id, 96).asImageBitmap() }
+                                val on = s.iconStyle == pr.id
+                                Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                                    androidx.compose.material3.Surface(
+                                        onClick = { Prefs.update { putString("iconStyle", pr.id) }; pickIcon = false },
+                                        shape = RoundedCornerShape(percent = 28),
+                                        border = if (on) androidx.compose.foundation.BorderStroke(3.dp, MaterialTheme.colorScheme.primary) else null,
+                                    ) { Image(img, null, Modifier.size(56.dp)) }
+                                    Text(stringResource(pr.name), style = MaterialTheme.typography.labelSmall, maxLines = 1)
+                                }
+                            }
+                            repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
+                        }
+                    }
+                    FilledTonalButton(onClick = {
+                        galleryIcon.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                    }) {
+                        Icon(Icons.Rounded.Image, null)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.icon_pick))
+                    }
+                    Text(stringResource(R.string.icon_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            confirmButton = { TextButton(onClick = { pickIcon = false }) { Text(stringResource(R.string.close)) } },
+        )
+    }
     if (pickLang) {
         AlertDialog(
             onDismissRequest = { pickLang = false },

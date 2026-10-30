@@ -13,6 +13,7 @@ import android.provider.MediaStore
 import android.util.LruCache
 import android.util.Size
 import android.webkit.MimeTypeMap
+import com.akis.app.FileAccess
 import com.akis.app.Prefs
 import com.akis.app.Lang
 import com.akis.app.R
@@ -92,6 +93,9 @@ class MediaLibrary(private val ctx: Context) {
 
     private val hiding get() = s.hideFolders
 
+    /** "Tüm dosyalar" (p: / pd: kimlikleri) yalnızca ayar açık ve izin verilmişse erişilebilir. */
+    private val filesAllowed get() = (s.allFilesUpnp || s.allFilesWeb) && FileAccess.granted(ctx)
+
     private fun folder(id: String, parent: String, title: String, count: Int = -1) =
         Entry(id, parent, title, Kind.FOLDER, childCount = count)
 
@@ -105,6 +109,7 @@ class MediaLibrary(private val ctx: Context) {
         if (s.shareAudio) add(folder("a", "0", Lang.s(R.string.music)))
         if (s.shareImage) add(folder("i", "0", Lang.s(R.string.photos)))
         if (s.folders.isNotEmpty()) add(folder("f", "0", Lang.s(R.string.my_folders), s.folders.size))
+        if (s.allFilesUpnp && FileAccess.granted(ctx)) add(folder("pd:", "0", Lang.s(R.string.all_files)))
     }
 
     fun children(id: String): List<Entry> = try {
@@ -144,6 +149,8 @@ class MediaLibrary(private val ctx: Context) {
             id == "i:all" && s.shareImage -> queryMedia(Kind.IMAGE, null, null, id)
             id.startsWith("i:b:") && s.shareImage -> queryMedia(Kind.IMAGE, "${MediaStore.MediaColumns.BUCKET_ID}=?", arrayOf(id.substring(4)), id)
 
+            id == "pd:" && filesAllowed -> FileAccess.roots().map { folder("pd:" + it.absolutePath, "pd:", FileAccess.rootName(ctx, it)) }
+            id.startsWith("pd:") && filesAllowed -> fileChildren(id)
             id.startsWith("t:") -> treeChildren(id.substring(2).toInt(), null, id)
             id.startsWith("d:") -> {
                 val rest = id.substring(2)
@@ -159,8 +166,15 @@ class MediaLibrary(private val ctx: Context) {
 
     fun metadata(id: String): Entry? = when (id) {
         "0" -> folder("0", "-1", s.name, root().size)
-        "r", "v", "a", "i", "f", "h:c", "h:u" -> root().firstOrNull { it.id == id }
-        else -> lookup(id) ?: folder(id, parentOf(id), id)
+        "r", "v", "a", "i", "f", "h:c", "h:u", "pd:" -> root().firstOrNull { it.id == id }
+        else -> if (id.startsWith("pd:")) {
+            FileAccess.resolve(id.substring(3))?.let { f ->
+                val root = FileAccess.roots().firstOrNull { it.absolutePath == f.absolutePath }
+                folder(id, parentOf(id), if (root != null) FileAccess.rootName(ctx, root) else f.name)
+            }
+        } else {
+            lookup(id) ?: folder(id, parentOf(id), id)
+        }
     }
 
     fun parentOf(id: String): String = when {
@@ -173,6 +187,12 @@ class MediaLibrary(private val ctx: Context) {
         id.startsWith("a:") -> "a"
         id.startsWith("i:") -> "i"
         id.startsWith("t:") -> "f"
+        id == "pd:" -> "0"
+        id.startsWith("p:") || id.startsWith("pd:") -> {
+            val f = java.io.File(id.substringAfter(':'))
+            val parent = if (id.startsWith("p:")) f.parentFile else f.parentFile?.takeIf { _ -> FileAccess.roots().none { it.absolutePath == f.absolutePath } }
+            if (parent != null && FileAccess.resolve(parent.path) != null) "pd:" + parent.path else "pd:"
+        }
         id.startsWith("h:") -> "0"
         id.startsWith("d:") || id.startsWith("fd:") -> "t:" + id.substringAfter(':').substringBefore(':')
         else -> "0"
@@ -197,6 +217,9 @@ class MediaLibrary(private val ctx: Context) {
                 else queryMedia(kind, "${MediaStore.MediaColumns._ID}=?", arrayOf(parts[2]), parentOf(id)).firstOrNull()
             }
             id.startsWith("fd:") -> lookupDocument(id)
+            id.startsWith("p:") && filesAllowed -> FileAccess.resolve(id.substring(2))?.takeIf { it.isFile }?.let { f ->
+                fileEntry(f, parentOf(id), emptyMap(), allowSub = true)
+            }
             else -> null
         }
     } catch (e: Exception) {
@@ -266,6 +289,14 @@ class MediaLibrary(private val ctx: Context) {
         val uri = e.uri ?: return null
         val bmp: Bitmap = try {
             if (id.startsWith("fd:")) DocumentsContract.getDocumentThumbnail(cr, uri, Point(320, 320), null)
+            else if (id.startsWith("p:")) {
+                val f = java.io.File(id.substring(2))
+                when (e.kind) {
+                    Kind.VIDEO -> android.media.ThumbnailUtils.createVideoThumbnail(f, Size(320, 320), null)
+                    Kind.AUDIO -> android.media.ThumbnailUtils.createAudioThumbnail(f, Size(320, 320), null)
+                    else -> android.media.ThumbnailUtils.createImageThumbnail(f, Size(320, 320), null)
+                }
+            }
             else cr.loadThumbnail(uri, Size(320, 320), null)
         } catch (ex: Exception) {
             null
@@ -512,8 +543,57 @@ class MediaLibrary(private val ctx: Context) {
         return out.mapValues { Subtitles.sort(it.value, s.subLang) }
     }
 
+    // ---------------- Tüm dosyalar (doğrudan dosya sistemi) ----------------
+
+    private fun fileEntry(f: java.io.File, parentId: String, subs: Map<String, List<Sub>>, allowSub: Boolean = false): Entry? {
+        val k = kindOf(f.name, null) ?: return null
+        if (k == Kind.SUBTITLE && !allowSub) return null
+        val base = f.name.substringBeforeLast('.')
+        return Entry(
+            id = "p:" + f.path,
+            parentId = parentId,
+            title = base,
+            kind = k,
+            mime = mimeFor(f.name, null),
+            size = f.length(),
+            uri = Uri.fromFile(f),
+            dateSec = f.lastModified() / 1000,
+            subtitles = if (k == Kind.VIDEO) subs[base.lowercase()].orEmpty() else emptyList(),
+            ext = f.name.substringAfterLast('.', "bin").lowercase(),
+        )
+    }
+
+    /** "p:" klasöründeki altyazıları videolara bağlar. */
+    private fun fileSubs(files: List<java.io.File>): Map<String, List<Sub>> {
+        val subFiles = files.filter { it.isFile && kindOf(it.name, null) == Kind.SUBTITLE }
+        if (subFiles.isEmpty()) return emptyMap()
+        val videos = files.filter { kindOf(it.name, null) == Kind.VIDEO }.map { it.name.substringBeforeLast('.').lowercase() }
+        val out = HashMap<String, MutableList<Sub>>()
+        for (f in subFiles) {
+            val (video, lang) = Subtitles.match(f.name.substringBeforeLast('.').lowercase(), videos) ?: continue
+            if (!s.subtitles && !f.name.endsWith(".srt", true)) continue
+            out.getOrPut(video) { ArrayList() } += Sub("p:" + f.path, lang, f.name.substringAfterLast('.').lowercase())
+        }
+        return out.mapValues { Subtitles.sort(it.value, s.subLang) }
+    }
+
+    private fun fileChildren(id: String): List<Entry> {
+        val dir = FileAccess.resolve(id.substring(3))?.takeIf { it.isDirectory } ?: return emptyList()
+        val files = FileAccess.list(dir)
+        val subs = fileSubs(files)
+        return files.mapNotNull { f ->
+            if (f.isDirectory) folder("pd:" + f.path, id, f.name)
+            else fileEntry(f, id, subs)
+        }
+    }
+
     /** Tek bir video için altyazılar: önce önbellek, yoksa (yerel depolamada) üst klasörü tarar. */
     fun subtitlesOf(e: Entry): List<Sub> {
+        if (e.kind == Kind.VIDEO && e.id.startsWith("p:")) {
+            val f = java.io.File(e.id.substring(2))
+            val dir = f.parentFile ?: return emptyList()
+            return fileSubs(FileAccess.list(dir))[f.name.substringBeforeLast('.').lowercase()].orEmpty()
+        }
         if (e.kind != Kind.VIDEO || !e.id.startsWith("fd:")) return e.subtitles
         subCache.get(e.id)?.let { return it }
         val rest = e.id.substring(3)
