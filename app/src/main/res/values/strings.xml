@@ -25,7 +25,14 @@
     <string name="artists">Artists</string>
     <string name="auto_start">Start on launch</string>
     <string name="auto_start_sub">Start sharing automatically when the app opens</string>
+    <string name="ban_15">Ban for 15 minutes</string>
+    <string name="ban_1d">Ban for 1 day</string>
+    <string name="ban_60">Ban for 1 hour</string>
+    <string name="ban_sub">Can\'t see the server until then; lifts by itself</string>
     <string name="block">Block</string>
+    <string name="block_forever">Block permanently</string>
+    <string name="block_sub">Until you remove it in Settings</string>
+    <string name="blocked_devices">Blocked devices</string>
     <string name="cancel">Cancel</string>
     <string name="ch_access_desc">Asked when a new device wants to connect</string>
     <string name="ch_files">Incoming files</string>
@@ -71,6 +78,7 @@
     <string name="dark_mode">Dark mode</string>
     <string name="default_value">Default</string>
     <string name="device_allowed">allowed</string>
+    <string name="device_banned_until">banned until %1$s</string>
     <string name="device_blocked">blocked</string>
     <string name="downloads_dir">Downloads/%1$s</string>
     <string name="err_no_wifi">No Wi-Fi network found. Connect to Wi-Fi or turn on the hotspot.</string>
@@ -142,10 +150,14 @@
     <string name="internal_storage">Internal storage</string>
     <string name="keep_awake">Keep awake</string>
     <string name="keep_awake_sub">Keep streaming while the screen is off</string>
+    <string name="kick">Disconnect now</string>
+    <string name="kick_sub">Drops its connections; it can reconnect right away</string>
     <string name="lang_system">Phone language</string>
     <string name="language">Language</string>
     <string name="log_allowed">✓ Allowed: %1$s (%2$s)</string>
+    <string name="log_banned">⛔ Banned until %3$s: %1$s (%2$s)</string>
     <string name="log_blocked">⛔ Blocked: %1$s (%2$s)</string>
+    <string name="log_kicked">⏏ Disconnected: %1$s (%2$s)</string>
     <string name="log_new_device">New device: %1$s (%2$s)</string>
     <string name="log_pending">\? Waiting for approval: %1$s (%2$s)</string>
     <string name="log_search">🔎 Searched for “%1$s”</string>
@@ -233,6 +245,7 @@
     <string name="theme_samsung">Samsung</string>
     <string name="theme_sunset">Sunset</string>
     <string name="theme_terminal">Terminal</string>
+    <string name="unblock">Remove</string>
     <string name="unknown_album">Unknown album</string>
     <string name="unknown_artist">Unknown artist</string>
     <string name="unwatched">Unwatched</string>

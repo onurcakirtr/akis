@@ -52,6 +52,8 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         }
     }
 
+    fun kick(ip: String) = http.closeClient(ip)
+
     fun announce() {
         ssdp?.announce()
     }
@@ -117,6 +119,10 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val ip = req.remote
         val p = req.path
         if (ip.startsWith("127.") || ip == currentIp?.hostAddress) return true
+        if (DeviceAccess.isBlocked(ip) || DeviceAccess.isBanned(ip)) {
+            res.text(403, Lang.s(R.string.http_blocked))
+            return false
+        }
         if (p in openPaths || p.startsWith("/static/")) return true
         if (p == "/pin") {
             pinLogin(req, res, settings)

@@ -43,6 +43,16 @@ object ServerState {
 
     private fun now() = System.currentTimeMillis()
 
+    /** Sunucu açıkken bir cihazın bağlantılarını kesen işlev (servis ayarlar). */
+    @Volatile var kicker: ((String) -> Unit)? = null
+
+    /** Cihazı listeden düşürür ve açık bağlantılarını (süren akış dahil) keser. */
+    fun kick(ip: String) {
+        kicker?.invoke(ip)
+        clients.update { list -> list.filter { it.ip != ip } }
+        streams.update { list -> list.filter { it.ip != ip } }
+    }
+
     fun log(text: String) {
         events.update { (listOf(LogEvent(now(), text)) + it).take(40) }
     }

@@ -272,7 +272,8 @@ fun SettingsScreen() {
                                 Column(Modifier.weight(1f)) {
                                     Text(d.name, style = MaterialTheme.typography.bodyMedium)
                                     Text(
-                                        "${d.ip} • " + stringResource(if (d.allowed) R.string.device_allowed else R.string.device_blocked),
+                                        "${d.ip} • " + if (d.until > 0) stringResource(R.string.device_banned_until, untilText(d.until))
+                                        else stringResource(if (d.allowed) R.string.device_allowed else R.string.device_blocked),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = if (d.allowed) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.error,
                                     )
@@ -361,6 +362,28 @@ fun SettingsScreen() {
                     stringResource(R.string.f_notif_sub),
                     s.notifDetails, divider = true,
                 ) { Prefs.set("notifDetails", it) }
+            }
+        }
+
+        val blocked = devices.filter { !it.allowed }
+        if (blocked.isNotEmpty() && !s.deviceApproval) {
+            item { SectionTitle(stringResource(R.string.blocked_devices)) }
+            item {
+                ExpressiveCard {
+                    blocked.forEach { d ->
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(d.name, style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    d.ip + " • " + if (d.until > 0) stringResource(R.string.device_banned_until, untilText(d.until)) else stringResource(R.string.device_blocked),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                )
+                            }
+                            TextButton(onClick = { DeviceAccess.forget(d.ip) }) { Text(stringResource(R.string.unblock)) }
+                        }
+                    }
+                }
             }
         }
 
@@ -513,6 +536,16 @@ fun SettingsScreen() {
             }
         }
     }
+}
+
+@Composable
+private fun untilText(until: Long): String {
+    val ctx = LocalContext.current
+    val sameDay = until - System.currentTimeMillis() < 20 * 60 * 60 * 1000L
+    return android.text.format.DateUtils.formatDateTime(
+        ctx, until,
+        android.text.format.DateUtils.FORMAT_SHOW_TIME or (if (sameDay) 0 else android.text.format.DateUtils.FORMAT_SHOW_DATE),
+    )
 }
 
 @Composable

@@ -150,9 +150,24 @@ class HttpServer(
         thread(name = "http-accept", isDaemon = true) {
             while (!ss.isClosed) {
                 val s = try { ss.accept() } catch (e: IOException) { break }
-                try { p.execute { handle(s) } } catch (e: Exception) { s.close() }
+                try {
+                    p.execute {
+                        conns.add(s)
+                        try { handle(s) } finally { conns.remove(s) }
+                    }
+                } catch (e: Exception) {
+                    s.close()
+                }
             }
         }
+    }
+
+    /** Açık bağlantılar (cihaz atılırken kapatılır). */
+    private val conns = java.util.concurrent.ConcurrentHashMap.newKeySet<Socket>()
+
+    /** Bir IP'nin tüm açık bağlantılarını (süren akışlar dahil) hemen keser. */
+    fun closeClient(ip: String) {
+        for (s in conns.toList()) if (s.inetAddress?.hostAddress == ip) runCatching { s.close() }
     }
 
     fun stop() {

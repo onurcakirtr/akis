@@ -15,6 +15,10 @@ Telefonundaki videoları, müzikleri ve fotoğrafları yerel ağdaki **VLC, akı
 - **Arama:** TV/VLC'den ve web arayüzünden başlık, sanatçı, albüm araması (Türkçe karakter duyarsız)
 - **İzleme geçmişi:** *Devam et* ve *İzlenmemiş* klasörleri, izlenenlere ✓, kaldığın yerden devam
 - **Gelişmiş altyazı:** .srt/.vtt/.ass/.sub, `film.tr.srt` gibi dilli adlar, Türkçe karakter düzeltme
+- **Çift ses ve altyazı:** dublaj + orijinal ses ve gömülü (MKV) altyazılar; web'de ses/altyazı seçimi ses diline göre hatırlanır, gömülü altyazılar TV'lere de gider
+- **Kendi web oynatıcısı:** telefon dosyayı tarayıcıya uygun parçalara çevirir (AC3/DTS ses → AAC); dokunmatik hareketler, klavye kısayolları, altyazı görünümü ve senkronu
+- **Özellikler:** web'de her öğe için bilgi paneli (EXIF, video/ses parçaları, etiketler); klasörü ZIP olarak indirme
+- **Cihaz yönetimi:** bağlı cihazı anında kesme, süreli yasaklama ya da kalıcı engelleme
 - **Web'den yükleme:** bilgisayarın tarayıcısından telefona sürükle-bırak dosya gönder
 - **Güvenlik:** yeni cihazlar için *İzin ver / Engelle* onayı, web PIN'i
 - **Gizli klasörler:** `.nomedia` içerenler ve elle gizlediklerin paylaşılmaz

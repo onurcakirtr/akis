@@ -24,7 +24,14 @@
     <string name="artists">Sanatçılar</string>
     <string name="auto_start">Açılışta başlat</string>
     <string name="auto_start_sub">Uygulamayı açınca yayın kendiliğinden başlasın</string>
+    <string name="ban_15">15 dakika yasakla</string>
+    <string name="ban_1d">1 gün yasakla</string>
+    <string name="ban_60">1 saat yasakla</string>
+    <string name="ban_sub">O zamana kadar sunucuyu göremez; süre bitince kalkar</string>
     <string name="block">Engelle</string>
+    <string name="block_forever">Kalıcı engelle</string>
+    <string name="block_sub">Ayarlar\'dan kaldırana kadar</string>
+    <string name="blocked_devices">Engellenen cihazlar</string>
     <string name="cancel">Vazgeç</string>
     <string name="ch_access_desc">Yeni bir cihaz bağlanmak istediğinde sorulur</string>
     <string name="ch_files">Gelen dosyalar</string>
@@ -70,6 +77,7 @@
     <string name="dark_mode">Koyu mod</string>
     <string name="default_value">Varsayılan</string>
     <string name="device_allowed">izinli</string>
+    <string name="device_banned_until">%1$s\'e kadar yasaklı</string>
     <string name="device_blocked">engelli</string>
     <string name="downloads_dir">İndirilenler/%1$s</string>
     <string name="err_no_wifi">Wi-Fi ağı bulunamadı. Wi-Fi\'a bağlan ya da hotspot aç.</string>
@@ -141,10 +149,14 @@
     <string name="internal_storage">Dahili depolama</string>
     <string name="keep_awake">Uyanık tut</string>
     <string name="keep_awake_sub">Ekran kapalıyken yayın kesilmesin</string>
+    <string name="kick">Bağlantıyı kes</string>
+    <string name="kick_sub">Bağlantılarını koparır; hemen yeniden bağlanabilir</string>
     <string name="lang_system">Telefonun dili</string>
     <string name="language">Dil</string>
     <string name="log_allowed">✓ İzin verildi: %1$s (%2$s)</string>
+    <string name="log_banned">⛔ %3$s\'e kadar yasaklandı: %1$s (%2$s)</string>
     <string name="log_blocked">⛔ Engellendi: %1$s (%2$s)</string>
+    <string name="log_kicked">⏏ Bağlantı kesildi: %1$s (%2$s)</string>
     <string name="log_new_device">Yeni cihaz: %1$s (%2$s)</string>
     <string name="log_pending">\? Onay bekliyor: %1$s (%2$s)</string>
     <string name="log_search">🔎 “%1$s” arandı</string>
@@ -232,6 +244,7 @@
     <string name="theme_samsung">Samsung</string>
     <string name="theme_sunset">Gün batımı</string>
     <string name="theme_terminal">Terminal</string>
+    <string name="unblock">Kaldır</string>
     <string name="unknown_album">Bilinmeyen albüm</string>
     <string name="unknown_artist">Bilinmeyen sanatçı</string>
     <string name="unwatched">İzlenmemiş</string>

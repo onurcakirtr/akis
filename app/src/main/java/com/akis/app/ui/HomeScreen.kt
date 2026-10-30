@@ -60,6 +60,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.ClientInfo
+import com.akis.app.DeviceAccess
+import androidx.compose.material.icons.rounded.Block
+import androidx.compose.material.icons.rounded.LinkOff
+import androidx.compose.material.icons.rounded.Timer
 import com.akis.app.Prefs
 import com.akis.app.ServerState
 import com.akis.app.StreamInfo
@@ -83,6 +87,7 @@ fun HomeScreen() {
     val error by ServerState.error.collectAsStateWithLifecycle()
     val settings by Prefs.settings.collectAsStateWithLifecycle()
     var showQr by remember { mutableStateOf(false) }
+    var actFor by remember { mutableStateOf<ClientInfo?>(null) }
 
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(running) {
@@ -168,7 +173,7 @@ fun HomeScreen() {
                     }
                 }
             } else {
-                items(clients, key = { "c-" + it.ip }) { ClientRow(it, now, Modifier.animateItem()) }
+                items(clients, key = { "c-" + it.ip }) { ClientRow(it, now, Modifier.animateItem()) { actFor = it } }
             }
             if (events.isNotEmpty()) {
                 item(key = "ev-title") { SectionTitle(stringResource(R.string.activity), Modifier.animateItem()) }
@@ -179,6 +184,24 @@ fun HomeScreen() {
         }
     }
 
+    actFor?.let { c ->
+        AlertDialog(
+            onDismissRequest = { actFor = null },
+            title = { Text(c.name) },
+            text = {
+                Column {
+                    Text(c.ip, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    DeviceAction(Icons.Rounded.LinkOff, stringResource(R.string.kick), stringResource(R.string.kick_sub)) { DeviceAccess.kick(c.ip, c.name); actFor = null }
+                    DeviceAction(Icons.Rounded.Timer, stringResource(R.string.ban_15), stringResource(R.string.ban_sub)) { DeviceAccess.ban(c.ip, c.name, 15); actFor = null }
+                    DeviceAction(Icons.Rounded.Timer, stringResource(R.string.ban_60), null) { DeviceAccess.ban(c.ip, c.name, 60); actFor = null }
+                    DeviceAction(Icons.Rounded.Timer, stringResource(R.string.ban_1d), null) { DeviceAccess.ban(c.ip, c.name, 24 * 60); actFor = null }
+                    DeviceAction(Icons.Rounded.Block, stringResource(R.string.block_forever), stringResource(R.string.block_sub), danger = true) { DeviceAccess.block(c.ip, c.name); actFor = null }
+                }
+            },
+            confirmButton = { TextButton(onClick = { actFor = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
     if (showQr && address != null) {
         AlertDialog(
             onDismissRequest = { showQr = false },
@@ -269,7 +292,22 @@ private fun StreamCard(s: StreamInfo, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun ClientRow(c: ClientInfo, now: Long, modifier: Modifier = Modifier) {
+private fun DeviceAction(icon: androidx.compose.ui.graphics.vector.ImageVector, title: String, sub: String?, danger: Boolean = false, onClick: () -> Unit) {
+    val color = if (danger) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
+    androidx.compose.material3.Surface(onClick = onClick, shape = MaterialTheme.shapes.medium, color = androidx.compose.ui.graphics.Color.Transparent) {
+        Row(Modifier.fillMaxWidth().padding(vertical = 10.dp, horizontal = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, null, tint = color)
+            Gap(14.dp)
+            Column {
+                Text(title, style = MaterialTheme.typography.bodyLarge, color = color)
+                if (sub != null) Text(sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    }
+}
+
+@Composable
+private fun ClientRow(c: ClientInfo, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val icon = when {
         c.name.contains("TV") -> Icons.Rounded.Tv
         c.name == "VLC" || c.name == "Kodi" -> Icons.Rounded.PlayArrow
@@ -284,7 +322,7 @@ private fun ClientRow(c: ClientInfo, now: Long, modifier: Modifier = Modifier) {
         ago < 60 -> stringResource(R.string.ago_sec, ago.toInt())
         else -> stringResource(R.string.ago_min, (ago / 60).toInt())
     }
-    ExpressiveCard(modifier = modifier) {
+    ExpressiveCard(modifier = modifier, onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconBadge(icon, bg = MaterialTheme.colorScheme.tertiaryContainer, tint = MaterialTheme.colorScheme.onTertiaryContainer, size = 44.dp)
             Gap(14.dp)

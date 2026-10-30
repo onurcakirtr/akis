@@ -11,7 +11,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.security.MessageDigest
 
-data class KnownDevice(val ip: String, val name: String, val allowed: Boolean)
+/** @param until süreli yasakta bitiş zamanı (ms); 0 = süresiz */
+data class KnownDevice(val ip: String, val name: String, val allowed: Boolean, val until: Long = 0)
 
 /**
  * Cihaz onayı ve web PIN'i.
@@ -50,7 +51,48 @@ object DeviceAccess {
 
     private fun publish() {
         _devices.value = read("allowed").map { KnownDevice(it.key, it.value, true) } +
-            read("blocked").map { KnownDevice(it.key, it.value, false) }
+            read("blocked").map { KnownDevice(it.key, it.value, false) } +
+            bans().map { (ip, v) -> KnownDevice(ip, v.first, false, v.second) }
+    }
+
+    // ---------------- Süreli yasak ----------------
+
+    /** ip → (ad, bitiş); süresi dolanlar ayıklanır. */
+    private fun bans(): Map<String, Pair<String, Long>> {
+        val now = System.currentTimeMillis()
+        val all = (sp.getStringSet("bans", emptySet()) ?: emptySet()).mapNotNull {
+            val p = it.split('\t')
+            if (p.size < 3) null else p[0] to (p[1] to (p[2].toLongOrNull() ?: 0L))
+        }.toMap()
+        val live = all.filterValues { it.second > now }
+        if (live.size != all.size) writeBans(live)
+        return live
+    }
+
+    private fun writeBans(m: Map<String, Pair<String, Long>>) {
+        sp.edit().putStringSet("bans", m.map { "${it.key}\t${it.value.first}\t${it.value.second}" }.toSet()).apply()
+    }
+
+    fun isBanned(ip: String) = bans().containsKey(ip)
+
+    /** Cihazı belirtilen süre boyunca yasaklar ve bağlantılarını keser. */
+    fun ban(ip: String, name: String, minutes: Int) {
+        val until = System.currentTimeMillis() + minutes * 60_000L
+        writeBans(bans() + (ip to (name to until)))
+        write("allowed", read("allowed") - ip)
+        publish()
+        ServerState.kick(ip)
+        val time = android.text.format.DateUtils.formatDateTime(
+            app, until,
+            android.text.format.DateUtils.FORMAT_SHOW_TIME or (if (minutes >= 24 * 60) android.text.format.DateUtils.FORMAT_SHOW_DATE else 0),
+        )
+        ServerState.log(Lang.s(R.string.log_banned, name, ip, time))
+    }
+
+    /** Yalnızca bağlantıları keser; cihaz yeniden bağlanabilir. */
+    fun kick(ip: String, name: String) {
+        ServerState.kick(ip)
+        ServerState.log(Lang.s(R.string.log_kicked, name, ip))
     }
 
     fun isAllowed(ip: String) = read("allowed").containsKey(ip)
@@ -73,12 +115,14 @@ object DeviceAccess {
         synchronized(pending) { pending.remove(ip) }
         cancelNotification(ip)
         publish()
+        ServerState.kick(ip)
         ServerState.log(Lang.s(R.string.log_blocked, name, ip))
     }
 
     fun forget(ip: String) {
         write("allowed", read("allowed") - ip)
         write("blocked", read("blocked") - ip)
+        writeBans(bans() - ip)
         publish()
     }
 

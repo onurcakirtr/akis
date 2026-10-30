@@ -113,6 +113,7 @@ class DlnaService : Service() {
             return
         }
         server = srv
+        ServerState.kicker = { ip -> srv.kick(ip) }
         if (ip == null) ServerState.error.value = Lang.s(R.string.err_no_wifi)
         acquireLocks(settings.keepAwake)
         registerNetworkCallback()
@@ -226,6 +227,7 @@ class DlnaService : Service() {
         netCallback = null
         val srv = server
         server = null
+        ServerState.kicker = null
         if (srv != null) {
             val t = Thread { srv.stop() }
             t.start()
