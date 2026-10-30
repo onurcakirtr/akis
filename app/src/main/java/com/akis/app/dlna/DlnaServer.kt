@@ -103,7 +103,11 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 webApi.handle(req, res) -> Unit
                 else -> res.text(404, Lang.s(R.string.http_not_found))
             }
-            "POST" -> if (p == "/h") webProgress(req, res) else control(req, res, base)
+            "POST" -> when {
+                p == "/h" -> webProgress(req, res)
+                p == "/zipsel" && settings.webUi -> webApi.zipSelection(req, res)
+                else -> control(req, res, base)
+            }
             "PUT" -> if (p.startsWith("/yukle/") && settings.upload && settings.webUi) upload(req, res) else res.text(403, Lang.s(R.string.http_upload_off))
             "SUBSCRIBE" -> gena.subscribe(req, res)
             "UNSUBSCRIBE" -> gena.unsubscribe(req, res)
@@ -117,7 +121,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     private val openPaths = setOf("/desc.xml", "/cd.xml", "/cm.xml", "/icon.png", "/icon48.png")
 
     private fun webPath(p: String) =
-        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/") || p == "/raw" || p == "/zip"
+        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/") || p == "/raw" || p == "/zip" || p == "/zipsel"
 
     /** @return true ise istek işlenebilir; false ise cevap zaten verildi. */
     private fun checkAccess(req: HttpRequest, res: HttpResponder, settings: Settings): Boolean {

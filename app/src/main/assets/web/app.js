@@ -59,6 +59,7 @@
     slides: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="12" rx="2"/><path d="M10 9v4l3.5-2z"/><path d="M8 21h8"/></svg>',
     dl: '<svg viewBox="0 0 24 24"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg>',
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>',
+    check: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
     link: '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>'
   };
   var CAT_ICON = { v: ICO.v, a: ICO.a, i: ICO.i, f: ICO.folder, 'h:u': ICO.unw, 'h:c': ICO.hist, r: ICO.recent, 'pd:': ICO.drive };
@@ -106,6 +107,7 @@
     return { name: map[name] || 'home', arg: arg, p: params, key: location.hash };
   }
   var player = null, list = [], listFolder = '0', scrolls = {}, lastKey = '', softNext = false;
+  var sel = null; // seçim modunda: { set: {indeks: true}, last: son tıklanan }
 
   /** Açık sayfanın verisini alır; öncekiyle aynıysa ekrana dokunmaz, farklıysa odak ve kaydırmayı koruyarak çizer. */
   var lastBody = {};
@@ -151,12 +153,14 @@
     var r = route();
     if (r.name === 'upload') { Upload.open(); history.replaceState(null, '', '#/'); r = route(); }
     if (player) { player.destroy(); player = null; }
+    if (r.key !== lastKey && sel) Select.stop(true);
     lastKey = r.key;
     Upload.dir = '';
     if (r.name !== 'search' && document.activeElement !== q) q.value = '';
     var soft = softNext; softNext = false;
     if (!soft) view.innerHTML = '<div class="spin"></div>';
     var done = function () {
+      if (sel) Select.paint();
       if (soft) return;
       var y = scrolls[r.key];
       window.scrollTo(0, y || 0);
@@ -207,6 +211,7 @@
   view.addEventListener('click', function (e) {
     var a = e.target.closest('[data-i]');
     if (!a || !view.contains(a)) return;
+    if (sel && a.getAttribute('data-src') !== 'shelf') { e.preventDefault(); Select.toggle(+a.getAttribute('data-i'), e.shiftKey); return; }
     var src = a.getAttribute('data-src') === 'shelf' ? shelves[a.getAttribute('data-shelf')] : list;
     var it = src && src[+a.getAttribute('data-i')];
     if (!it) return;
@@ -268,6 +273,7 @@
       h += '<select class="pill nav" id="sortSel" aria-label="' + esc(t('sort')) + '">' +
         ['default', 'name', 'date', 'size'].map(function (s) { return '<option value="' + s + '"' + (s === sort ? ' selected' : '') + '>' + esc(t('sort_' + s)) + '</option>'; }).join('') + '</select>';
     }
+    h += '<button class="pill nav' + (sel ? ' acc' : '') + '" data-sel="1">' + ICO.check + esc(t('select')) + '</button>';
     h += '<div class="seg"><button class="nav' + (mode === 'grid' ? ' on' : '') + '" data-vm="grid" aria-label="' + esc(t('view_grid')) + '">' + ICO.grid + '</button>' +
       '<button class="nav' + (mode === 'list' ? ' on' : '') + '" data-vm="list" aria-label="' + esc(t('view_list')) + '">' + ICO.list + '</button></div></div>';
     return h;
@@ -276,6 +282,8 @@
     var s = $('#sortSel');
     if (s) s.addEventListener('change', function () { put('sort', s.value); rerender(); });
     view.querySelectorAll('[data-vm]').forEach(function (b) { b.addEventListener('click', function () { put('view', b.getAttribute('data-vm')); rerender(); }); });
+    var sb = view.querySelector('[data-sel]');
+    if (sb) sb.addEventListener('click', function () { if (sel) Select.stop(); else Select.start(); });
   }
   function itemsHtml(items) {
     if (!items.length) return '<div class="empty">' + esc(t('empty')) + '</div>';
@@ -491,9 +499,80 @@
         bar.hidden = false; document.body.classList.add('has-mini');
         load();
       },
+      enqueue: function (items) {
+        if (!items.length) return;
+        if (!queue.length || bar.hidden) { this.play(items, items[0]); return; }
+        var start = queue.length;
+        queue = queue.concat(items);
+        items.forEach(function (_, k) { order.push(start + k); });
+        paintQueue();
+      },
       active: function () { return !bar.hidden && !audio.paused; },
       pause: function () { audio.pause(); }
     };
+  })();
+
+  // ======================= Çoklu seçim =======================
+  var Select = (function () {
+    var bar = document.createElement('div');
+    bar.className = 'selbar'; bar.hidden = true;
+    document.body.appendChild(bar);
+    function count() { return Object.keys(sel ? sel.set : {}).length; }
+    function picked() { return Object.keys(sel.set).map(function (i) { return list[+i]; }).filter(Boolean); }
+    function paint() {
+      if (!sel) return;
+      view.querySelectorAll('[data-i]').forEach(function (a) {
+        if (a.getAttribute('data-src') === 'shelf') return;
+        a.classList.toggle('picked', !!sel.set[a.getAttribute('data-i')]);
+        a.classList.add('selecting');
+      });
+      var n = count(), audio = picked().some(function (x) { return x.k === 'a'; });
+      bar.innerHTML = '<span>' + esc(t('selected_n', n)) + '</span><span class="sp"></span>' +
+        '<button class="pill nav" data-sa="all">' + esc(t('select_all')) + '</button>' +
+        (audio ? '<button class="pill nav" data-sa="queue">' + esc(t('add_queue')) + '</button>' : '') +
+        '<button class="pill acc nav" data-sa="zip"' + (n ? '' : ' disabled') + '>' + ICO.dl + esc(t('zip')) + '</button>' +
+        '<button class="pill nav" data-sa="x" aria-label="' + esc(t('cancel')) + '">' + ICO.x + '</button>';
+      bar.hidden = false;
+    }
+    function zip() {
+      var f = document.createElement('form');
+      f.method = 'post'; f.action = '/zipsel'; f.style.display = 'none';
+      picked().forEach(function (x) {
+        var inp = document.createElement('input');
+        inp.type = 'hidden';
+        if (x.id) { inp.name = 'i'; inp.value = x.id; } else { inp.name = 'p'; inp.value = x.path || decodeURIComponent((x.raw || '').split('p=')[1] || ''); }
+        f.appendChild(inp);
+      });
+      document.body.appendChild(f); f.submit(); f.remove();
+    }
+    bar.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-sa]'); if (!b) return;
+      var a = b.getAttribute('data-sa');
+      if (a === 'x') api2.stop();
+      else if (a === 'all') { list.forEach(function (_, i) { sel.set[i] = true; }); paint(); }
+      else if (a === 'zip') { zip(); api2.stop(); }
+      else if (a === 'queue') { var au = picked().filter(function (x) { return x.k === 'a'; }); Music.enqueue(au); toast(t('queued_n', au.length)); api2.stop(); }
+    });
+    document.addEventListener('keydown', function (e) { if (sel && e.key === 'Escape') { e.preventDefault(); api2.stop(); } });
+    var api2 = {
+      start: function () { sel = { set: {}, last: -1 }; document.body.classList.add('has-sel'); paint(); var b = view.querySelector('[data-sel]'); if (b) b.classList.add('acc'); },
+      stop: function (quiet) {
+        sel = null; bar.hidden = true; document.body.classList.remove('has-sel');
+        if (quiet) return;
+        view.querySelectorAll('.selecting').forEach(function (a) { a.classList.remove('selecting', 'picked'); });
+        var b = view.querySelector('[data-sel]'); if (b) b.classList.remove('acc');
+      },
+      toggle: function (i, range) {
+        if (range && sel.last >= 0) {
+          var a = Math.min(sel.last, i), z = Math.max(sel.last, i);
+          for (var k = a; k <= z; k++) sel.set[k] = true;
+        } else if (sel.set[i]) delete sel.set[i]; else sel.set[i] = true;
+        sel.last = i;
+        paint();
+      },
+      paint: paint
+    };
+    return api2;
   })();
 
   // ======================= Özellikler =======================

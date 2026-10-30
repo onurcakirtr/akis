@@ -283,6 +283,7 @@
     <string name="w_wait_text">Telefona gelen bildirimden &lt;b&gt;İzin ver&lt;/b&gt;\'e dokun. Bu sayfa kendiliğinden yenilenecek.</string>
     <string name="waiting_approval">Telefondan onay bekleniyor</string>
     <string name="waiting_network">Ağ bekleniyor…</string>
+    <string name="web_add_queue">Sıraya ekle</string>
     <string name="web_album_t">Albüm</string>
     <string name="web_all">Tümü</string>
     <string name="web_all_files">Tüm dosyalar</string>
@@ -364,6 +365,7 @@
     <string name="web_queue">Sıra</string>
     <string name="web_queue_n">{0} / {1}</string>
     <string name="web_queued">sırada</string>
+    <string name="web_queued_n">{0} şarkı sıraya eklendi</string>
     <string name="web_recent">Son eklenenler</string>
     <string name="web_reset">Sıfırla</string>
     <string name="web_resolution">Çözünürlük</string>
@@ -374,6 +376,9 @@
     <string name="web_see_all">Tümü</string>
     <string name="web_seek_back">10 saniye geri</string>
     <string name="web_seek_fwd">10 saniye ileri</string>
+    <string name="web_select">Seç</string>
+    <string name="web_select_all">Tümünü seç</string>
+    <string name="web_selected_n">{0} seçildi</string>
     <string name="web_sent">gönderildi ✓</string>
     <string name="web_settings">Ayarlar</string>
     <string name="web_shuffle">Karıştır</string>

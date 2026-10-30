@@ -353,6 +353,86 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
     }
 
     /** Klasörü (alt klasörleriyle, gizli dosyalar hariç) telefonda geçici dosya oluşturmadan ZIP olarak akıtır. */
+    /** Web'de seçilen öğeleri tek ZIP olarak akıtır. Gövde: i=<kitaplık kimliği>&p=<dosya yolu>… */
+    fun zipSelection(req: HttpRequest, res: HttpResponder) {
+        val pairs = String(req.body, Charsets.UTF_8).split('&').mapNotNull {
+            val k = it.substringBefore('=', "")
+            val v = runCatching { decode(it.substringAfter('=', "")) }.getOrNull()
+            if (k.isEmpty() || v.isNullOrEmpty()) null else k to v
+        }
+        if (pairs.isEmpty()) return res.text(400, Lang.s(R.string.http_not_found))
+        ServerState.log("⬇ ZIP (${pairs.size}) → ${ServerState.clientName(req.remote)}")
+        res.stream(
+            200, "application/zip",
+            mapOf("Content-Disposition" to "attachment; filename=\"akis.zip\"", "Cache-Control" to "no-store"),
+        ) { out ->
+            val z = java.util.zip.ZipOutputStream(out)
+            z.setLevel(java.util.zip.Deflater.NO_COMPRESSION)
+            val used = HashSet<String>()
+            val buf = ByteArray(256 * 1024)
+            var sent = 0L
+            fun unique(name: String): String {
+                if (used.add(name)) return name
+                val base = name.substringBeforeLast('.', name)
+                val ext = name.substringAfterLast('.', "").let { if (it.isEmpty() || it == name) "" else ".$it" }
+                var n = 2
+                while (!used.add("$base ($n)$ext")) n++
+                return "$base ($n)$ext"
+            }
+            fun put(rel: String, time: Long, open: () -> java.io.InputStream?) {
+                val e = java.util.zip.ZipEntry(unique(rel))
+                if (time > 0) e.time = time
+                z.putNextEntry(e)
+                try {
+                    open()?.use { input ->
+                        while (true) {
+                            val n = input.read(buf)
+                            if (n < 0) break
+                            z.write(buf, 0, n)
+                            sent += n
+                        }
+                    }
+                } catch (e: java.io.FileNotFoundException) {
+                } catch (e: SecurityException) {
+                }
+                z.closeEntry()
+            }
+            fun addFile(f: java.io.File, rel: String) {
+                if (f.isDirectory) {
+                    val kids = FileAccess.list(f)
+                    if (kids.isEmpty()) { z.putNextEntry(java.util.zip.ZipEntry(unique("$rel/"))); z.closeEntry() }
+                    for (k in kids) addFile(k, "$rel/${k.name}")
+                } else {
+                    put(rel, f.lastModified()) { f.inputStream() }
+                }
+            }
+            fun addEntry(e: Entry, prefix: String) {
+                val uri = e.uri ?: return
+                val name = prefix + e.title + if (e.ext.isNotEmpty()) "." + e.ext else ""
+                put(name, e.dateSec * 1000) { ctx.contentResolver.openInputStream(uri) }
+            }
+            try {
+                for ((k, v) in pairs) {
+                    when (k) {
+                        "p" -> if (filesOn()) FileAccess.resolve(v)?.let { addFile(it, it.name) }
+                        "i" -> {
+                            val e = lib.lookup(v)
+                            if (e != null && e.kind != Kind.FOLDER) addEntry(e, "")
+                            else {
+                                // Kitaplık klasörü: içindeki medya (bir düzey)
+                                val title = lib.metadata(v)?.title ?: "klasor"
+                                lib.children(v).filter { it.kind != Kind.FOLDER }.forEach { addEntry(it, "$title/") }
+                            }
+                        }
+                    }
+                }
+                z.finish()
+            } finally {
+                ServerState.addBytes(sent)
+            }
+        }
+    }
+
     private fun zip(req: HttpRequest, res: HttpResponder, path: String) {
         if (!filesOn()) return res.text(403, Lang.s(R.string.http_not_found))
         val dir = FileAccess.resolve(path)?.takeIf { it.isDirectory } ?: return res.text(404, Lang.s(R.string.http_not_found))

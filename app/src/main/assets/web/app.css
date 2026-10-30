@@ -210,6 +210,21 @@ select.pill { appearance: none; -webkit-appearance: none; border: 0; color: var(
 .pl .msg .pill.acc { background: var(--acc); color: var(--onacc) }
 .pl.hide-cursor { cursor: none }
 
+/* ---------- Çoklu seçim ---------- */
+.card.selecting .meta::before { content: ""; position: absolute; left: 10px; top: 10px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #fff; background: rgba(0,0,0,.35); z-index: 2 }
+.card.picked { outline: 3px solid var(--acc); outline-offset: -3px }
+.card.picked .meta::after { content: "✓"; position: absolute; left: 10px; top: 10px; width: 26px; height: 26px; border-radius: 50%; background: var(--acc); color: var(--onacc); display: grid; place-items: center; font-size: 14px; z-index: 3 }
+.masonry .ph.picked { outline: 3px solid var(--acc); outline-offset: -3px }
+.selbar {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 31;
+  width: min(760px, calc(100% - 24px)); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px;
+  background: var(--card); border: 1px solid var(--line); border-radius: calc(var(--r) * .8); box-shadow: 0 10px 40px rgba(0,0,0,.35); animation: up .35s var(--ease)
+}
+.selbar .sp { flex: 1 }
+.selbar button[disabled] { opacity: .5; pointer-events: none }
+body.has-mini .selbar { bottom: calc(96px + env(safe-area-inset-bottom)) }
+body.has-sel { padding-bottom: 90px }
+
 /* ---------- Müzik çubuğu ---------- */
 .mini {
   position: fixed; left: 50%; bottom: calc(12px + env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 30;
