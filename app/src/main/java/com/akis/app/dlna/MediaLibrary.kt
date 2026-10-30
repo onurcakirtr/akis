@@ -10,6 +10,7 @@ import android.net.Uri
 import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.util.LruCache
 import android.util.Size
 import android.webkit.MimeTypeMap
@@ -195,6 +196,7 @@ class MediaLibrary(private val ctx: Context) {
                 else queryMedia(kind, "${MediaStore.MediaColumns._ID}=?", arrayOf(parts[2]), parentOf(id)).firstOrNull()
             }
             id.startsWith("fd:") -> lookupDocument(id)
+            id.startsWith("x:") -> shared[id]
             else -> null
         }
     } catch (e: Exception) {
@@ -264,6 +266,16 @@ class MediaLibrary(private val ctx: Context) {
         val uri = e.uri ?: return null
         val bmp: Bitmap = try {
             if (id.startsWith("fd:")) DocumentsContract.getDocumentThumbnail(cr, uri, Point(320, 320), null)
+            else if (id.startsWith("x:") && e.kind == Kind.VIDEO && uri.authority != MediaStore.AUTHORITY) {
+                MediaMetadataRetriever().let { r ->
+                    try {
+                        r.setDataSource(ctx, uri)
+                        r.getScaledFrameAtTime(1_000_000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC, 320, 320)
+                    } finally {
+                        r.release()
+                    }
+                }
+            }
             else cr.loadThumbnail(uri, Size(320, 320), null)
         } catch (ex: Exception) {
             null
@@ -574,7 +586,48 @@ class MediaLibrary(private val ctx: Context) {
         return null
     }
 
+    /**
+     * Başka uygulamadan "Paylaş → Akış" ile gelen dosyayı sunulabilir bir öğeye çevirir.
+     * Galeri dosyaları kendi kitaplık kimliğini alır (geçmiş ve altyazı ortak kalsın).
+     */
+    fun share(uri: Uri, givenMime: String?): Entry? {
+        if (uri.authority == MediaStore.AUTHORITY) {
+            val rowId = uri.lastPathSegment?.toLongOrNull()
+            val path = uri.path ?: ""
+            val p = when {
+                "/video/" in path -> "v"
+                "/audio/" in path -> "a"
+                "/images/" in path -> "i"
+                else -> null
+            }
+            if (rowId != null && p != null) lookup("m:$p:$rowId")?.let { return it }
+        }
+        var name = uri.lastPathSegment?.substringAfterLast('/') ?: "dosya"
+        var size = 0L
+        try {
+            cr.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE), null, null, null)?.use { c ->
+                if (c.moveToFirst()) {
+                    c.getString(0)?.let { name = it }
+                    if (!c.isNull(1)) size = c.getLong(1)
+                }
+            }
+        } catch (_: Exception) {
+        }
+        val mime = mimeFor(name, givenMime ?: cr.getType(uri))
+        val kind = kindOf(name, mime)?.takeIf { it != Kind.SUBTITLE } ?: return null
+        val id = "x:" + (shared.size + 1)
+        val e = Entry(
+            id = id, parentId = "0", title = name.substringBeforeLast('.'), kind = kind, mime = mime, size = size, uri = uri,
+            ext = name.substringAfterLast('.', "bin").lowercase(),
+        )
+        shared[id] = e
+        return e
+    }
+
     companion object {
+        /** Paylaş menüsüyle gelen dosyalar (x:<n> → öğe); yalnızca uygulama açıkken geçerli. */
+        private val shared = java.util.concurrent.ConcurrentHashMap<String, Entry>()
+
         val VIDEO: Uri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
         val AUDIO: Uri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
         val IMAGE: Uri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI

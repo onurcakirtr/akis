@@ -36,6 +36,8 @@ object WatchHistory {
     private val _records = MutableStateFlow<List<WatchRecord>>(emptyList())
     val records: StateFlow<List<WatchRecord>> get() = _records
     @Volatile private var saveQueued = false
+    /** Kumandayla oynatılan video: konumu kesin bilindiği için bayt tahmini yapılmaz. */
+    @Volatile var preciseId: String? = null
 
     private val enabled get() = Prefs.current.history
 
@@ -80,7 +82,7 @@ object WatchHistory {
      * önceden okur; bu yüzden sondan başlayan istekler yok sayılır ve tahmin biraz geride tutulur.
      */
     fun reportBytes(e: Entry, requestStart: Long, pos: Long, size: Long) {
-        if (!enabled || e.kind != Kind.VIDEO || e.durationMs <= 0 || size <= 0) return
+        if (!enabled || e.kind != Kind.VIDEO || e.durationMs <= 0 || size <= 0 || e.id == preciseId) return
         val prev = get(e.id)
         val startFrac = requestStart.toFloat() / size
         if (startFrac > 0.9f && (prev == null || prev.fraction < 0.8f)) return

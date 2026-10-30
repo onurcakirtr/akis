@@ -25,6 +25,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Bolt
+import androidx.compose.material.icons.rounded.Cast
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.DeleteSweep
@@ -72,6 +73,7 @@ import com.akis.app.DeviceAccess
 import com.akis.app.Prefs
 import com.akis.app.ServerState
 import com.akis.app.WatchHistory
+import com.akis.app.cast.Remote
 import com.akis.app.dlna.MediaLibrary
 import com.akis.app.dlna.Subtitles
 import com.akis.app.dlna.Uploads
@@ -260,6 +262,14 @@ fun SettingsScreen() {
                         }
                     },
                 ) { Prefs.set("upload", it) }
+                FeatureRow(
+                    Icons.Rounded.Cast, "TV'ye gönderme",
+                    "Google TV / Chromecast ve DLNA TV'lere gönder, telefondan kumanda et",
+                    s.cast, divider = true,
+                ) { on ->
+                    Prefs.set("cast", on)
+                    if (on) Remote.ensureInit() else Remote.disconnect()
+                }
                 // FEATURES
             }
         }
