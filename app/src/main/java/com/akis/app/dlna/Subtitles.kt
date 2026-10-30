@@ -1,16 +1,23 @@
 package com.akis.app.dlna
 
+import com.akis.app.Lang
+import com.akis.app.R
 import java.nio.ByteBuffer
 import java.nio.charset.CharacterCodingException
 import java.nio.charset.Charset
 import java.nio.charset.CodingErrorAction
 import java.util.Locale
-import com.akis.app.Lang
-import com.akis.app.R
 
 /** Bir videoya bağlı altyazı dosyası. */
-data class Sub(val id: String, val lang: String, val ext: String) {
-    val label: String get() = Subtitles.langName(lang)
+data class Sub(val id: String, val lang: String, val ext: String, val name: String = "", val forced: Boolean = false) {
+    val label: String
+        get() {
+            val base = name.ifEmpty { Subtitles.langName(lang) }
+            return if (forced && !name.contains("forced", true)) Lang.s(R.string.sub_forced, base) else base
+        }
+
+    /** Videonun içine gömülü (MKV) altyazı mı. */
+    val embedded: Boolean get() = id.startsWith("e:")
 }
 
 /**

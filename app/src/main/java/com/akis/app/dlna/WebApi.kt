@@ -190,7 +190,10 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
         if (s.subtitles && e.kind == Kind.VIDEO) {
             val subs = JSONArray()
             lib.subtitlesOf(e).forEach { sub ->
-                subs.put(JSONObject().put("u", "/s/" + Xml.enc(sub.id) + ".vtt").put("l", sub.label).put("lang", sub.lang))
+                subs.put(
+                    JSONObject().put("u", "/s/" + Xml.enc(sub.id) + ".vtt").put("l", sub.label).put("lang", sub.lang)
+                        .put("emb", sub.embedded).put("forced", sub.forced),
+                )
             }
             o.put("subs", subs)
         }
@@ -215,12 +218,18 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
         } catch (_: Exception) {
             return json(res, JSONObject().put("ok", false))
         }
+        // MKV'de ses parçalarının adı ("Türkçe Dublaj") ve varsayılanı: aynı sıradaki ses parçasıyla eşleşir
+        val mkvAudio = if (Mkv.isMkv(e)) Mkv.tracks(ctx, e).filter { it.type == Mkv.AUDIO } else emptyList()
+        var audioNo = 0
         val tracks = JSONArray()
         for (t in pr.tracks) {
+            val mk = if (!t.video) mkvAudio.getOrNull(audioNo++) else null
             tracks.put(
                 JSONObject().put("i", t.index).put("v", t.video).put("mime", t.mime).put("codec", t.codec)
                     .put("lang", t.lang).put("ch", t.channels).put("rate", t.sampleRate)
-                    .put("w", t.width).put("h", t.height).put("tx", t.canTranscode),
+                    .put("w", t.width).put("h", t.height).put("tx", t.canTranscode)
+                    .put("name", mk?.name ?: "").put("def", mk?.isDefault ?: false)
+                    .apply { if (mk != null && mk.lang.isNotEmpty()) put("lang", mk.lang) },
             )
         }
         json(res, JSONObject().put("ok", true).put("d", if (pr.durationMs > 0) pr.durationMs else e.durationMs).put("tracks", tracks))

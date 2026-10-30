@@ -213,6 +213,7 @@
     <string name="status_on_devices">Yayında • %1$s</string>
     <string name="status_on_sub">Ağdaki cihazlar seni görebiliyor</string>
     <string name="stop">Durdur</string>
+    <string name="sub_forced">%1$s (zorunlu)</string>
     <string name="subtitle_generic">Altyazı</string>
     <string name="tab_home">Yayın</string>
     <string name="tab_sources">Kaynaklar</string>
@@ -321,6 +322,8 @@
     <string name="web_stereo">Stereo</string>
     <string name="web_subs_count_one">{0} altyazı</string>
     <string name="web_subs_count_other">{0} altyazı</string>
+    <string name="web_subs_failed">Altyazı yüklenemedi</string>
+    <string name="web_subs_loading">Altyazı hazırlanıyor…</string>
     <string name="web_subs_off">Altyazı kapalı</string>
     <string name="web_subtitles">Altyazı</string>
     <string name="web_track">Parça {0}</string>

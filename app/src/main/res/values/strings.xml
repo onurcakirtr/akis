@@ -214,6 +214,7 @@
     <string name="status_on_devices">Sharing • %1$s</string>
     <string name="status_on_sub">Devices on the network can see you</string>
     <string name="stop">Stop</string>
+    <string name="sub_forced">%1$s (forced)</string>
     <string name="subtitle_generic">Subtitles</string>
     <string name="tab_home">Share</string>
     <string name="tab_sources">Sources</string>
@@ -322,6 +323,8 @@
     <string name="web_stereo">Stereo</string>
     <string name="web_subs_count_one">{0} subtitle</string>
     <string name="web_subs_count_other">{0} subtitles</string>
+    <string name="web_subs_failed">Couldn\'t load the subtitles</string>
+    <string name="web_subs_loading">Preparing subtitles…</string>
     <string name="web_subs_off">Subtitles off</string>
     <string name="web_subtitles">Subtitles</string>
     <string name="web_track">Track {0}</string>

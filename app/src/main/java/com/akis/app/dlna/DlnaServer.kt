@@ -249,13 +249,13 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val returned: Int
         val total: Int
         if (flag == "BrowseMetadata") {
-            val list = listOfNotNull(lib.metadata(oid)?.let(WatchHistory::mark))
+            val list = lib.withSubtitles(listOfNotNull(lib.metadata(oid)?.let(WatchHistory::mark)))
             didl = Xml.didl(list, base, Prefs.current.subtitles, Prefs.current.search)
             returned = list.size
             total = list.size
         } else {
             val all = lib.children(oid)
-            val part = all.drop(start).let { if (count > 0) it.take(count) else it }.map(WatchHistory::mark)
+            val part = lib.withSubtitles(all.drop(start).let { if (count > 0) it.take(count) else it }.map(WatchHistory::mark))
             didl = Xml.didl(part, base, Prefs.current.subtitles)
             returned = part.size
             total = all.size
@@ -269,6 +269,13 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
 
     /** Altyazıyı UTF-8'e ve istenen biçime (srt / vtt) çevirerek verir. */
     private fun serveSubtitle(res: HttpResponder, id: String, format: String) {
+        if (id.startsWith("e:")) {
+            // MKV içine gömülü altyazı: e:<parça>:<video kimliği>
+            val track = id.substring(2).substringBefore(':').toIntOrNull() ?: return res.text(404, Lang.s(R.string.http_sub_not_found))
+            val video = lib.lookup(id.substring(2).substringAfter(':')) ?: return res.text(404, Lang.s(R.string.http_sub_not_found))
+            val srt = Mkv.subtitle(ctx, video, track) ?: return res.text(404, Lang.s(R.string.http_sub_open_fail))
+            return sendSubtitle(res, srt, "srt", format)
+        }
         val e = lib.lookup(id)
         val uri = e?.uri
         if (e == null || uri == null || e.kind != Kind.SUBTITLE) return res.text(404, Lang.s(R.string.http_sub_not_found))
@@ -286,12 +293,15 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         } catch (_: Exception) {
             null
         } ?: return res.text(404, Lang.s(R.string.http_sub_open_fail))
-        val text = Subtitles.decode(bytes, Prefs.current.subLang)
+        sendSubtitle(res, Subtitles.decode(bytes, Prefs.current.subLang), e.ext, format)
+    }
+
+    private fun sendSubtitle(res: HttpResponder, text: String, ext: String, format: String) {
         val cors = mapOf("Access-Control-Allow-Origin" to "*", "Cache-Control" to "no-cache")
         if (format == "vtt") {
-            res.bytes(200, "text/vtt; charset=utf-8", Subtitles.toVtt(text, e.ext).toByteArray(Charsets.UTF_8), cors)
+            res.bytes(200, "text/vtt; charset=utf-8", Subtitles.toVtt(text, ext).toByteArray(Charsets.UTF_8), cors)
         } else {
-            val body = byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) + Subtitles.toSrt(text, e.ext).toByteArray(Charsets.UTF_8)
+            val body = byteArrayOf(0xEF.toByte(), 0xBB.toByte(), 0xBF.toByte()) + Subtitles.toSrt(text, ext).toByteArray(Charsets.UTF_8)
             res.bytes(200, "text/srt; charset=utf-8", body, cors)
         }
     }

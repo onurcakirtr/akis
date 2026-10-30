@@ -587,8 +587,24 @@ class MediaLibrary(private val ctx: Context) {
         }
     }
 
-    /** Tek bir video için altyazılar: önce önbellek, yoksa (yerel depolamada) üst klasörü tarar. */
+    /** Dosyanın yanındaki altyazılar + MKV'nin içine gömülü metin altyazıları. */
     fun subtitlesOf(e: Entry): List<Sub> {
+        val external = externalSubtitlesOf(e)
+        if (e.kind != Kind.VIDEO || !Mkv.isMkv(e)) return external
+        val embedded = Mkv.tracks(ctx, e).filter { it.textSub }.map {
+            Sub("e:${it.number}:${e.id}", it.lang, "srt", it.name, it.forced)
+        }
+        return Subtitles.sort(external + embedded, s.subLang)
+    }
+
+    /** Liste halinde dönen videolara (TV'nin göreceği) gömülü altyazıları da ekler; çok uzun listelerde atlanır. */
+    fun withSubtitles(list: List<Entry>): List<Entry> {
+        if (list.size > 60) return list
+        return list.map { if (it.kind == Kind.VIDEO && Mkv.isMkv(it)) it.copy(subtitles = subtitlesOf(it)) else it }
+    }
+
+    /** Tek bir video için altyazılar: önce önbellek, yoksa (yerel depolamada) üst klasörü tarar. */
+    private fun externalSubtitlesOf(e: Entry): List<Sub> {
         if (e.kind == Kind.VIDEO && e.id.startsWith("p:")) {
             val f = java.io.File(e.id.substring(2))
             val dir = f.parentFile ?: return emptyList()

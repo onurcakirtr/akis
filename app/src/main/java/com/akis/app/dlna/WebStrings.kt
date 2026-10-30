@@ -96,6 +96,8 @@ object WebStrings {
         "view_grid" to R.string.web_view_grid,
         "view_list" to R.string.web_view_list,
         "volume" to R.string.web_volume,
+        "subs_loading" to R.string.web_subs_loading,
+        "subs_failed" to R.string.web_subs_failed,
     )
 
     fun json(): JSONObject = JSONObject().also { o -> for ((k, id) in KEYS) o.put(k, Lang.s(id)) }

@@ -22,6 +22,13 @@
     var h = Math.floor(sec / 3600), m = Math.floor(sec / 60) % 60, s = sec % 60;
     return (h ? h + ':' + (m < 10 ? '0' : '') : '') + m + ':' + (s < 10 ? '0' : '') + s;
   }
+  var langNames = null;
+  try { langNames = new Intl.DisplayNames([(window.AKIS && window.AKIS.lang) || 'en'], { type: 'language' }); } catch (e) { }
+  function langName(code) {
+    if (!code) return '';
+    try { var n = langNames && langNames.of(code); if (n && n !== code) return n.charAt(0).toUpperCase() + n.slice(1); } catch (e) { }
+    return code.toUpperCase();
+  }
   function get(k, d) { try { var v = localStorage.getItem('akis.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } }
   function put(k, v) { try { localStorage.setItem('akis.' + k, JSON.stringify(v)); } catch (e) { } }
 
@@ -424,6 +431,13 @@
       menu.className = 'menu'; menu.setAttribute('data-k', kind);
       var h = '';
       if (kind === 'cc') {
+        var auds = audioTracks();
+        if (auds.length > 1) {
+          h += '<h4>' + esc(t('audio_track')) + '</h4>';
+          auds.forEach(function (x, i) {
+            h += '<button data-au="' + x.i + '" class="' + (choice && choice.a === x.i ? 'on' : '') + '">' + esc(audioLabel(x, i)) + '</button>';
+          });
+        }
         h += '<h4>' + esc(t('subtitles')) + '</h4><button data-s="-1" class="' + (subIdx < 0 ? 'on' : '') + '">' + esc(t('off')) + '</button>';
         subs.forEach(function (s, i) { h += '<button data-s="' + i + '" class="' + (subIdx === i ? 'on' : '') + '">' + esc(s.l) + '</button>'; });
         if (!subs.length) h += '<h4>' + esc(t('no_subs')) + '</h4>';
@@ -432,14 +446,6 @@
         [0.5, 0.75, 1, 1.25, 1.5, 2].forEach(function (r) {
           h += '<button data-r="' + r + '" class="' + (video.playbackRate === r ? 'on' : '') + '">' + (r === 1 ? esc(t('normal')) : r + '×') + '</button>';
         });
-        var auds = probe ? probe.tracks.filter(function (x) { return !x.v; }) : [];
-        if (auds.length > 1) {
-          h += '<h4>' + esc(t('audio_track')) + '</h4>';
-          auds.forEach(function (x, i) {
-            var name = (x.lang ? x.lang.toUpperCase() : t('track', i + 1)) + (x.ch ? ' · ' + (x.ch > 2 ? (x.ch - 1) + '.1' : x.ch === 2 ? t('stereo') : t('mono')) : '');
-            h += '<button data-au="' + x.i + '" class="' + (choice && choice.a === x.i ? 'on' : '') + '">' + esc(name) + '</button>';
-          });
-        }
         if (info.next) {
           h += '<h4>' + esc(t('autoplay')) + '</h4><button data-ap="1" class="' + (get('autoplay', true) ? 'on' : '') + '">' + esc(get('autoplay', true) ? t('on') : t('off')) + '</button>';
         }
@@ -448,7 +454,7 @@
       menu.addEventListener('click', function (e) {
         e.stopPropagation();
         var b = e.target.closest('button'); if (!b) return;
-        if (b.hasAttribute('data-s')) selectSub(+b.getAttribute('data-s'));
+        if (b.hasAttribute('data-s')) selectSub(+b.getAttribute('data-s'), true);
         else if (b.hasAttribute('data-r')) setRate(+b.getAttribute('data-r'));
         else if (b.hasAttribute('data-au')) switchAudio(+b.getAttribute('data-au'));
         else if (b.hasAttribute('data-ap')) put('autoplay', !get('autoplay', true));
@@ -460,21 +466,58 @@
       showUI(true);
     }
 
-    function selectSub(i) {
+    function audioTracks() { return probe && probe.ok ? probe.tracks.filter(function (x) { return !x.v; }) : []; }
+    function audioLabel(x, i) {
+      var ch = x.ch ? (x.ch > 2 ? (x.ch - 1) + '.1' : x.ch === 2 ? t('stereo') : t('mono')) : '';
+      var name = x.name || langName(x.lang) || t('track', i + 1);
+      if (x.name && x.lang && x.name.toLowerCase().indexOf(langName(x.lang).toLowerCase()) < 0) name += ' (' + langName(x.lang) + ')';
+      return name + (ch ? ' · ' + ch : '');
+    }
+    function curAudioLang() {
+      if (!choice || choice.a < 0) return '';
+      var a = audioTracks().filter(function (x) { return x.i === choice.a; })[0];
+      return (a && a.lang) || '';
+    }
+    /** user=true: kullanıcı seçti; tercih o ses diline göre saklanır (ör. İngilizce ses → Türkçe altyazı, Türkçe dublaj → kapalı). */
+    function selectSub(i, user) {
       subIdx = i; cues = [];
-      put('subOn', i >= 0);
-      if (i >= 0) put('subLang', subs[i].lang || '');
+      if (user) {
+        var pref = get('subFor', {});
+        pref[curAudioLang() || '*'] = i < 0 ? 'off' : (subs[i].lang || subs[i].l);
+        put('subFor', pref);
+        put('subOn', i >= 0);
+        if (i >= 0 && subs[i].lang) put('subLang', subs[i].lang);
+      }
       renderSubs();
       if (i < 0) return;
-      fetch(subs[i].u).then(function (r) { return r.text(); }).then(function (txt) { if (subIdx === i) { cues = parseVtt(txt); renderSubs(); } }).catch(function () { });
+      var waitT = setTimeout(function () { if (subIdx === i && !cues.length) flash(t('subs_loading'), 0); }, 700);
+      fetch(subs[i].u).then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }).then(function (txt) {
+        clearTimeout(waitT);
+        if (subIdx === i) { cues = parseVtt(txt); renderSubs(); }
+      }).catch(function () { clearTimeout(waitT); if (subIdx === i) flash(t('subs_failed'), 0); });
     }
-    (function initSubs() {
-      if (!subs.length || !get('subOn', true)) return;
-      var want = get('subLang', window.AKIS.subLang || '');
-      var i = 0;
-      for (var k = 0; k < subs.length; k++) if (subs[k].lang === want) { i = k; break; }
-      selectSub(i);
-    })();
+    /** Açılışta altyazı: önce bu ses dili için saklanan tercih, yoksa genel tercih. */
+    function initSubs() {
+      if (!subs.length) return;
+      var lang = curAudioLang();
+      var pref = get('subFor', {});
+      var want = pref[lang || '*'];
+      if (want === undefined) {
+        if (!get('subOn', true)) return;
+        want = get('subLang', window.AKIS.subLang || '');
+        // Dublaj tercih edilen altyazı diliyle aynıysa altyazıyı açma (yalnızca "zorunlu" varsa onu göster)
+        if (lang && want && lang === want) {
+          for (var f = 0; f < subs.length; f++) if (subs[f].forced && subs[f].lang === lang) { selectSub(f); return; }
+          return;
+        }
+      }
+      if (want === 'off') return;
+      var i = -1;
+      for (var k = 0; k < subs.length; k++) if ((subs[k].lang === want || subs[k].l === want) && !subs[k].forced) { i = k; break; }
+      if (i < 0) for (var k2 = 0; k2 < subs.length; k2++) if (subs[k2].lang === want || subs[k2].l === want) { i = k2; break; }
+      if (i < 0 && pref[lang || '*'] === undefined) i = 0;
+      if (i >= 0) selectSub(i);
+    }
 
     // ---------- dokunmatik ve fare hareketleri ----------
     var down = null, lastTap = { t: 0, side: 0, n: 0 }, tapTimer = 0, longTimer = 0, boosted = false, prevRate = 1;
@@ -574,7 +617,7 @@
         case 'm': case 'M': toggleMute(); flash(video.muted ? t('mute') : Math.round(video.volume * 100) + '%', 0); break;
         case 'f': case 'F': toggleFs(); break;
         case 'c': case 'C':
-          if (subs.length) { var nx = subIdx + 1 >= subs.length ? -1 : subIdx + 1; selectSub(nx); flash(nx < 0 ? t('subs_off') : subs[nx].l, 0); }
+          if (subs.length) { var nx = subIdx + 1 >= subs.length ? -1 : subIdx + 1; selectSub(nx, true); flash(nx < 0 ? t('subs_off') : subs[nx].l, 0); }
           break;
         case 'n': case 'N': case 'MediaTrackNext': if (info.next) goNext(); break;
         case '>': setRate(Math.min(2, video.playbackRate + 0.25)); break;
@@ -702,6 +745,8 @@
     function switchAudio(trackIndex) {
       var au = probe.tracks.filter(function (x) { return x.i === trackIndex; })[0];
       if (!au) return;
+      if (au.lang) put('audioLang', au.lang);
+      setTimeout(function () { if (get('subFor', {})[au.lang || '*'] !== undefined) { selectSub(-1); initSubs(); } }, 0);
       var ok = au.codec && MS && MS.isTypeSupported(Engine.mime(choice.vcodec, au.codec));
       restart(ok ? { a: au.i, tx: false, acodec: au.codec } : au.tx ? { a: au.i, tx: true, acodec: 'mp4a.40.2' } : { a: -1, tx: false, acodec: null }, video.currentTime);
     }
@@ -725,7 +770,8 @@
       } else {
         var auds = pr.tracks.filter(function (x) { return !x.v; });
         var want = get('audioLang', '');
-        var au = auds.filter(function (x) { return want && x.lang === want; })[0] || auds[0];
+        var au = auds.filter(function (x) { return want && x.lang === want; })[0] ||
+          auds.filter(function (x) { return x.def; })[0] || auds[0];
         var c = { vcodec: vt.codec, a: -1, tx: false, acodec: null };
         if (au) {
           if (au.codec && MS.isTypeSupported(Engine.mime(vt.codec, au.codec))) { c.a = au.i; c.acodec = au.codec; }
@@ -736,6 +782,7 @@
         engine = new Engine(video, id, dur, choice, fail);
         engine.open(startAt);
       }
+      initSubs();
       if (startAt > 0) showResumeChip(startAt);
       play();
       root.focus({ preventScroll: true });
