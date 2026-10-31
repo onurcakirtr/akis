@@ -48,6 +48,7 @@ data class Settings(
     val pwa: Boolean,               // web: ana ekrana ekle (uygulama tanımı)
     val fileReq: Boolean,           // dosya isteme bağlantıları
     val wifiQr: Boolean,            // QR penceresinde Wi-Fi sekmesi
+    val ring: Boolean,              // yönetim sayfasından telefonu çaldır
     val wifiSsid: String,
     val wifiPass: String,
     val rateOn: Boolean,            // bağlantı başına hız sınırı
@@ -129,6 +130,7 @@ object Prefs {
         pwa = sp.getBoolean("pwa", true),
         fileReq = sp.getBoolean("fileReq", true),
         wifiQr = sp.getBoolean("wifiQr", true),
+        ring = sp.getBoolean("ring", false),
         wifiSsid = sp.getString("wifiSsid", "") ?: "",
         wifiPass = sp.getString("wifiPass", "") ?: "",
         rateOn = sp.getBoolean("rateOn", false),

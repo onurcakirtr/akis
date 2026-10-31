@@ -138,6 +138,8 @@
     <string name="f_rate_sub">Cap how fast each connection can download (videos, files, ZIPs, camera, TVs too)</string>
     <string name="f_remote">Remote access (Cloudflare Tunnel)</string>
     <string name="f_remote_sub">Reach the web interface from anywhere over the internet</string>
+    <string name="f_ring">Ring the phone</string>
+    <string name="f_ring_sub">From the web admin page (password + approval) ring the phone at full volume for 30 s, even on silent</string>
     <string name="f_search">Search</string>
     <string name="f_search_sub">Search by title, artist and album from TVs and VLC; search box in the web interface</string>
     <string name="f_status">Phone status</string>
@@ -221,6 +223,7 @@
     <string name="log_remote_in">🌐 Remote sign-in (%1$s)</string>
     <string name="log_remote_up">🌐 Remote access connected</string>
     <string name="log_remote_wrong">🌐 Wrong remote password (%1$s)</string>
+    <string name="log_ring">🔔 Ringing (%1$s)</string>
     <string name="log_search">🔎 Searched for “%1$s”</string>
     <string name="log_share_created">🔗 Share link created: %1$s</string>
     <string name="log_share_dl">⬇ %1$s downloaded (%2$s)</string>
@@ -344,6 +347,10 @@
     <string name="req_stop">Close link</string>
     <string name="restart">Restart</string>
     <string name="restart_for_port">Restart for the new port</string>
+    <string name="ring_need_admin">Needs web admin to be on</string>
+    <string name="ring_stop">Stop</string>
+    <string name="ring_text">Requested from %1$s</string>
+    <string name="ring_title">Akış is ringing the phone</string>
     <string name="save">Save</string>
     <string name="sec_about">About</string>
     <string name="sec_appearance">Appearance</string>
@@ -460,7 +467,11 @@
     <string name="web_ad_none">Nothing here</string>
     <string name="web_ad_off">Managing from the web is off. Turn it on in the Akış app.</string>
     <string name="web_ad_password">Admin password</string>
+    <string name="web_ad_phone">Phone</string>
     <string name="web_ad_remove">Remove</string>
+    <string name="web_ad_ring">Ring for 30 s</string>
+    <string name="web_ad_ring_note">Plays an alarm at full volume, even on silent.</string>
+    <string name="web_ad_ring_stop">Stop ringing</string>
     <string name="web_ad_save">Save</string>
     <string name="web_ad_saved">Saved</string>
     <string name="web_ad_security">Passwords, PIN, device approval and all-files sharing can only be changed on the phone.</string>

@@ -101,6 +101,7 @@ class AdminApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("name", s.name).put("switches", sw).put("subLang", s.subLang).put("langs", JSONArray(Subtitles.CHOICES))
             .put("folders", folders).put("buckets", buckets).put("clients", clients).put("known", known).put("shares", shares)
             .put("filesGranted", FileAccess.granted(ctx)).put("now", System.currentTimeMillis())
+            .put("ring", s.ring).put("ringing", com.akis.app.Ringer.active)
     }
 
     /** Klasör seçici: yalnızca klasörler (tüm dosyalara erişim izni varsa). */
@@ -174,6 +175,12 @@ class AdminApi(private val ctx: Context, private val lib: MediaLibrary) {
                 DeviceAccess.forget(b.optString("ip"))
                 Admin.audit("unblock ${b.optString("ip")}", ip)
             }
+            "ring" -> {
+                if (!Prefs.current.ring) return err(res, 403, "off")
+                com.akis.app.Ringer.start(ctx, ServerState.clientName(ip))
+                Admin.audit("ring", ip)
+            }
+            "ringStop" -> com.akis.app.Ringer.stop()
             "shareClose" -> {
                 QuickShare.remove(b.optString("token"))
                 Admin.audit("share closed", ip)

@@ -78,6 +78,12 @@
       h += '<div class="row"><span class="grow">' + e(t('ad_sw_' + k)) + '</span>' + sw(st.switches[k], 'data-sw="' + k + '"') + '</div>';
     });
     h += '<div class="note" style="padding-top:8px">' + e(t('ad_security')) + '</div></div>';
+    // Telefon
+    if (st.ring) {
+      h += '<div class="card2"><h2>' + e(t('ad_phone')) + '</h2><div class="row"><span class="grow">' + e(t('ad_ring_note')) + '</span>' +
+        (st.ringing ? '<button class="pill nav" data-x="ringStop">' + e(t('ad_ring_stop')) + '</button>' : '<button class="pill acc nav" data-x="ring">' + e(t('ad_ring')) + '</button>') +
+        '</div></div>';
+    }
     // Klasörlerim
     h += '<div class="card2"><h2>' + e(t('ad_myfolders')) + '</h2>';
     if (!st.folders.length) h += '<div class="note">' + e(t('ad_none')) + '</div>';
@@ -169,6 +175,8 @@
     else if (x === 'ban') act({ op: 'ban', ip: v, min: 60 });
     else if (x === 'unb') act({ op: 'unblock', ip: v });
     else if (x === 'shc') act({ op: 'shareClose', token: v });
+    else if (x === 'ring') act({ op: 'ring' }, false).then(function () { setTimeout(load, 31000); });
+    else if (x === 'ringStop') act({ op: 'ringStop' }, false);
   }
 
   window.AkisAdmin = {

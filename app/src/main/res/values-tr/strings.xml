@@ -137,6 +137,8 @@
     <string name="f_rate_sub">Her bağlantının indirme hızını sınırla (videolar, dosyalar, ZIP, kamera; TV\'ler de)</string>
     <string name="f_remote">Uzaktan erişim (Cloudflare Tunnel)</string>
     <string name="f_remote_sub">Web arayüzüne internet üzerinden her yerden eriş</string>
+    <string name="f_ring">Telefonu çaldır</string>
+    <string name="f_ring_sub">Web yönetim sayfasından (şifre + onay ile) telefonu sessizde bile 30 sn tam sesle çaldır</string>
     <string name="f_search">Arama</string>
     <string name="f_search_sub">TV ve VLC\'den başlık, sanatçı ve albüme göre ara; web arayüzüne arama kutusu</string>
     <string name="f_status">Telefon durumu</string>
@@ -220,6 +222,7 @@
     <string name="log_remote_in">🌐 Uzaktan giriş (%1$s)</string>
     <string name="log_remote_up">🌐 Uzaktan erişim bağlandı</string>
     <string name="log_remote_wrong">🌐 Yanlış uzaktan erişim şifresi (%1$s)</string>
+    <string name="log_ring">🔔 Çaldırılıyor (%1$s)</string>
     <string name="log_search">🔎 “%1$s” arandı</string>
     <string name="log_share_created">🔗 Paylaşım bağlantısı: %1$s</string>
     <string name="log_share_dl">⬇ %1$s indirildi (%2$s)</string>
@@ -343,6 +346,10 @@
     <string name="req_stop">Bağlantıyı kapat</string>
     <string name="restart">Yeniden başlat</string>
     <string name="restart_for_port">Yeni port için yeniden başlat</string>
+    <string name="ring_need_admin">Web\'den yönetimin açık olması gerekir</string>
+    <string name="ring_stop">Durdur</string>
+    <string name="ring_text">%1$s istedi</string>
+    <string name="ring_title">Akış telefonu çaldırıyor</string>
     <string name="save">Kaydet</string>
     <string name="sec_about">Hakkında</string>
     <string name="sec_appearance">Görünüm</string>
@@ -459,7 +466,11 @@
     <string name="web_ad_none">Burada bir şey yok</string>
     <string name="web_ad_off">Web\'den yönetim kapalı. Akış uygulamasından açabilirsin.</string>
     <string name="web_ad_password">Yönetici şifresi</string>
+    <string name="web_ad_phone">Telefon</string>
     <string name="web_ad_remove">Kaldır</string>
+    <string name="web_ad_ring">30 sn çaldır</string>
+    <string name="web_ad_ring_note">Sessizde bile tam sesle alarm çalar.</string>
+    <string name="web_ad_ring_stop">Çalmayı durdur</string>
     <string name="web_ad_save">Kaydet</string>
     <string name="web_ad_saved">Kaydedildi</string>
     <string name="web_ad_security">Şifreler, PIN, cihaz onayı ve tüm dosyalar paylaşımı yalnızca telefondan değiştirilebilir.</string>
