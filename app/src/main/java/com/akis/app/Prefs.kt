@@ -39,6 +39,7 @@ data class Settings(
     val allFilesUpnp: Boolean,      // TV / VLC / Gezgin'de "Tüm dosyalar" klasörü
     val iconStyle: String,          // sunucu simgesi: "default", renk adı, "theme" ya da "custom"
     val adminOn: Boolean,           // web'den yönetim
+    val onboarded: Boolean,         // ilk açılış tanıtımı görüldü
     val adminHash: String,          // yönetici şifresi "tuz:pbkdf2" (boşsa belirlenmemiş)
 )
 
@@ -88,6 +89,7 @@ object Prefs {
         allFilesUpnp = sp.getBoolean("allFilesUpnp", false),
         iconStyle = sp.getString("iconStyle", "default") ?: "default",
         adminOn = sp.getBoolean("adminOn", false),
+        onboarded = sp.getBoolean("onboarded", false),
         adminHash = sp.getString("adminHash", "") ?: "",
     )
 

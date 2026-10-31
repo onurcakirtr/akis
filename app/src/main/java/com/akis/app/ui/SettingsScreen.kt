@@ -55,6 +55,7 @@ import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.VerifiedUser
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Router
+import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Smartphone
 import androidx.compose.material.icons.rounded.Upload
@@ -468,6 +469,12 @@ fun SettingsScreen() {
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
+                }
+                Spacer(Modifier.height(12.dp))
+                FilledTonalButton(onClick = { Prefs.set("onboarded", false) }) {
+                    Icon(Icons.Rounded.School, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.ob_replay))
                 }
             }
         }

@@ -68,7 +68,11 @@ class MainActivity : AppCompatActivity() {
                 enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
                 onDispose { }
             }
-            AkisTheme(theme = theme, dark = dark) { AppRoot() }
+            AkisTheme(theme = theme, dark = dark) {
+                AnimatedContent(targetState = s.onboarded, transitionSpec = { fadeIn() togetherWith fadeOut() }, label = "intro") { done ->
+                    if (done) AppRoot() else Onboarding { Prefs.set("onboarded", true) }
+                }
+            }
         }
     }
 
