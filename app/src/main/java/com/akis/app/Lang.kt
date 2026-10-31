@@ -24,7 +24,9 @@ object Lang {
     )
 
     private lateinit var app: Context
-    @Volatile private var cached: Pair<String, Context>? = null
+    private val contexts = java.util.concurrent.ConcurrentHashMap<String, Context>()
+    /** Bu iş parçacığında geçerli dil (web arayüzünde tarayıcının seçtiği dil); null ise uygulamanın dili. */
+    private val override = ThreadLocal<String?>()
 
     fun init(ctx: Context) {
         app = ctx.applicationContext
@@ -34,28 +36,39 @@ object Lang {
     val current: String get() = AppCompatDelegate.getApplicationLocales().toLanguageTags().substringBefore(',')
 
     /** Ekranda ve web arayüzünde kullanılan gerçek dil (ör. "tr"). */
-    val locale: Locale get() = current.takeIf { it.isNotEmpty() }?.let { Locale.forLanguageTag(it) } ?: Locale.getDefault()
+    val locale: Locale get() = (override.get() ?: current).takeIf { it.isNotEmpty() }?.let { Locale.forLanguageTag(it) } ?: Locale.getDefault()
 
     fun set(tag: String) {
         AppCompatDelegate.setApplicationLocales(
             if (tag.isEmpty()) LocaleListCompat.getEmptyLocaleList() else LocaleListCompat.forLanguageTags(tag),
         )
-        cached = null
+        contexts.clear()
         // TV'lerdeki klasör adları da yeni dile geçsin
         ServerState.accessChanged.tryEmit(Unit)
     }
 
     /** Servis, bildirim, widget ve web arayüzü için seçili dile ayarlanmış bağlam. */
     fun ctx(): Context {
-        val tag = current
-        cached?.let { (t, c) -> if (t == tag) return c }
-        val c = if (tag.isEmpty()) app else {
-            val conf = Configuration(app.resources.configuration)
-            conf.setLocale(Locale.forLanguageTag(tag))
-            app.createConfigurationContext(conf)
+        val tag = override.get() ?: current
+        return contexts.getOrPut(tag) {
+            if (tag.isEmpty()) app else {
+                val conf = Configuration(app.resources.configuration)
+                conf.setLocale(Locale.forLanguageTag(tag))
+                app.createConfigurationContext(conf)
+            }
         }
-        cached = tag to c
-        return c
+    }
+
+    /** [block] boyunca bu iş parçacığındaki metinler [tag] dilinde olur (desteklenmeyen ya da boş kodda değişmez). */
+    fun <T> using(tag: String?, block: () -> T): T {
+        if (tag.isNullOrEmpty() || SUPPORTED.none { it.first == tag }) return block()
+        val prev = override.get()
+        override.set(tag)
+        try {
+            return block()
+        } finally {
+            override.set(prev)
+        }
     }
 
     fun s(@StringRes id: Int): String = ctx().getString(id)

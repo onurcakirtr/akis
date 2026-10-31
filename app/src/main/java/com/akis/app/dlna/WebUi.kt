@@ -10,8 +10,11 @@ object WebUi {
 
     private fun h(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
 
-    /** Seçili temanın renkleri (Ayarlar → Görünüm → Tema). */
-    @Volatile var themeCss: () -> String = { "" }
+    /** Temanın renkleri: (tema kimliği, mod); boş kimlik = Ayarlar → Görünüm → Tema'daki tema. */
+    @Volatile var themeCss: (String, String) -> String = { _, _ -> "" }
+
+    /** Tüm temalar (kimlik → geçerli dildeki adı); web'deki görünüm menüsü için. */
+    @Volatile var themeNames: () -> List<Pair<String, String>> = { emptyList() }
 
     private const val CSS = """
 *{box-sizing:border-box}
@@ -51,7 +54,7 @@ form.q input:focus{border-color:var(--acc)}
 
     private fun page(server: String, title: String, crumbs: String, body: String, header: String = "") =
         "<!doctype html><html lang=\"${Lang.locale.language}\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">" +
-            "<title>${h(title)}</title><style>${themeCss()}$CSS</style></head><body><header><div class=\"dot\"></div><h1>${h(server)}</h1>$header</header>" +
+            "<title>${h(title)}</title><style>${themeCss("", "")}$CSS</style></head><body><header><div class=\"dot\"></div><h1>${h(server)}</h1>$header</header>" +
             "<nav>$crumbs</nav>$body</body></html>"
 
     /** Hızlı paylaşım indirme sayfası. name null ise bağlantı geçersiz. */

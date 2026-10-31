@@ -362,8 +362,11 @@ fun AkisTheme(theme: AppTheme, dark: Boolean, content: @Composable () -> Unit) {
     }
 }
 
-/** Web arayüzü CSS değişkenleri: seçili temanın koyu ve (varsa) açık renkleri. */
-fun webCss(ctx: Context, theme: AppTheme): String {
+/**
+ * Web arayüzü CSS değişkenleri: seçili temanın koyu ve (varsa) açık renkleri.
+ * [mode] "light" / "dark" ise yalnızca o renkler; aksi halde tarayıcının açık/koyu ayarına uyar.
+ */
+fun webCss(ctx: Context, theme: AppTheme, mode: String = "system"): String {
     fun hex(c: Color): String {
         val v = (c.red * 255).toInt() shl 16 or ((c.green * 255).toInt() shl 8) or (c.blue * 255).toInt()
         return "#%06x".format(v)
@@ -383,6 +386,8 @@ fun webCss(ctx: Context, theme: AppTheme): String {
         theme.font == FontFamily.Serif -> "Georgia,'Times New Roman',serif"
         else -> "system-ui,Roboto,sans-serif"
     }
-    val light = if (theme.darkOnly) "" else "@media(prefers-color-scheme:light){:root{${vars(theme.scheme(ctx, false))}}}"
+    if (mode == "light" && !theme.darkOnly) return ":root{${vars(theme.scheme(ctx, false))};--r:$r;--font:$font;color-scheme:light}"
+    if (mode == "dark" || theme.darkOnly) return ":root{$dark;--r:$r;--font:$font;color-scheme:dark}"
+    val light = "@media(prefers-color-scheme:light){:root{${vars(theme.scheme(ctx, false))}}}"
     return ":root{$dark;--r:$r;--font:$font}$light"
 }

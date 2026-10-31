@@ -22,7 +22,11 @@ class AkisApplication : Application() {
         super.onCreate()
         Prefs.init(this)
         Lang.init(this)
-        WebUi.themeCss = { webCss(this, Themes.byId(Prefs.current.theme)) }
+        WebUi.themeCss = { id, mode ->
+            val t = Themes.ALL.firstOrNull { it.id == id } ?: Themes.byId(Prefs.current.theme)
+            webCss(this, t, mode.ifEmpty { Prefs.current.darkMode })
+        }
+        WebUi.themeNames = { Themes.ALL.map { it.id to Lang.s(it.name) } }
         WatchHistory.init(this)
         DeviceAccess.init(this)
         QuickShare.init(this)

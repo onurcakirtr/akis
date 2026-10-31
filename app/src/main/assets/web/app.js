@@ -83,6 +83,44 @@
   if (C.admin) { var ab = $('#adminBtn'); ab.hidden = false; ab.setAttribute('aria-label', t('ad_title')); }
   var upBtn = $('#upBtn');
   if (C.upload) { upBtn.hidden = false; $('#upLabel').textContent = t('upload'); upBtn.addEventListener('click', function () { Upload.open(); }); }
+
+  // ======================= Görünüm (yalnızca bu tarayıcı) =======================
+  // akis_ui çerezi "dil.tema.mod"; sunucu sayfayı buna göre üretir. Boş parça = telefonu takip et.
+  var lookBtn = $('#lookBtn'), lookPanel = $('#lookPanel');
+  if (C.look) {
+    lookBtn.hidden = false; lookBtn.setAttribute('aria-label', t('look')); lookBtn.title = t('look');
+    var lookCur = decodeURIComponent((document.cookie.match(/(?:^|; )akis_ui=([^;]*)/) || [])[1] || '').split('.');
+    var lookSel = function (name, label, opts, cur) {
+      return '<label>' + esc(t(label)) + '<select class="pill nav" data-k="' + name + '">' +
+        [['', t('look_phone')]].concat(opts).map(function (o) {
+          return '<option value="' + esc(o[0]) + '"' + (o[0] === (cur || '') ? ' selected' : '') + '>' + esc(o[1]) + '</option>';
+        }).join('') + '</select></label>';
+    };
+    lookPanel.innerHTML = '<h3>' + esc(t('look')) + '</h3>' +
+      lookSel('l', 'look_lang', C.langs || [], lookCur[0]) +
+      lookSel('t', 'look_theme', C.themes || [], lookCur[1]) +
+      lookSel('m', 'look_mode', [['system', t('mode_system')], ['light', t('mode_light')], ['dark', t('mode_dark')]], lookCur[2]) +
+      '<p class="note">' + esc(t('look_note')) + '</p>' +
+      '<button class="pill nav" type="button" data-reset>' + esc(t('look_reset')) + '</button>';
+    var lookSave = function (v) {
+      document.cookie = 'akis_ui=' + encodeURIComponent(v) + '; Path=/; SameSite=Lax; ' + (v.replace(/\./g, '') ? 'Max-Age=31536000' : 'Max-Age=0');
+      location.reload();
+    };
+    lookPanel.addEventListener('change', function () {
+      var v = ['l', 't', 'm'].map(function (k) { return lookPanel.querySelector('[data-k="' + k + '"]').value; }).join('.');
+      lookSave(v);
+    });
+    lookPanel.querySelector('[data-reset]').addEventListener('click', function () { lookSave(''); });
+    var lookClose = function () { lookPanel.hidden = true; };
+    lookBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      lookPanel.hidden = !lookPanel.hidden;
+      if (!lookPanel.hidden) lookPanel.querySelector('select').focus();
+    });
+    document.addEventListener('click', function (e) { if (!lookPanel.hidden && !lookPanel.contains(e.target)) lookClose(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !lookPanel.hidden) { lookClose(); lookBtn.focus(); } });
+  }
+
   var qTimer = 0;
   q.addEventListener('input', function () {
     clearTimeout(qTimer);

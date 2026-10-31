@@ -122,6 +122,8 @@
     <string name="f_history_sub">Kaldığın yerden devam; TV\'de \"Devam et\" ve \"İzlenmemiş\" klasörleri</string>
     <string name="f_keys">Kısayol yardımı</string>
     <string name="f_keys_sub">Web arayüzünde ? tuşuyla tüm klavye kısayollarını gör</string>
+    <string name="f_look">Tarayıcıya göre dil ve tema</string>
+    <string name="f_look_sub">Her tarayıcı kendine dil, tema ve açık/koyu mod seçebilir. Varsayılan olarak web telefonu takip eder.</string>
     <string name="f_notif">Bildirim paneli ayrıntıları</string>
     <string name="f_notif_sub">Bildirimde ve hızlı ayar kutucuğunda ilerleme, cihaz sayısı, oynatılan dosya</string>
     <string name="f_pin">Web PIN\'i</string>
@@ -525,8 +527,18 @@
     <string name="web_left">{0} kaldı</string>
     <string name="web_library">Kitaplık</string>
     <string name="web_link_speed">Bağlantı hızı</string>
+    <string name="web_look">Görünüm</string>
+    <string name="web_look_lang">Dil</string>
+    <string name="web_look_mode">Mod</string>
+    <string name="web_look_note">Yalnızca bu tarayıcıda saklanır.</string>
+    <string name="web_look_phone">Telefonla aynı</string>
+    <string name="web_look_reset">Telefonu takip et</string>
+    <string name="web_look_theme">Tema</string>
     <string name="web_lost">Bağlantı koptu</string>
     <string name="web_memory">Bellek (RAM)</string>
+    <string name="web_mode_dark">Koyu</string>
+    <string name="web_mode_light">Açık</string>
+    <string name="web_mode_system">Sistem</string>
     <string name="web_modified">Değiştirilme</string>
     <string name="web_mono">Mono</string>
     <string name="web_mute">Sessiz</string>

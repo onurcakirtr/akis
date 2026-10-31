@@ -34,11 +34,27 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
     private fun param(req: HttpRequest, name: String): String =
         req.query.split('&').firstOrNull { it.substringBefore('=') == name }?.substringAfter('=', "")?.let { decode(it) } ?: ""
 
-    /** @return true ise istek bu sınıf tarafından cevaplandı. */
+    /** Bu tarayıcının görünüm seçimi: akis_ui çerezi "dil.tema.mod" (boş parça = telefonu takip et). */
+    private class Look(val lang: String, val theme: String, val mode: String)
+
+    private fun look(req: HttpRequest): Look {
+        if (!Prefs.current.webLook) return Look("", "", "")
+        val v = req.headers["cookie"]?.split(';')?.map { it.trim() }?.firstOrNull { it.startsWith("akis_ui=") }?.substringAfter('=')
+            ?: return Look("", "", "")
+        val p = runCatching { decode(v) }.getOrDefault("").split('.') + listOf("", "", "")
+        return Look(p[0], p[1], p[2])
+    }
+
+    /** @return true ise istek bu sınıf tarafından cevaplandı. Metinler tarayıcının seçtiği dilde üretilir. */
     fun handle(req: HttpRequest, res: HttpResponder): Boolean {
+        val look = look(req)
+        return Lang.using(look.lang) { route(req, res, look) }
+    }
+
+    private fun route(req: HttpRequest, res: HttpResponder, look: Look): Boolean {
         val p = req.path
         when {
-            p == "/" || p == "/index.html" -> res.html(shell(req.tunnel))
+            p == "/" || p == "/index.html" -> res.html(shell(req.tunnel, look))
             p.startsWith("/static/") -> static(p.removePrefix("/static/"), res)
             p == "/api/home" -> json(res, home())
             p == "/api/list" -> json(res, list(param(req, "id").ifEmpty { "0" }))
@@ -106,7 +122,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
         res.bytes(200, type, data, mapOf("Cache-Control" to "no-cache"))
     }
 
-    private fun shell(remote: Boolean): String {
+    private fun shell(remote: Boolean, look: Look): String {
         val s = Prefs.current
         val html = asset("index.html")?.toString(Charsets.UTF_8) ?: return "Akış"
         val conf = JSONObject()
@@ -125,13 +141,16 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("docs", s.docPreview).put("zipView", s.zipView).put("thumbs", s.richThumbs).put("keys", s.keysHelp)
             .put("subLang", s.subLang)
             .put("lang", Lang.locale.language)
+            .put("look", s.webLook)
+            .put("langs", JSONArray().also { a -> Lang.SUPPORTED.forEach { a.put(JSONArray().put(it.first).put(it.second)) } })
+            .put("themes", JSONArray().also { a -> WebUi.themeNames().forEach { a.put(JSONArray().put(it.first).put(it.second)) } })
             .put("uploadTarget", if (s.uploadFolder.isEmpty()) Lang.s(R.string.downloads_dir, Uploads.DEFAULT_DIR) else MediaLibrary.treeName(ctx, s.uploadFolder))
             .put("t", WebStrings.json())
         return html
             .replace("{{LANG}}", Lang.locale.language)
             .replace("{{TITLE}}", esc(s.name))
             .replace("{{ICONV}}", ServerIcon.version(ctx))
-            .replace("{{THEME}}", WebUi.themeCss())
+            .replace("{{THEME}}", WebUi.themeCss(look.theme, look.mode))
             .replace("{{CONF}}", conf.toString().replace("</", "<\\/"))
     }
 

@@ -244,6 +244,16 @@ object WebStrings {
         "fit_contain" to R.string.web_fit_contain,
         "fit_cover" to R.string.web_fit_cover,
         "fit_fill" to R.string.web_fit_fill,
+        "look" to R.string.web_look,
+        "look_lang" to R.string.web_look_lang,
+        "look_theme" to R.string.web_look_theme,
+        "look_mode" to R.string.web_look_mode,
+        "look_phone" to R.string.web_look_phone,
+        "look_note" to R.string.web_look_note,
+        "look_reset" to R.string.web_look_reset,
+        "mode_system" to R.string.web_mode_system,
+        "mode_light" to R.string.web_mode_light,
+        "mode_dark" to R.string.web_mode_dark,
     )
 
     fun json(): JSONObject = JSONObject().also { o -> for ((k, id) in KEYS) o.put(k, Lang.s(id)) }

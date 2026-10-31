@@ -123,6 +123,8 @@
     <string name="f_history_sub">Resume where you left off; \"Continue watching\" and \"Unwatched\" folders on the TV</string>
     <string name="f_keys">Shortcut help</string>
     <string name="f_keys_sub">Press ? in the web interface to see all keyboard shortcuts</string>
+    <string name="f_look">Language and theme per browser</string>
+    <string name="f_look_sub">Each browser can pick its own language, theme and light/dark mode. By default the web follows the phone.</string>
     <string name="f_notif">Notification details</string>
     <string name="f_notif_sub">Progress, device count and what\'s playing in the notification and quick settings tile</string>
     <string name="f_pin">Web PIN</string>
@@ -526,8 +528,18 @@
     <string name="web_left">{0} left</string>
     <string name="web_library">Library</string>
     <string name="web_link_speed">Link speed</string>
+    <string name="web_look">Appearance</string>
+    <string name="web_look_lang">Language</string>
+    <string name="web_look_mode">Mode</string>
+    <string name="web_look_note">Saved only in this browser.</string>
+    <string name="web_look_phone">Same as phone</string>
+    <string name="web_look_reset">Follow the phone</string>
+    <string name="web_look_theme">Theme</string>
     <string name="web_lost">Connection lost</string>
     <string name="web_memory">Memory (RAM)</string>
+    <string name="web_mode_dark">Dark</string>
+    <string name="web_mode_light">Light</string>
+    <string name="web_mode_system">System</string>
     <string name="web_modified">Modified</string>
     <string name="web_mono">Mono</string>
     <string name="web_mute">Mute</string>

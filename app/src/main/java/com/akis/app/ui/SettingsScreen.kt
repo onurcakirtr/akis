@@ -430,6 +430,7 @@ fun SettingsScreen() {
                 FeatureRow(Icons.Rounded.FolderZip, stringResource(R.string.f_zipview), stringResource(R.string.f_zipview_sub), s.zipView, divider = true) { Prefs.set("zipView", it) }
                 FeatureRow(Icons.Rounded.Image, stringResource(R.string.f_thumbs), stringResource(R.string.f_thumbs_sub), s.richThumbs, divider = true) { Prefs.set("richThumbs", it) }
                 FeatureRow(Icons.Rounded.Keyboard, stringResource(R.string.f_keys), stringResource(R.string.f_keys_sub), s.keysHelp, divider = true) { Prefs.set("keysHelp", it) }
+                FeatureRow(Icons.Rounded.Palette, stringResource(R.string.f_look), stringResource(R.string.f_look_sub), s.webLook, divider = true) { Prefs.set("webLook", it) }
                 FeatureRow(
                     Icons.Rounded.BatteryStd, stringResource(R.string.f_status), stringResource(R.string.f_status_sub), s.phoneStatus, divider = true,
                     extra = { Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) },
