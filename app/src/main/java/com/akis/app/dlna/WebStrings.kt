@@ -111,6 +111,8 @@ object WebStrings {
         "sync_val" to R.string.web_sync_val,
         "reset" to R.string.web_reset,
         "zip" to R.string.web_zip,
+        "ad_code" to R.string.web_ad_code,
+        "ad_wrong_code" to R.string.web_ad_wrong_code,
         "camera" to R.string.web_camera,
         "cam_switch" to R.string.web_cam_switch,
         "cam_snap" to R.string.web_cam_snap,

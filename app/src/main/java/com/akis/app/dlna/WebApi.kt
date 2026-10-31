@@ -117,6 +117,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("subtitles", s.subtitles)
             .put("files", filesOn())
             .put("admin", s.adminOn && s.adminHash.isNotEmpty())
+            .put("totp", s.totpSecret.isNotEmpty())
             .put("status", s.phoneStatus).put("apps", s.appsList).put("camera", com.akis.app.CameraStream.allowed(ctx))
             .put("camFront", s.camFront).put("camHeight", s.camHeight)
             .put("docs", s.docPreview).put("zipView", s.zipView).put("thumbs", s.richThumbs).put("keys", s.keysHelp)

@@ -134,6 +134,8 @@
     <string name="f_subs_sub">.srt, .vtt, .ass, .sub ve film.tr.srt gibi dilli adlar; Türkçe karakterler düzeltilir</string>
     <string name="f_thumbs">Daha iyi küçük resimler</string>
     <string name="f_thumbs_sub">APK\'larda uygulama ikonu, PDF\'lerde ilk sayfa, klasörlerde bir fotoğraf</string>
+    <string name="f_totp">İki adımlı doğrulama</string>
+    <string name="f_totp_sub">Yönetim ve uzaktan erişim girişinde doğrulama uygulamasından kod iste</string>
     <string name="f_upload">Web\'den yükleme</string>
     <string name="f_upload_sub">Bilgisayarın tarayıcısından telefona sürükle-bırak dosya gönder</string>
     <string name="f_widget">Ana ekran widget\'ları</string>
@@ -323,6 +325,12 @@
     <string name="theme_samsung">Samsung</string>
     <string name="theme_sunset">Gün batımı</string>
     <string name="theme_terminal">Terminal</string>
+    <string name="totp_code">6 haneli kod</string>
+    <string name="totp_key">Anahtar: %1$s</string>
+    <string name="totp_setup">İki adımlı doğrulamayı kur</string>
+    <string name="totp_steps">QR kodu Google Authenticator, Aegis ya da Microsoft Authenticator ile okut (ya da anahtarı elle gir), sonra gösterdiği 6 haneli kodu yaz.</string>
+    <string name="totp_verify">Doğrula ve aç</string>
+    <string name="totp_wrong">Kod yanlış, tekrar dene</string>
     <string name="unblock">Kaldır</string>
     <string name="unknown_album">Bilinmeyen albüm</string>
     <string name="unknown_artist">Bilinmeyen sanatçı</string>
@@ -350,6 +358,7 @@
     <string name="web_ad_blocked">Engellenen ve yasaklı</string>
     <string name="web_ad_blocked_tag">engelli</string>
     <string name="web_ad_close">Kapat</string>
+    <string name="web_ad_code">Doğrulama uygulamasındaki kod</string>
     <string name="web_ad_connected">Şu an bağlı</string>
     <string name="web_ad_denied">İstek telefonda reddedildi.</string>
     <string name="web_ad_devices">Cihazlar</string>
@@ -388,6 +397,7 @@
     <string name="web_ad_unblock">Engeli kaldır</string>
     <string name="web_ad_wait">Telefondaki isteği onayla…</string>
     <string name="web_ad_wrong">Şifre yanlış</string>
+    <string name="web_ad_wrong_code">Kod yanlış</string>
     <string name="web_ad_you">bu cihaz</string>
     <string name="web_add_queue">Sıraya ekle</string>
     <string name="web_album_t">Albüm</string>

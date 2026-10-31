@@ -55,6 +55,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Pin
 import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material.icons.rounded.Password
 import androidx.compose.material.icons.rounded.VerifiedUser
@@ -96,6 +97,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.Admin
+import com.akis.app.Totp
+import androidx.compose.ui.graphics.Color
 import com.akis.app.DeviceAccess
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import com.akis.app.FileAccess
@@ -123,6 +126,7 @@ fun SettingsScreen() {
     var confirmClear by remember { mutableStateOf(false) }
     var editPin by remember { mutableStateOf(false) }
     var pickLang by remember { mutableStateOf(false) }
+    var totpSetup by remember { mutableStateOf<String?>(null) }
     val camPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) Prefs.set("camera", true) }
     var editAdminPw by remember { mutableStateOf(false) }
     val adminSession by Admin.active.collectAsStateWithLifecycle()
@@ -335,6 +339,11 @@ fun SettingsScreen() {
                         Prefs.set("adminOn", on)
                         if (!on) Admin.endSession()
                     }
+                }
+                FeatureRow(
+                    Icons.Rounded.Pin, stringResource(R.string.f_totp), stringResource(R.string.f_totp_sub), s.totpSecret.isNotEmpty(), divider = true,
+                ) { on ->
+                    if (on) totpSetup = Totp.newSecret() else Prefs.update { putString("totpSecret", "") }
                 }
                 FeatureRow(
                     Icons.Rounded.Upload, stringResource(R.string.f_upload),
@@ -611,6 +620,42 @@ fun SettingsScreen() {
                 }) { Text(stringResource(R.string.save)) }
             },
             dismissButton = { TextButton(onClick = { editAdminPw = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+    totpSetup?.let { secret ->
+        var code by remember { mutableStateOf("") }
+        var wrong by remember { mutableStateOf(false) }
+        val keyText = secret.chunked(4).joinToString(" ")
+        AlertDialog(
+            onDismissRequest = { totpSetup = null },
+            title = { Text(stringResource(R.string.totp_setup)) },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(stringResource(R.string.totp_steps), style = MaterialTheme.typography.bodySmall)
+                    Box(Modifier.background(Color.White, MaterialTheme.shapes.medium).padding(10.dp)) {
+                        androidx.compose.material3.MaterialTheme(colorScheme = androidx.compose.material3.lightColorScheme()) {
+                            DotQrCode(Totp.uri(secret, s.name), Modifier.size(180.dp))
+                        }
+                    }
+                    Text(stringResource(R.string.totp_key, keyText), style = MaterialTheme.typography.bodySmall)
+                    OutlinedTextField(
+                        value = code, onValueChange = { v -> code = v.filter { it.isDigit() }.take(6); wrong = false }, singleLine = true,
+                        placeholder = { Text(stringResource(R.string.totp_code)) }, isError = wrong,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth(),
+                    )
+                    if (wrong) Text(stringResource(R.string.totp_wrong), color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (Totp.check(code, secret)) {
+                        Prefs.update { putString("totpSecret", secret) }
+                        totpSetup = null
+                    } else wrong = true
+                }) { Text(stringResource(R.string.totp_verify)) }
+            },
+            dismissButton = { TextButton(onClick = { totpSetup = null }) { Text(stringResource(R.string.cancel)) } },
         )
     }
     if (pickLang) {

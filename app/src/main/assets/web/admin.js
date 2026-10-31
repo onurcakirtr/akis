@@ -20,6 +20,7 @@
     clearTimeout(waitTimer);
     view.innerHTML = '<div class="adm"><form class="login" id="admLogin"><h2>' + e(t('ad_title')) + '</h2>' +
       '<input class="nav" type="password" id="admPw" autocomplete="current-password" placeholder="' + e(t('ad_password')) + '">' +
+      (window.AKIS && window.AKIS.totp ? '<input class="nav" type="text" id="admCode" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="' + e(t('ad_code')) + '">' : '') +
       '<button class="pill acc nav" type="submit" style="justify-content:center">' + e(t('ad_signin')) + '</button>' +
       '<div class="note" id="admMsg">' + e(msg || '') + '</div><div class="note">' + e(t('ad_security')) + '</div></form></div>';
     var f = document.getElementById('admLogin');
@@ -28,9 +29,10 @@
       ev.preventDefault();
       var pw = document.getElementById('admPw').value;
       if (!pw) return;
-      call('/admin/login', { pw: pw }).then(function (j) {
+      var codeEl = document.getElementById('admCode');
+      call('/admin/login', { pw: pw, code: codeEl ? codeEl.value : '' }).then(function (j) {
         if (j.r) wait(j.r);
-        else login(t(j.err === 'locked' ? 'ad_locked' : j.err === 'off' ? 'ad_off' : 'ad_wrong'));
+        else login(t(j.err === 'locked' ? 'ad_locked' : j.err === 'off' ? 'ad_off' : j.err === 'code' ? 'ad_wrong_code' : 'ad_wrong'));
       });
     });
   }

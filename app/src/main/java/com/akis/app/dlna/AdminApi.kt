@@ -47,8 +47,9 @@ class AdminApi(private val ctx: Context, private val lib: MediaLibrary) {
         if (post && req.headers["x-akis"] != "1") { err(res, 403, "csrf"); return true }
         when (p) {
             "/admin/login" -> if (post) {
-                val r = Admin.login(ip, ServerState.clientName(ip), body(req).optString("pw"))
-                if (r == "wrong" || r == "locked" || r == "off") err(res, 403, r) else json(res, JSONObject().put("r", r))
+                val b = body(req)
+                val r = Admin.login(ip, ServerState.clientName(ip), b.optString("pw"), b.optString("code"))
+                if (r == "wrong" || r == "locked" || r == "off" || r == "code") err(res, 403, r) else json(res, JSONObject().put("r", r))
             } else err(res, 405, "method")
             "/admin/status" -> {
                 val s = Admin.status(param(req, "r"), ip)

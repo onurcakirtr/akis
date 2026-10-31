@@ -16,6 +16,7 @@ import javax.crypto.spec.PBEKeySpec
 /**
  * Web'den yönetim güvenliği:
  *  - ayrı yönetici şifresi (tuzlu PBKDF2 özeti saklanır)
+ *  - iki adımlı doğrulama açıksa ayrıca 6 haneli kod
  *  - doğru şifreden sonra telefonda "İzin ver / Reddet" onayı
  *  - tek oturum; 30 dk hareketsizlikte ya da en geç 12 saatte biter; IP'ye bağlı
  *  - bir cihazdan 5 yanlış denemede 15 dk bekleme + telefona uyarı
@@ -82,10 +83,11 @@ object Admin {
     /**
      * @return "locked", "wrong", "off" ya da onay isteği kimliği (telefona bildirim gider)
      */
-    fun login(ip: String, name: String, pw: String): String {
+    fun login(ip: String, name: String, pw: String, code: String = ""): String {
         if (!Prefs.current.adminOn || !hasPassword) return "off"
         if (locked(ip)) return "locked"
-        if (!check(pw)) {
+        val codeOk = !Totp.enabled || Totp.check(code)
+        if (!check(pw) || !codeOk) {
             val n = synchronized(fails) {
                 val (c, _) = fails[ip] ?: (0 to 0L)
                 fails[ip] = (c + 1) to System.currentTimeMillis()
@@ -93,7 +95,7 @@ object Admin {
             }
             ServerState.log(Lang.s(R.string.log_admin_wrong, name, ip))
             if (n == 5) notify(Lang.s(R.string.admin_wrong_title), Lang.s(R.string.admin_wrong_text, name, ip), null)
-            return if (n >= 5) "locked" else "wrong"
+            return if (n >= 5) "locked" else if (check(pw)) "code" else "wrong"
         }
         synchronized(fails) { fails.remove(ip) }
         val id = random(12)

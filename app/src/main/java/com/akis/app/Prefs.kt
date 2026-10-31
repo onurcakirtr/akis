@@ -50,6 +50,7 @@ data class Settings(
     val camera: Boolean,            // web: canlı kamera (hassas)
     val camFront: Boolean,          // varsayılan ön kamera
     val camHeight: Int,             // 480 / 720
+    val totpSecret: String,         // iki adımlı doğrulama anahtarı (boşsa kapalı)
     val adminHash: String,          // yönetici şifresi "tuz:pbkdf2" (boşsa belirlenmemiş)
 )
 
@@ -110,6 +111,7 @@ object Prefs {
         camera = sp.getBoolean("camera", false),
         camFront = sp.getBoolean("camFront", false),
         camHeight = sp.getInt("camHeight", 720),
+        totpSecret = sp.getString("totpSecret", "") ?: "",
         adminHash = sp.getString("adminHash", "") ?: "",
     )
 

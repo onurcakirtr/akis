@@ -135,6 +135,8 @@
     <string name="f_subs_sub">.srt, .vtt, .ass, .sub and language-tagged names like movie.en.srt; broken characters are fixed</string>
     <string name="f_thumbs">Better thumbnails</string>
     <string name="f_thumbs_sub">App icons for APKs, first page for PDFs, a photo for folders</string>
+    <string name="f_totp">Two-step verification</string>
+    <string name="f_totp_sub">Ask for a code from an authenticator app when signing in to management and remote access</string>
     <string name="f_upload">Upload from the web</string>
     <string name="f_upload_sub">Drag and drop files from a computer\'s browser to the phone</string>
     <string name="f_widget">Home screen widgets</string>
@@ -324,6 +326,12 @@
     <string name="theme_samsung">Samsung</string>
     <string name="theme_sunset">Sunset</string>
     <string name="theme_terminal">Terminal</string>
+    <string name="totp_code">6-digit code</string>
+    <string name="totp_key">Key: %1$s</string>
+    <string name="totp_setup">Set up two-step verification</string>
+    <string name="totp_steps">Scan the QR code with Google Authenticator, Aegis or Microsoft Authenticator (or enter the key), then type the 6-digit code it shows.</string>
+    <string name="totp_verify">Verify and turn on</string>
+    <string name="totp_wrong">Wrong code, try again</string>
     <string name="unblock">Remove</string>
     <string name="unknown_album">Unknown album</string>
     <string name="unknown_artist">Unknown artist</string>
@@ -351,6 +359,7 @@
     <string name="web_ad_blocked">Blocked and banned</string>
     <string name="web_ad_blocked_tag">blocked</string>
     <string name="web_ad_close">Close</string>
+    <string name="web_ad_code">Code from the authenticator app</string>
     <string name="web_ad_connected">Connected now</string>
     <string name="web_ad_denied">The request was denied on the phone.</string>
     <string name="web_ad_devices">Devices</string>
@@ -389,6 +398,7 @@
     <string name="web_ad_unblock">Unblock</string>
     <string name="web_ad_wait">Approve the request on the phone…</string>
     <string name="web_ad_wrong">Wrong password</string>
+    <string name="web_ad_wrong_code">Wrong code</string>
     <string name="web_ad_you">this device</string>
     <string name="web_add_queue">Add to queue</string>
     <string name="web_album_t">Album</string>
