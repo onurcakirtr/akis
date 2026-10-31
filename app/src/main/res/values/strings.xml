@@ -129,6 +129,8 @@
     <string name="f_notif_sub">Progress, device count and what\'s playing in the notification and quick settings tile</string>
     <string name="f_pin">Web PIN</string>
     <string name="f_pin_sub">Ask browser visitors for a 4–6 digit PIN</string>
+    <string name="f_pwa">Add to home screen</string>
+    <string name="f_pwa_sub">Browsers can install the web interface like an app with the server icon. Full install needs the remote (HTTPS) address; on the local address it is added as a shortcut.</string>
     <string name="f_rate">Speed limit</string>
     <string name="f_rate_sub">Cap how fast each connection can download (videos, files, ZIPs, camera, TVs too)</string>
     <string name="f_remote">Remote access (Cloudflare Tunnel)</string>

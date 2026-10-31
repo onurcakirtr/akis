@@ -56,6 +56,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
         when {
             p == "/" || p == "/index.html" -> res.html(shell(req.tunnel, look))
             p.startsWith("/static/") -> static(p.removePrefix("/static/"), res)
+            p == "/manifest.webmanifest" -> if (Prefs.current.pwa) manifest(res) else res.text(404, Lang.s(R.string.http_not_found))
             p == "/api/home" -> json(res, home())
             p == "/api/list" -> json(res, list(param(req, "id").ifEmpty { "0" }))
             p == "/api/search" -> json(res, JSONObject().put("items", items(lib.search(param(req, "q"), limit = 300))))
@@ -151,7 +152,33 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .replace("{{TITLE}}", esc(s.name))
             .replace("{{ICONV}}", ServerIcon.version(ctx))
             .replace("{{THEME}}", WebUi.themeCss(look.theme, look.mode))
+            .replace("{{PWA}}", if (!s.pwa) "" else {
+                val v = ServerIcon.version(ctx)
+                "<link rel=\"manifest\" href=\"/manifest.webmanifest\" crossorigin=\"use-credentials\">" +
+                    "<link rel=\"apple-touch-icon\" href=\"/icon-180.png?v=$v\">" +
+                    "<meta name=\"mobile-web-app-capable\" content=\"yes\"><meta name=\"apple-mobile-web-app-capable\" content=\"yes\">" +
+                    "<meta name=\"apple-mobile-web-app-title\" content=\"${esc(s.name)}\"><meta name=\"theme-color\" content=\"#000\">"
+            })
             .replace("{{CONF}}", conf.toString().replace("</", "<\\/"))
+    }
+
+    /** Ana ekrana ekle: uygulama tanımı (ad ve sunucu simgesi). */
+    private fun manifest(res: HttpResponder) {
+        val name = Prefs.current.name
+        val v = ServerIcon.version(ctx)
+        val icons = JSONArray()
+        for (n in listOf(192, 512)) {
+            icons.put(JSONObject().put("src", "/icon-$n.png?v=$v").put("sizes", "${n}x$n").put("type", "image/png").put("purpose", "any"))
+        }
+        val o = JSONObject()
+            .put("name", name)
+            .put("short_name", name.take(12))
+            .put("start_url", "/")
+            .put("scope", "/")
+            .put("display", "standalone")
+            .put("lang", Lang.locale.language)
+            .put("icons", icons)
+        res.bytes(200, "application/manifest+json; charset=utf-8", o.toString().toByteArray(Charsets.UTF_8), mapOf("Cache-Control" to "no-cache"))
     }
 
     private fun esc(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")

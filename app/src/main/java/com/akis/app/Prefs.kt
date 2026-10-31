@@ -45,6 +45,7 @@ data class Settings(
     val richThumbs: Boolean,        // web: APK ikonu, PDF ilk sayfa, klasör kapağı
     val keysHelp: Boolean,          // web: ? ile kısayol yardımı
     val webLook: Boolean,           // web: tarayıcı başına dil ve tema seçimi
+    val pwa: Boolean,               // web: ana ekrana ekle (uygulama tanımı)
     val rateOn: Boolean,            // bağlantı başına hız sınırı
     val rateLocal: Int,             // Mbit/s (0 = sınırsız)
     val rateRemote: Int,            // Mbit/s, uzaktan erişim (0 = sınırsız)
@@ -121,6 +122,7 @@ object Prefs {
         richThumbs = sp.getBoolean("richThumbs", true),
         keysHelp = sp.getBoolean("keysHelp", true),
         webLook = sp.getBoolean("webLook", true),
+        pwa = sp.getBoolean("pwa", true),
         rateOn = sp.getBoolean("rateOn", false),
         rateLocal = sp.getInt("rateLocal", 0),
         rateRemote = sp.getInt("rateRemote", 5),

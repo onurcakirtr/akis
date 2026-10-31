@@ -99,7 +99,13 @@ object ServerIcon {
         val o = ByteArrayOutputStream()
         bmp.compress(Bitmap.CompressFormat.PNG, 100, o)
         bmp.recycle()
-        return o.toByteArray().also { synchronized(cache) { cache.clear(); cache[key] = it } }
+        return o.toByteArray().also {
+            synchronized(cache) {
+                // Simge değişince eski boyutlar atılır; aynı simgenin farklı boyutları birlikte durur
+                cache.keys.removeAll { k -> !k.startsWith(version(ctx) + "@") }
+                cache[key] = it
+            }
+        }
     }
 
     /** Galeriden seçilen resmi ortadan kare kırpıp 256×256 PNG olarak saklar. */

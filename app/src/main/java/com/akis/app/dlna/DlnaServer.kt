@@ -80,6 +80,9 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
 
     private fun decode(s: String) = URLDecoder.decode(s, "UTF-8")
 
+    private fun iconSize(p: String): Int? =
+        p.removePrefix("/icon-").removeSuffix(".png").takeIf { p.startsWith("/icon-") && p.endsWith(".png") }?.toIntOrNull()?.takeIf { it in appIcons }
+
     /** Ayarlar → Hız sınırı: bağlantı başına bayt/sn (0 = sınırsız). Telefonun kendisi sınırlanmaz. */
     private fun rateFor(req: HttpRequest): Long {
         val s = Prefs.current
@@ -105,6 +108,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 p == "/cm.xml" -> res.xml(Xml.CM_SCPD)
                 p == "/icon.png" -> res.bytes(200, "image/png", ServerIcon.png(ctx, 120), mapOf("Cache-Control" to "max-age=300"))
                 p == "/icon48.png" -> res.bytes(200, "image/png", ServerIcon.png(ctx, 48), mapOf("Cache-Control" to "max-age=300"))
+                iconSize(p) != null -> res.bytes(200, "image/png", ServerIcon.png(ctx, iconSize(p)!!), mapOf("Cache-Control" to "max-age=300"))
                 p.startsWith("/m/") -> serveMedia(req, res, decode(p.removePrefix("/m/").substringBefore('/')), base)
                 p.startsWith("/s/") -> serveSubtitle(res, decode(p.removePrefix("/s/").substringBeforeLast('.')), p.substringAfterLast('.'))
                 p.startsWith("/t/") -> {
@@ -135,7 +139,10 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
 
     // ---------------- Erişim (cihaz onayı + web PIN'i) ----------------
 
-    private val openPaths = setOf("/desc.xml", "/cd.xml", "/cm.xml", "/icon.png", "/icon48.png")
+    private val openPaths = setOf("/desc.xml", "/cd.xml", "/cm.xml", "/icon.png", "/icon48.png", "/manifest.webmanifest")
+
+    /** Ana ekran simgeleri (yalnızca sunucu simgesi; giriş gerektirmez). */
+    private val appIcons = setOf(180, 192, 512)
 
     private fun webPath(p: String) =
         p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/") || p == "/raw" || p == "/zip" || p == "/zipget" || p == "/tf" || p == "/appicon" || p == "/apk" || p.startsWith("/cam/") || p == "/zipsel" || p.startsWith("/admin/")
@@ -150,7 +157,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             return false
         }
         if (req.tunnel) return remoteAccess(req, res, settings)
-        if (p in openPaths || p.startsWith("/static/") || p.startsWith("/share/")) return true
+        if (p in openPaths || p.startsWith("/static/") || p.startsWith("/share/") || iconSize(p) != null) return true
         if (p == "/pin") {
             pinLogin(req, res, settings)
             return false

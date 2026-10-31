@@ -84,6 +84,9 @@
   var upBtn = $('#upBtn');
   if (C.upload) { upBtn.hidden = false; $('#upLabel').textContent = t('upload'); upBtn.addEventListener('click', function () { Upload.open(); }); }
 
+  var themeMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeMeta) themeMeta.content = getComputedStyle(document.documentElement).getPropertyValue('--bg').trim() || '#000';
+
   // ======================= Görünüm (yalnızca bu tarayıcı) =======================
   // akis_ui çerezi "dil.tema.mod"; sunucu sayfayı buna göre üretir. Boş parça = telefonu takip et.
   var lookBtn = $('#lookBtn'), lookPanel = $('#lookPanel');
