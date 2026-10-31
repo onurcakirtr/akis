@@ -54,6 +54,17 @@
     <string name="cam_live">📷 Camera is live</string>
     <string name="cam_note">Start the server from the app (not from the widget or quick tile) for the camera to work. A notification shows while the camera is on.</string>
     <string name="cancel">Cancel</string>
+    <string name="card_footer">Scan with the phone camera</string>
+    <string name="card_local_title">Open in a browser</string>
+    <string name="card_make">Make card</string>
+    <string name="card_remote">Include remote address</string>
+    <string name="card_remote_title">From anywhere</string>
+    <string name="card_save">Save</string>
+    <string name="card_saved">Saved to Pictures/Akış</string>
+    <string name="card_share">Share</string>
+    <string name="card_title">QR card</string>
+    <string name="card_wifi">Include Wi-Fi</string>
+    <string name="card_wifi_title">Join Wi-Fi</string>
     <string name="ch_access_desc">Asked when a new device wants to connect</string>
     <string name="ch_files">Incoming files</string>
     <string name="ch_files_desc">When a file is uploaded from the web interface</string>
@@ -139,6 +150,8 @@
     <string name="f_pin_sub">Ask browser visitors for a 4–6 digit PIN</string>
     <string name="f_pwa">Add to home screen</string>
     <string name="f_pwa_sub">Browsers can install the web interface like an app with the server icon. Full install needs the remote (HTTPS) address; on the local address it is added as a shortcut.</string>
+    <string name="f_qrcard">QR card</string>
+    <string name="f_qrcard_sub">Make a printable card with the server\'s addresses and Wi-Fi from the QR window</string>
     <string name="f_rate">Speed limit</string>
     <string name="f_rate_sub">Cap how fast each connection can download (videos, files, ZIPs, camera, TVs too)</string>
     <string name="f_remote">Remote access (Cloudflare Tunnel)</string>

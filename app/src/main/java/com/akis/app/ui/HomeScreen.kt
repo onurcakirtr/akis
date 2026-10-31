@@ -62,6 +62,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.ClientInfo
 import com.akis.app.DeviceAccess
 import com.akis.app.QuickShare
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.toArgb
 import com.akis.app.FileRequests
 import androidx.compose.material.icons.rounded.MoveToInbox
 import androidx.compose.material.icons.rounded.Public
@@ -96,6 +98,7 @@ fun HomeScreen() {
     val tunnelState by com.akis.app.Tunnel.state.collectAsStateWithLifecycle()
     val remoteUrl by com.akis.app.Tunnel.url.collectAsStateWithLifecycle()
     var qrTab by remember { mutableStateOf("local") }
+    var cardOpen by remember { mutableStateOf(false) }
     val shares by QuickShare.shares.collectAsStateWithLifecycle()
     var qrFor by remember { mutableStateOf<String?>(null) }
     val requests by FileRequests.list.collectAsStateWithLifecycle()
@@ -281,6 +284,9 @@ fun HomeScreen() {
     qrRequest?.let { tk ->
         LinkQrDialog(stringResource(R.string.req_new), stringResource(R.string.req_hint), { FileRequests.url(tk, it) }, remoteUrl != null && tunnelState == com.akis.app.Tunnel.State.UP) { qrRequest = null }
     }
+    if (cardOpen && address != null) {
+        QrCardDialog(settings.name, address!!, remoteUrl.takeIf { tunnelState == com.akis.app.Tunnel.State.UP }, settings.wifiSsid, settings.wifiPass) { cardOpen = false }
+    }
     actFor?.let { c ->
         AlertDialog(
             onDismissRequest = { actFor = null },
@@ -303,6 +309,7 @@ fun HomeScreen() {
         AlertDialog(
             onDismissRequest = { showQr = false },
             confirmButton = { TextButton(onClick = { showQr = false }) { Text(stringResource(R.string.close)) } },
+            dismissButton = if (settings.qrCard) ({ TextButton(onClick = { showQr = false; cardOpen = true }) { Text(stringResource(R.string.card_make)) } }) else null,
             title = { Text(stringResource(R.string.open_in_browser)) },
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
@@ -336,6 +343,65 @@ fun HomeScreen() {
     }
 }
 
+/** WIFI:… biçimi (telefon kameraları tanır). */
+private fun wifiCode(ssid: String, pass: String): String {
+    fun e(v: String) = v.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:").replace("\"", "\\\"")
+    return if (pass.isEmpty()) "WIFI:T:nopass;S:${e(ssid)};;" else "WIFI:T:WPA;S:${e(ssid)};P:${e(pass)};;"
+}
+
+/** Kişisel QR kartı: önizleme, Wi-Fi / uzak adres seçimi, kaydet ve paylaş. */
+@Composable
+private fun QrCardDialog(name: String, local: String, remote: String?, ssid: String, pass: String, onDismiss: () -> Unit) {
+    val ctx = LocalContext.current
+    var withWifi by remember { mutableStateOf(ssid.isNotEmpty()) }
+    var withRemote by remember { mutableStateOf(false) }
+    val theme = com.akis.app.ui.theme.LocalAppTheme.current
+    val titles = listOf(stringResource(R.string.card_local_title), stringResource(R.string.card_wifi_title), stringResource(R.string.card_remote_title))
+    val footer = stringResource(R.string.card_footer)
+    val savedMsg = stringResource(R.string.card_saved)
+    val shareTitle = stringResource(R.string.card_share)
+    val bmp = remember(withWifi, withRemote, name, local, remote, ssid, pass, theme.id) {
+        val cs = theme.scheme(ctx, theme.darkOnly)
+        val colors = QrCard.Colors(
+            cs.background.toArgb(), cs.surfaceContainerHigh.toArgb(), cs.onSurface.toArgb(), cs.onSurfaceVariant.toArgb(), cs.primary.toArgb(),
+        )
+        val rows = buildList {
+            add(QrCard.Row(titles[0], local, local))
+            if (withWifi && ssid.isNotEmpty()) add(QrCard.Row(titles[1], ssid, wifiCode(ssid, pass)))
+            if (withRemote && remote != null) add(QrCard.Row(titles[2], remote, remote))
+        }
+        QrCard.render(ctx, colors, name, rows, footer)
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.card_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.foundation.Image(
+                    bmp.asImageBitmap(), null,
+                    modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium),
+                )
+                if (ssid.isNotEmpty()) Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.card_wifi), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    androidx.compose.material3.Switch(withWifi, { withWifi = it })
+                }
+                if (remote != null) Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(stringResource(R.string.card_remote), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                    androidx.compose.material3.Switch(withRemote, { withRemote = it })
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { QrCard.save(ctx, bmp, name)?.let { QrCard.share(ctx, it, shareTitle) } }) { Text(stringResource(R.string.card_share)) }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                if (QrCard.save(ctx, bmp, name) != null) android.widget.Toast.makeText(ctx, savedMsg, android.widget.Toast.LENGTH_SHORT).show()
+            }) { Text(stringResource(R.string.card_save)) }
+        },
+    )
+}
+
 /** Ağa bağlanma QR'ı (WIFI:… biçimi; telefon kameraları tanır) ve ardından açılacak adres. */
 @Composable
 private fun WifiQr(ssid: String, pass: String, address: String) {
@@ -360,9 +426,7 @@ private fun WifiQr(ssid: String, pass: String, address: String) {
         }
         return
     }
-    fun e(v: String) = v.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:").replace("\"", "\\\"")
-    val code = if (pass.isEmpty()) "WIFI:T:nopass;S:${e(ssid)};;" else "WIFI:T:WPA;S:${e(ssid)};P:${e(pass)};;"
-    DotQrCode(code, Modifier.size(240.dp))
+    DotQrCode(wifiCode(ssid, pass), Modifier.size(240.dp))
     Spacer(Modifier.height(10.dp))
     Text(ssid, style = MaterialTheme.typography.titleMedium)
     Spacer(Modifier.height(6.dp))

@@ -55,6 +55,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material.icons.rounded.NotificationsActive
@@ -496,6 +497,7 @@ fun SettingsScreen() {
                     Icons.Rounded.NotificationsActive, stringResource(R.string.f_ring), stringResource(R.string.f_ring_sub), s.ring, divider = true,
                     extra = { if (!s.adminOn) Text(stringResource(R.string.ring_need_admin), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) },
                 ) { Prefs.set("ring", it) }
+                FeatureRow(Icons.Rounded.QrCode2, stringResource(R.string.f_qrcard), stringResource(R.string.f_qrcard_sub), s.qrCard, divider = true) { Prefs.set("qrCard", it) }
                 FeatureRow(Icons.Rounded.Wifi, stringResource(R.string.f_wifiqr), stringResource(R.string.f_wifiqr_sub), s.wifiQr, divider = true) { Prefs.set("wifiQr", it) }
                 FeatureRow(Icons.Rounded.MoveToInbox, stringResource(R.string.f_filereq), stringResource(R.string.f_filereq_sub), s.fileReq, divider = true) { Prefs.set("fileReq", it) }
                 FeatureRow(Icons.Rounded.AddToHomeScreen, stringResource(R.string.f_pwa), stringResource(R.string.f_pwa_sub), s.pwa, divider = true) { Prefs.set("pwa", it) }

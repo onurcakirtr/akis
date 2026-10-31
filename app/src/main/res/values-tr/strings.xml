@@ -53,6 +53,17 @@
     <string name="cam_live">📷 Kamera yayında</string>
     <string name="cam_note">Kameranın çalışması için sunucuyu uygulamadan başlat (widget ya da kutucuktan değil). Kamera açıkken bildirim görünür.</string>
     <string name="cancel">Vazgeç</string>
+    <string name="card_footer">Telefon kamerasıyla okut</string>
+    <string name="card_local_title">Tarayıcıda aç</string>
+    <string name="card_make">Kart oluştur</string>
+    <string name="card_remote">Uzak adresi ekle</string>
+    <string name="card_remote_title">Her yerden</string>
+    <string name="card_save">Kaydet</string>
+    <string name="card_saved">Resimler/Akış klasörüne kaydedildi</string>
+    <string name="card_share">Paylaş</string>
+    <string name="card_title">QR kartı</string>
+    <string name="card_wifi">Wi-Fi ekle</string>
+    <string name="card_wifi_title">Wi-Fi\'a bağlan</string>
     <string name="ch_access_desc">Yeni bir cihaz bağlanmak istediğinde sorulur</string>
     <string name="ch_files">Gelen dosyalar</string>
     <string name="ch_files_desc">Web arayüzünden dosya yüklendiğinde</string>
@@ -138,6 +149,8 @@
     <string name="f_pin_sub">Tarayıcıdan girenlerden 4–6 haneli PIN iste</string>
     <string name="f_pwa">Ana ekrana ekle</string>
     <string name="f_pwa_sub">Tarayıcılar web arayüzünü sunucu simgesiyle uygulama gibi yükleyebilir. Tam yükleme uzak (HTTPS) adreste olur; yerel adreste kısayol olarak eklenir.</string>
+    <string name="f_qrcard">QR kartı</string>
+    <string name="f_qrcard_sub">QR penceresinden sunucunun adresleri ve Wi-Fi\'ı ile yazdırılabilir bir kart oluştur</string>
     <string name="f_rate">Hız sınırı</string>
     <string name="f_rate_sub">Her bağlantının indirme hızını sınırla (videolar, dosyalar, ZIP, kamera; TV\'ler de)</string>
     <string name="f_remote">Uzaktan erişim (Cloudflare Tunnel)</string>

@@ -48,6 +48,7 @@ data class Settings(
     val pwa: Boolean,               // web: ana ekrana ekle (uygulama tanımı)
     val fileReq: Boolean,           // dosya isteme bağlantıları
     val wifiQr: Boolean,            // QR penceresinde Wi-Fi sekmesi
+    val qrCard: Boolean,            // yazdırılabilir QR kartı
     val ring: Boolean,              // yönetim sayfasından telefonu çaldır
     val screen: Boolean,            // web: ekran paylaşımı (hassas)
     val mic: Boolean,               // web: canlı mikrofon (hassas)
@@ -135,6 +136,7 @@ object Prefs {
         pwa = sp.getBoolean("pwa", true),
         fileReq = sp.getBoolean("fileReq", true),
         wifiQr = sp.getBoolean("wifiQr", true),
+        qrCard = sp.getBoolean("qrCard", true),
         ring = sp.getBoolean("ring", false),
         screen = sp.getBoolean("screen", false),
         mic = sp.getBoolean("mic", false),
