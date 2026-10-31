@@ -148,6 +148,9 @@
     <string name="f_mic_sub">Telefonun mikrofonunu web\'den canlı dinle; kamerayla ya da tek başına. Yalnızca biri dinlerken açık.</string>
     <string name="f_notif">Bildirim paneli ayrıntıları</string>
     <string name="f_notif_sub">Bildirimde ve hızlı ayar kutucuğunda ilerleme, cihaz sayısı, oynatılan dosya</string>
+    <string name="f_notifs">Bildirim yansıtma</string>
+    <string name="f_notifs_short">Bildirimler</string>
+    <string name="f_notifs_sub">Telefona gelen bildirimleri web\'de canlı göster. Yalnızca son 50 bildirim bellekte tutulur.</string>
     <string name="f_pin">Web PIN\'i</string>
     <string name="f_pin_sub">Tarayıcıdan girenlerden 4–6 haneli PIN iste</string>
     <string name="f_pwa">Ana ekrana ekle</string>
@@ -285,9 +288,13 @@
     <string name="nobody_hint">VLC\'de Yerel Ağ → Universal Plug\'n\'Play bölümünü aç. \"%1$s\" listede görünecek.</string>
     <string name="nobody_yet">Henüz kimse bağlanmadı</string>
     <string name="nothing_playing">Şu an bir şey oynatılmıyor</string>
+    <string name="notif_listener">Akış bildirim yansıtma</string>
     <string name="notif_on">Akış yayında</string>
     <string name="notif_playing_on">%1$s cihazında oynatılıyor</string>
     <string name="notif_sent">%1$s • %2$s gönderildi</string>
+    <string name="notifs_grant">Bildirim erişimine izin ver</string>
+    <string name="notifs_need">Android, Akış için bildirim erişimi izni istiyor (sistem ayarları).</string>
+    <string name="notifs_title_only">Yalnızca uygulama adı ve başlık (metin, ör. kodlar gizlensin)</string>
     <string name="now_playing">Şu an oynatılıyor</string>
     <string name="ob_1_text">Akış, telefonundaki videoları, müzikleri ve fotoğrafları evdeki TV\'ler, VLC ve bilgisayarlarla paylaşır. Reklam yok, hesap yok; hiçbir şey ağından dışarı çıkmaz.</string>
     <string name="ob_1_title">Telefonun, medya sunucun</string>
@@ -653,6 +660,10 @@
     <string name="web_normal">Normal</string>
     <string name="web_not_charging">Şarj olmuyor</string>
     <string name="web_nothing_found">Sonuç yok</string>
+    <string name="web_notifs">Bildirimler</string>
+    <string name="web_notifs_empty">Henüz bildirim yok. Yenileri burada görünür.</string>
+    <string name="web_notifs_gone">kapatıldı</string>
+    <string name="web_notifs_sub">Telefondan canlı</string>
     <string name="web_off">Kapalı</string>
     <string name="web_on">Açık</string>
     <string name="web_open_map">Haritada aç</string>

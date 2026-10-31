@@ -149,6 +149,9 @@
     <string name="f_mic_sub">Listen to the phone\'s microphone live from the web, with or without the camera. On only while someone listens.</string>
     <string name="f_notif">Notification details</string>
     <string name="f_notif_sub">Progress, device count and what\'s playing in the notification and quick settings tile</string>
+    <string name="f_notifs">Notification mirroring</string>
+    <string name="f_notifs_short">Notifications</string>
+    <string name="f_notifs_sub">Show the phone\'s notifications live on the web. Only the last 50 are kept, in memory.</string>
     <string name="f_pin">Web PIN</string>
     <string name="f_pin_sub">Ask browser visitors for a 4–6 digit PIN</string>
     <string name="f_pwa">Add to home screen</string>
@@ -286,9 +289,13 @@
     <string name="nobody_hint">In VLC, open Local Network → Universal Plug\'n\'Play. \"%1$s\" will show up in the list.</string>
     <string name="nobody_yet">Nobody has connected yet</string>
     <string name="nothing_playing">Nothing is playing right now</string>
+    <string name="notif_listener">Akış notification mirroring</string>
     <string name="notif_on">Akış is sharing</string>
     <string name="notif_playing_on">Playing on %1$s</string>
     <string name="notif_sent">%1$s • %2$s sent</string>
+    <string name="notifs_grant">Allow notification access</string>
+    <string name="notifs_need">Android needs notification access for Akış (system settings).</string>
+    <string name="notifs_title_only">Only app name and title (hide text, e.g. codes)</string>
     <string name="now_playing">Now playing</string>
     <string name="ob_1_text">Akış shares the videos, music and photos on your phone with TVs, VLC and computers at home. No ads, no account, nothing leaves your network.</string>
     <string name="ob_1_title">Your phone, your media server</string>
@@ -654,6 +661,10 @@
     <string name="web_normal">Normal</string>
     <string name="web_not_charging">Not charging</string>
     <string name="web_nothing_found">Nothing found</string>
+    <string name="web_notifs">Notifications</string>
+    <string name="web_notifs_empty">No notifications yet. New ones appear here.</string>
+    <string name="web_notifs_gone">dismissed</string>
+    <string name="web_notifs_sub">Live from the phone</string>
     <string name="web_off">Off</string>
     <string name="web_on">On</string>
     <string name="web_open_map">Open in map</string>

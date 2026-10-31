@@ -500,6 +500,28 @@ fun SettingsScreen() {
                 ) { Prefs.set("ring", it) }
                 FeatureRow(Icons.Rounded.QrCode2, stringResource(R.string.f_qrcard), stringResource(R.string.f_qrcard_sub), s.qrCard, divider = true) { Prefs.set("qrCard", it) }
                 FeatureRow(Icons.Rounded.Wifi, stringResource(R.string.f_wifiqr), stringResource(R.string.f_wifiqr_sub), s.wifiQr, divider = true) { Prefs.set("wifiQr", it) }
+                FeatureRow(
+                    Icons.Rounded.Notifications, stringResource(R.string.f_notifs), stringResource(R.string.f_notifs_sub), s.notifs, divider = true,
+                    extra = {
+                        if (!com.akis.app.NotifMirror.granted(ctx)) {
+                            Text(stringResource(R.string.notifs_need), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                            FilledTonalButton(onClick = {
+                                runCatching { ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+                            }) { Text(stringResource(R.string.notifs_grant)) }
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.notifs_title_only), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Switch(s.notifsTitleOnly, { v -> Prefs.set("notifsTitleOnly", v) })
+                        }
+                        Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    },
+                ) { on ->
+                    Prefs.set("notifs", on)
+                    if (on) com.akis.app.NotifMirror.rebind(ctx) else com.akis.app.NotifMirror.clear()
+                    if (on && !com.akis.app.NotifMirror.granted(ctx)) {
+                        runCatching { ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+                    }
+                }
                 FeatureRow(Icons.Rounded.Inbox, stringResource(R.string.f_inbox_web), stringResource(R.string.f_inbox_web_sub), s.inboxWeb, divider = true) { Prefs.set("inboxWeb", it) }
                 FeatureRow(Icons.Rounded.MoveToInbox, stringResource(R.string.f_filereq), stringResource(R.string.f_filereq_sub), s.fileReq, divider = true) { Prefs.set("fileReq", it) }
                 FeatureRow(Icons.Rounded.AddToHomeScreen, stringResource(R.string.f_pwa), stringResource(R.string.f_pwa_sub), s.pwa, divider = true) { Prefs.set("pwa", it) }
@@ -595,6 +617,7 @@ fun SettingsScreen() {
                                 Triple("remoteStatus", stringResource(R.string.f_status), s.remoteStatus),
                                 Triple("remoteApps", stringResource(R.string.f_apps), s.remoteApps),
                                 Triple("remoteScreen", stringResource(R.string.f_screen_short), s.remoteScreen),
+                                Triple("remoteNotifs", stringResource(R.string.f_notifs_short), s.remoteNotifs),
                                 Triple("remoteInbox", stringResource(R.string.f_inbox_short), s.remoteInbox),
                                 Triple("remoteMic", stringResource(R.string.f_mic_short), s.remoteMic),
                             ).forEach { (key, label, on) ->

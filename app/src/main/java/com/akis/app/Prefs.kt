@@ -48,6 +48,9 @@ data class Settings(
     val pwa: Boolean,               // web: ana ekrana ekle (uygulama tanımı)
     val fileReq: Boolean,           // dosya isteme bağlantıları
     val inboxWeb: Boolean,          // gelen dosyalar web'de
+    val notifs: Boolean,            // bildirim yansıtma (hassas)
+    val notifsTitleOnly: Boolean,   // yalnızca uygulama adı ve başlık
+    val remoteNotifs: Boolean,
     val remoteInbox: Boolean,
     val wifiQr: Boolean,            // QR penceresinde Wi-Fi sekmesi
     val qrCard: Boolean,            // yazdırılabilir QR kartı
@@ -138,6 +141,9 @@ object Prefs {
         pwa = sp.getBoolean("pwa", true),
         fileReq = sp.getBoolean("fileReq", true),
         inboxWeb = sp.getBoolean("inboxWeb", false),
+        notifs = sp.getBoolean("notifs", false),
+        notifsTitleOnly = sp.getBoolean("notifsTitleOnly", false),
+        remoteNotifs = sp.getBoolean("remoteNotifs", false),
         remoteInbox = sp.getBoolean("remoteInbox", false),
         wifiQr = sp.getBoolean("wifiQr", true),
         qrCard = sp.getBoolean("qrCard", true),

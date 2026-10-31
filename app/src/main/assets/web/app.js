@@ -65,6 +65,7 @@
     battery: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 11v2M6 10v4M9 10v4"/></svg>',
     screen: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
     mic: '<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+    bell: '<svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
     link: '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>'
   };
   var CAT_ICON = { v: ICO.v, a: ICO.a, i: ICO.i, f: ICO.folder, 'h:u': ICO.unw, 'h:c': ICO.hist, r: ICO.recent, 'pd:': ICO.drive };
@@ -150,7 +151,7 @@
     var parts = h.split('/');
     var name = parts[0] || 'home';
     var arg = decodeURIComponent(parts.slice(1).join('/'));
-    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload', admin: 'admin', status: 'status', apps: 'apps', cam: 'cam', screen: 'screen', mic: 'mic', inbox: 'inbox' };
+    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload', admin: 'admin', status: 'status', apps: 'apps', cam: 'cam', screen: 'screen', mic: 'mic', inbox: 'inbox', notifs: 'notifs' };
     return { name: map[name] || 'home', arg: arg, p: params, key: location.hash };
   }
   var player = null, list = [], listFolder = '0', scrolls = {}, lastKey = '', softNext = false;
@@ -222,6 +223,7 @@
     else if (r.name === 'cam') p = renderCam();
     else if (r.name === 'screen') p = renderScreen();
     else if (r.name === 'inbox') p = renderInbox();
+    else if (r.name === 'notifs') p = renderNotifs();
     else if (r.name === 'mic') p = renderMic();
     else if (r.name === 'apps') p = renderApps();
     else if (r.name === 'admin') p = window.AkisAdmin.render(view, { t: t, esc: esc, toast: toast, size: size, ICO: ICO });
@@ -305,6 +307,7 @@
       if (C.files) h += '<a class="tile nav" href="#/d/"><div class="icon-badge">' + ICO.drive + '</div><b>' + esc(t('all_files')) + '</b><span class="sub">' + esc(t('all_files_sub')) + '</span></a>';
       if (C.apps) h += '<a class="tile nav" href="#/apps"><div class="icon-badge">' + ICO.apps + '</div><b>' + esc(t('apps')) + '</b><span class="sub">APK</span></a>';
       if (C.camera) h += '<a class="tile nav" href="#/cam"><div class="icon-badge">' + ICO.cam + '</div><b>' + esc(t('camera')) + '</b><span class="sub">MJPEG</span></a>';
+      if (C.notifs) h += '<a class="tile nav" href="#/notifs"><div class="icon-badge">' + ICO.bell + '</div><b>' + esc(t('notifs')) + '</b><span class="sub">' + esc(t('notifs_sub')) + '</span></a>';
       if (C.inbox) h += '<a class="tile nav" href="#/inbox"><div class="icon-badge">' + ICO.dl + '</div><b>' + esc(t('inbox')) + '</b><span class="sub">' + esc(t('inbox_sub')) + '</span></a>';
       if (C.screen) h += '<a class="tile nav" href="#/screen"><div class="icon-badge">' + ICO.screen + '</div><b>' + esc(t('screen')) + '</b><span class="sub">MJPEG</span></a>';
       if (C.mic) h += '<a class="tile nav" href="#/mic"><div class="icon-badge">' + ICO.mic + '</div><b>' + esc(t('mic')) + '</b><span class="sub">WAV</span></a>';
@@ -509,6 +512,33 @@
     var a = document.getElementById('micAud');
     a.onerror = function () { a.insertAdjacentHTML('afterend', '<div class="empty">' + esc(t('mic_off')) + '</div>'); a.remove(); };
     return Promise.resolve();
+  }
+
+  // ======================= Bildirimler =======================
+  var notifTimer = 0;
+  function renderNotifs() {
+    clearTimeout(notifTimer);
+    var last = -1;
+    function draw(d) {
+      var h = d.items.map(function (n) {
+        var when = new Date(n.t).toLocaleTimeString(C.lang || undefined, { hour: '2-digit', minute: '2-digit' });
+        return '<div class="card app"' + (n.gone ? ' style="opacity:.55"' : '') + '><img loading="lazy" alt="" src="/nicon?pkg=' + enc(n.pkg) + '">' +
+          '<div class="meta"><div class="sub">' + esc(n.app + ' • ' + when + (n.gone ? ' • ' + t('notifs_gone') : '')) + '</div>' +
+          '<div class="title">' + esc(n.title) + '</div>' + (n.text ? '<div class="sub" style="white-space:pre-wrap">' + esc(n.text) + '</div>' : '') + '</div></div>';
+      }).join('') || '<div class="empty">' + esc(t('notifs_empty')) + '</div>';
+      var el = document.getElementById('notifList');
+      if (el) el.innerHTML = h;
+    }
+    function poll() {
+      if (route().name !== 'notifs') return;
+      api('/api/notifs').then(function (d) {
+        if (d.v !== last) { last = d.v; draw(d); }
+        notifTimer = setTimeout(poll, 3000);
+      }).catch(function () { notifTimer = setTimeout(poll, 6000); });
+    }
+    view.innerHTML = '<div class="bar"><nav class="crumbs"><a class="nav" href="#/">' + esc(t('home')) + '</a><span>›</span><a>' + esc(t('notifs')) + '</a></nav></div>' +
+      '<div class="list" id="notifList"><div class="spin" style="margin:30px auto"></div></div>';
+    return api('/api/notifs').then(function (d) { last = d.v; draw(d); notifTimer = setTimeout(poll, 3000); });
   }
 
   // ======================= Gelenler =======================

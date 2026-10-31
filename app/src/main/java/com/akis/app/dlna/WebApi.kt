@@ -84,6 +84,11 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
                 res.bytes(200, "image/jpeg", it, mapOf("Content-Disposition" to "attachment; filename=\"$name\""))
             } ?: res.text(404, Lang.s(R.string.http_not_found))
             p == "/live/screen" || p == "/live/mic.wav" -> if (!live(if (p == "/live/screen") "screen" else "mic", req, res)) res.text(404, Lang.s(R.string.http_not_found))
+            p == "/api/notifs" -> if (Prefs.current.notifs) json(res, notifs()) else res.text(404, Lang.s(R.string.http_not_found))
+            p == "/nicon" -> if (Prefs.current.notifs && com.akis.app.NotifMirror.items().any { it.pkg == param(req, "pkg") }) {
+                PhoneInfo.icon(ctx, param(req, "pkg"))?.let { res.bytes(200, "image/png", it, mapOf("Cache-Control" to "max-age=86400")) }
+                    ?: res.text(404, Lang.s(R.string.http_not_found))
+            } else res.text(404, Lang.s(R.string.http_not_found))
             p == "/api/inbox" -> if (Prefs.current.inboxWeb) json(res, inboxList()) else res.text(404, Lang.s(R.string.http_not_found))
             p.startsWith("/inbox/") -> inboxFile(req, res, p.removePrefix("/inbox/"))
             p == "/api/status" -> if (Prefs.current.phoneStatus) json(res, PhoneInfo.status(ctx)) else res.text(404, Lang.s(R.string.http_not_found))
@@ -142,6 +147,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("status", s.phoneStatus && (!remote || s.remoteStatus)).put("apps", s.appsList && (!remote || s.remoteApps))
             .put("camera", com.akis.app.CameraStream.allowed(ctx) && (!remote || s.remoteCamera))
             .put("camFront", s.camFront).put("camHeight", s.camHeight)
+            .put("notifs", s.notifs && (!remote || s.remoteNotifs))
             .put("inbox", s.inboxWeb && (!remote || s.remoteInbox))
             .put("screen", com.akis.app.ScreenStream.allowed() && (!remote || s.remoteScreen))
             .put("mic", com.akis.app.MicStream.allowed(ctx) && (!remote || s.remoteMic))
@@ -185,6 +191,18 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("lang", Lang.locale.language)
             .put("icons", icons)
         res.bytes(200, "application/manifest+json; charset=utf-8", o.toString().toByteArray(Charsets.UTF_8), mapOf("Cache-Control" to "no-cache"))
+    }
+
+    /** Yansıtılan bildirimler; "yalnızca başlık" açıksa metin hiç gönderilmez. */
+    private fun notifs(): JSONObject {
+        val titleOnly = Prefs.current.notifsTitleOnly
+        val a = JSONArray()
+        for (n in com.akis.app.NotifMirror.items()) {
+            val o = JSONObject().put("k", n.key).put("pkg", n.pkg).put("app", n.app).put("title", n.title).put("t", n.time).put("gone", n.gone)
+            if (!titleOnly) o.put("text", n.text)
+            a.put(o)
+        }
+        return JSONObject().put("v", com.akis.app.NotifMirror.version).put("items", a)
     }
 
     // ---------------- Gelenler (dosya isteme bağlantıları) ----------------
