@@ -60,6 +60,7 @@
     dl: '<svg viewBox="0 0 24 24"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg>',
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>',
     check: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    cam: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3z"/></svg>',
     apps: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>',
     battery: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 11v2M6 10v4M9 10v4"/></svg>',
     link: '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>'
@@ -106,7 +107,7 @@
     var parts = h.split('/');
     var name = parts[0] || 'home';
     var arg = decodeURIComponent(parts.slice(1).join('/'));
-    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload', admin: 'admin', status: 'status', apps: 'apps' };
+    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload', admin: 'admin', status: 'status', apps: 'apps', cam: 'cam' };
     return { name: map[name] || 'home', arg: arg, p: params, key: location.hash };
   }
   var player = null, list = [], listFolder = '0', scrolls = {}, lastKey = '', softNext = false;
@@ -175,6 +176,7 @@
     else if (r.name === 'watch') p = renderWatch(r.arg, r.p['in'] || '');
     else if (r.name === 'files') p = renderFiles(r.arg || '');
     else if (r.name === 'status') p = renderStatus();
+    else if (r.name === 'cam') p = renderCam();
     else if (r.name === 'apps') p = renderApps();
     else if (r.name === 'admin') p = window.AkisAdmin.render(view, { t: t, esc: esc, toast: toast, size: size, ICO: ICO });
     else p = renderHome();
@@ -256,6 +258,7 @@
       });
       if (C.files) h += '<a class="tile nav" href="#/d/"><div class="icon-badge">' + ICO.drive + '</div><b>' + esc(t('all_files')) + '</b><span class="sub">' + esc(t('all_files_sub')) + '</span></a>';
       if (C.apps) h += '<a class="tile nav" href="#/apps"><div class="icon-badge">' + ICO.apps + '</div><b>' + esc(t('apps')) + '</b><span class="sub">APK</span></a>';
+      if (C.camera) h += '<a class="tile nav" href="#/cam"><div class="icon-badge">' + ICO.cam + '</div><b>' + esc(t('camera')) + '</b><span class="sub">MJPEG</span></a>';
       if (C.status) h += '<a class="tile nav" href="#/status"><div class="icon-badge">' + ICO.battery + '</div><b>' + esc(t('status')) + '</b><span class="sub" id="batTile"></span></a>';
       h += '</div>';
       if (d.recent && d.recent.length) {
@@ -393,6 +396,31 @@
       view.innerHTML = h + '</div>';
       statusTimer = setTimeout(function () { if (route().name === 'status' && !document.hidden) renderStatus(); }, 5000);
     });
+  }
+
+  // ======================= Canlı kamera =======================
+  function renderCam() {
+    var front = get('camFront', C.camFront), q = get('camQ', C.camHeight || 720);
+    function draw() {
+      view.innerHTML = '<div class="bar"><nav class="crumbs"><a class="nav" href="#/">' + esc(t('home')) + '</a><span>›</span><a>' + esc(t('camera')) + '</a></nav>' +
+        '<button class="pill nav" data-cm="sw">' + esc(t('cam_switch')) + '</button>' +
+        '<button class="pill nav" data-cm="q">' + (q >= 720 ? '720p' : '480p') + '</button>' +
+        '<a class="pill nav" href="/cam/snap" download>' + esc(t('cam_snap')) + '</a>' +
+        '<button class="pill nav" data-cm="fs">' + esc(t('fullscreen')) + '</button></div>' +
+        '<div class="camwrap"><img id="camImg" alt="" src="/cam/stream?f=' + (front ? 'front' : 'back') + '&q=' + q + '&_=' + Date.now() + '"></div>';
+      var img = document.getElementById('camImg');
+      img.onerror = function () { view.querySelector('.camwrap').innerHTML = '<div class="empty">' + esc(t('cam_off')) + '</div>'; };
+      view.querySelectorAll('[data-cm]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          var a = b.getAttribute('data-cm');
+          if (a === 'sw') { front = !front; put('camFront', front); draw(); }
+          else if (a === 'q') { q = q >= 720 ? 480 : 720; put('camQ', q); draw(); }
+          else if (a === 'fs') { var w = view.querySelector('.camwrap'); (w.requestFullscreen || w.webkitRequestFullscreen || function () { }).call(w); }
+        });
+      });
+    }
+    draw();
+    return Promise.resolve();
   }
 
   // ======================= Yüklü uygulamalar =======================

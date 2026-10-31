@@ -38,6 +38,8 @@ object ServerState {
     val streams = MutableStateFlow<List<StreamInfo>>(emptyList())
     val events = MutableStateFlow<List<LogEvent>>(emptyList())
     val bytesSent = MutableStateFlow(0L)
+    /** Web'den canlı kamera izleniyor mu (bildirimde gösterilir). */
+    val cameraLive = MutableStateFlow(false)
     /** Bir cihaza izin verilince istemcilere "içerik değişti" duyurusu için. */
     val accessChanged = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
 

@@ -91,10 +91,17 @@ class DlnaService : Service() {
     }
 
     private fun goForeground() {
-        ServiceCompat.startForeground(
-            this, NOTIF_ID, buildNotification(),
-            ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE,
-        )
+        // Kamera açıksa (ve izin varsa) kamera türü de eklenir; arka plandan başlatıldıysa Android buna izin vermez → yalnızca ağ
+        val cam = com.akis.app.CameraStream.allowed(this)
+        try {
+            ServiceCompat.startForeground(
+                this, NOTIF_ID, buildNotification(),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or (if (cam) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0),
+            )
+        } catch (e: Exception) {
+            if (!cam) throw e
+            ServiceCompat.startForeground(this, NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+        }
     }
 
     private fun startServer() {
@@ -125,12 +132,12 @@ class DlnaService : Service() {
         val sc = CoroutineScope(SupervisorJob() + Dispatchers.Main)
         scope = sc
         sc.launch {
-            combine(ServerState.address, ServerState.clients, ServerState.streams, Prefs.settings) { a, c, s, set ->
+            combine(ServerState.address, ServerState.clients, ServerState.streams, Prefs.settings, ServerState.cameraLive) { a, c, s, set, cam ->
                 val st = s.firstOrNull()
                 listOf(
                     a, c.size, st?.let { "${it.title} → ${it.client}" },
                     if (set.notifDetails && st != null && st.size > 0) st.position * 50 / st.size else null,
-                    set.notifDetails,
+                    set.notifDetails, cam,
                 )
             }.distinctUntilChanged().collect { updateNotification() }
         }
@@ -141,6 +148,13 @@ class DlnaService : Service() {
             }
         }
         sc.launch { ServerState.accessChanged.collect { server?.contentChanged() } }
+        // Kamera ayarı açılınca ön plan türünü güncelle (kullanıcı uygulamadayken)
+        sc.launch {
+            Prefs.settings.map { it.camera }.distinctUntilChanged().drop(1).collect {
+                runCatching { goForeground() }
+                if (!it) com.akis.app.CameraStream.close()
+            }
+        }
         // İçerik ayarları değişince istemcilere haber ver
         sc.launch {
             Prefs.settings.map {
@@ -289,7 +303,7 @@ class DlnaService : Service() {
         val addr = ServerState.address.value
         val stream = ServerState.streams.value.firstOrNull()
         val clients = ServerState.clients.value.size
-        val title = if (stream != null) "▶ ${stream.title}" else Lang.s(R.string.notif_on)
+        val title = if (ServerState.cameraLive.value) Lang.s(R.string.cam_live) else if (stream != null) "▶ ${stream.title}" else Lang.s(R.string.notif_on)
         val text = when {
             stream != null -> Lang.s(R.string.notif_playing_on, stream.client)
             addr != null -> "${s.name} • $addr" + if (clients > 0) " • " + Lang.q(R.plurals.count_devices, clients) else ""

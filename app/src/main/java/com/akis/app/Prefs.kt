@@ -47,6 +47,9 @@ data class Settings(
     val phoneStatus: Boolean,       // web: telefon durumu (hassas)
     val appsList: Boolean,          // web: yüklü uygulamalar ve APK indirme (hassas)
     val appsSystem: Boolean,        // sistem uygulamaları da listelensin
+    val camera: Boolean,            // web: canlı kamera (hassas)
+    val camFront: Boolean,          // varsayılan ön kamera
+    val camHeight: Int,             // 480 / 720
     val adminHash: String,          // yönetici şifresi "tuz:pbkdf2" (boşsa belirlenmemiş)
 )
 
@@ -104,6 +107,9 @@ object Prefs {
         phoneStatus = sp.getBoolean("phoneStatus", false),
         appsList = sp.getBoolean("appsList", false),
         appsSystem = sp.getBoolean("appsSystem", false),
+        camera = sp.getBoolean("camera", false),
+        camFront = sp.getBoolean("camFront", false),
+        camHeight = sp.getInt("camHeight", 720),
         adminHash = sp.getString("adminHash", "") ?: "",
     )
 

@@ -48,6 +48,10 @@
     <string name="block_forever">Kalıcı engelle</string>
     <string name="block_sub">Ayarlar\'dan kaldırana kadar</string>
     <string name="blocked_devices">Engellenen cihazlar</string>
+    <string name="cam_back">Arka</string>
+    <string name="cam_front">Ön</string>
+    <string name="cam_live">📷 Kamera yayında</string>
+    <string name="cam_note">Kameranın çalışması için sunucuyu uygulamadan başlat (widget ya da kutucuktan değil). Kamera açıkken bildirim görünür.</string>
     <string name="cancel">Vazgeç</string>
     <string name="ch_access_desc">Yeni bir cihaz bağlanmak istediğinde sorulur</string>
     <string name="ch_files">Gelen dosyalar</string>
@@ -108,6 +112,8 @@
     <string name="f_approval_sub">Yeni bir cihaz bağlanınca telefona \"İzin ver / Engelle\" sorulsun</string>
     <string name="f_apps">Yüklü uygulamalar</string>
     <string name="f_apps_sub">Web arayüzünde yüklü uygulamaları listele ve APK\'larını indir</string>
+    <string name="f_camera">Canlı kamera</string>
+    <string name="f_camera_sub">Telefonun kamerasını web arayüzünden canlı izle (yalnızca biri izlerken açılır)</string>
     <string name="f_docs">Belge önizleme</string>
     <string name="f_docs_sub">PDF, metin, kod, Markdown ve JSON dosyalarını indirmeden tarayıcıda aç</string>
     <string name="f_hidden">Gizli klasörler</string>
@@ -404,6 +410,9 @@
     <string name="web_bg_solid">Kutu</string>
     <string name="web_bitrate">Bit hızı</string>
     <string name="web_brightness">Parlaklık {0}</string>
+    <string name="web_cam_off">Kamera kullanılamıyor. Uygulamada aç ve sunucuyu uygulamadan başlat.</string>
+    <string name="web_cam_snap">Fotoğraf çek</string>
+    <string name="web_cam_switch">Kamerayı değiştir</string>
     <string name="web_camera">Kamera</string>
     <string name="web_cancel">Vazgeç</string>
     <string name="web_cant_play_audio">Bu dosya tarayıcıda çalınamıyor</string>

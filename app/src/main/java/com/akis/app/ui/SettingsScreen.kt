@@ -64,6 +64,7 @@ import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Smartphone
 import androidx.compose.material.icons.rounded.Upload
+import androidx.compose.material.icons.rounded.Videocam
 import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -122,6 +123,7 @@ fun SettingsScreen() {
     var confirmClear by remember { mutableStateOf(false) }
     var editPin by remember { mutableStateOf(false) }
     var pickLang by remember { mutableStateOf(false) }
+    val camPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) Prefs.set("camera", true) }
     var editAdminPw by remember { mutableStateOf(false) }
     val adminSession by Admin.active.collectAsStateWithLifecycle()
     var pickIcon by remember { mutableStateOf(false) }
@@ -420,6 +422,27 @@ fun SettingsScreen() {
                         Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     },
                 ) { Prefs.set("appsList", it) }
+                FeatureRow(
+                    Icons.Rounded.Videocam, stringResource(R.string.f_camera), stringResource(R.string.f_camera_sub), s.camera, divider = true,
+                    extra = {
+                        Segmented(
+                            options = listOf("back" to stringResource(R.string.cam_back), "front" to stringResource(R.string.cam_front)),
+                            selected = if (s.camFront) "front" else "back",
+                        ) { v -> Prefs.set("camFront", v == "front") }
+                        Segmented(
+                            options = listOf("480" to "480p", "720" to "720p"),
+                            selected = s.camHeight.toString(),
+                        ) { v -> Prefs.update { putInt("camHeight", v.toInt()) } }
+                        Text(stringResource(R.string.cam_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    },
+                ) { on ->
+                    if (on && ctx.checkSelfPermission(android.Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        camPerm.launch(android.Manifest.permission.CAMERA)
+                    } else {
+                        Prefs.set("camera", on)
+                    }
+                }
                 // WEBFEATURES
             }
         }

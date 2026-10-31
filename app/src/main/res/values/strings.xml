@@ -49,6 +49,10 @@
     <string name="block_forever">Block permanently</string>
     <string name="block_sub">Until you remove it in Settings</string>
     <string name="blocked_devices">Blocked devices</string>
+    <string name="cam_back">Back</string>
+    <string name="cam_front">Front</string>
+    <string name="cam_live">📷 Camera is live</string>
+    <string name="cam_note">Start the server from the app (not from the widget or quick tile) for the camera to work. A notification shows while the camera is on.</string>
     <string name="cancel">Cancel</string>
     <string name="ch_access_desc">Asked when a new device wants to connect</string>
     <string name="ch_files">Incoming files</string>
@@ -109,6 +113,8 @@
     <string name="f_approval_sub">Ask on the phone (\"Allow / Block\") when a new device connects</string>
     <string name="f_apps">Installed apps</string>
     <string name="f_apps_sub">List installed apps in the web interface and download their APKs</string>
+    <string name="f_camera">Live camera</string>
+    <string name="f_camera_sub">Watch the phone\'s camera live from the web interface (only while someone is watching)</string>
     <string name="f_docs">Document preview</string>
     <string name="f_docs_sub">Open PDF, text, code, Markdown and JSON files in the browser without downloading</string>
     <string name="f_hidden">Hidden folders</string>
@@ -405,6 +411,9 @@
     <string name="web_bg_solid">Box</string>
     <string name="web_bitrate">Bitrate</string>
     <string name="web_brightness">Brightness {0}</string>
+    <string name="web_cam_off">Camera isn\'t available. Turn it on in the app and start the server from the app.</string>
+    <string name="web_cam_snap">Take photo</string>
+    <string name="web_cam_switch">Switch camera</string>
     <string name="web_camera">Camera</string>
     <string name="web_cancel">Cancel</string>
     <string name="web_cant_play_audio">This file can\'t be played in the browser</string>

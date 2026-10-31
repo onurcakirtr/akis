@@ -54,6 +54,18 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             p == "/api/zipls" -> zipList(param(req, "p"), res)
             p == "/zipget" -> zipGet(req, res, param(req, "p"), param(req, "e"))
             p == "/tf" -> fileThumb(param(req, "p"), res)
+            p == "/cam/stream" -> if (com.akis.app.CameraStream.allowed(ctx)) {
+                val front = param(req, "f").let { if (it.isEmpty()) Prefs.current.camFront else it == "front" }
+                val h = param(req, "q").toIntOrNull()?.coerceIn(240, 1080) ?: Prefs.current.camHeight
+                ServerState.log("📷 ${ServerState.clientName(req.remote)}")
+                res.stream(200, "multipart/x-mixed-replace; boundary=akisframe", mapOf("Cache-Control" to "no-store")) { out ->
+                    com.akis.app.CameraStream.stream(ctx, front, h, out)
+                }
+            } else res.text(404, Lang.s(R.string.http_not_found))
+            p == "/cam/snap" -> com.akis.app.CameraStream.snapshot()?.takeIf { com.akis.app.CameraStream.allowed(ctx) }?.let {
+                val name = "akis-" + java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date()) + ".jpg"
+                res.bytes(200, "image/jpeg", it, mapOf("Content-Disposition" to "attachment; filename=\"$name\""))
+            } ?: res.text(404, Lang.s(R.string.http_not_found))
             p == "/api/status" -> if (Prefs.current.phoneStatus) json(res, PhoneInfo.status(ctx)) else res.text(404, Lang.s(R.string.http_not_found))
             p == "/api/apps" -> if (Prefs.current.appsList) json(res, PhoneInfo.apps(ctx, Prefs.current.appsSystem)) else res.text(404, Lang.s(R.string.http_not_found))
             p == "/appicon" -> if (Prefs.current.appsList) PhoneInfo.icon(ctx, param(req, "pkg"))?.let {
@@ -105,7 +117,8 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("subtitles", s.subtitles)
             .put("files", filesOn())
             .put("admin", s.adminOn && s.adminHash.isNotEmpty())
-            .put("status", s.phoneStatus).put("apps", s.appsList)
+            .put("status", s.phoneStatus).put("apps", s.appsList).put("camera", com.akis.app.CameraStream.allowed(ctx))
+            .put("camFront", s.camFront).put("camHeight", s.camHeight)
             .put("docs", s.docPreview).put("zipView", s.zipView).put("thumbs", s.richThumbs).put("keys", s.keysHelp)
             .put("subLang", s.subLang)
             .put("lang", Lang.locale.language)
