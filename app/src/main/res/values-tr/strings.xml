@@ -125,8 +125,13 @@
     <string name="f_history_sub">Kaldığın yerden devam; TV\'de \"Devam et\" ve \"İzlenmemiş\" klasörleri</string>
     <string name="f_keys">Kısayol yardımı</string>
     <string name="f_keys_sub">Web arayüzünde ? tuşuyla tüm klavye kısayollarını gör</string>
+    <string name="f_live_upnp">UPnP\'de canlı yayın</string>
+    <string name="f_live_upnp_sub">Kamera, ekran ve mikrofon VLC ve diğer oynatıcılarda \"Canlı\" klasöründe görünür. Çoğu TV bunları (MJPEG / WAV) oynatamaz; VLC oynatır.</string>
     <string name="f_look">Tarayıcıya göre dil ve tema</string>
     <string name="f_look_sub">Her tarayıcı kendine dil, tema ve açık/koyu mod seçebilir. Varsayılan olarak web telefonu takip eder.</string>
+    <string name="f_mic">Mikrofon (bebek telsizi)</string>
+    <string name="f_mic_short">Mikrofon</string>
+    <string name="f_mic_sub">Telefonun mikrofonunu web\'den canlı dinle; kamerayla ya da tek başına. Yalnızca biri dinlerken açık.</string>
     <string name="f_notif">Bildirim paneli ayrıntıları</string>
     <string name="f_notif_sub">Bildirimde ve hızlı ayar kutucuğunda ilerleme, cihaz sayısı, oynatılan dosya</string>
     <string name="f_pin">Web PIN\'i</string>
@@ -139,6 +144,9 @@
     <string name="f_remote_sub">Web arayüzüne internet üzerinden her yerden eriş</string>
     <string name="f_ring">Telefonu çaldır</string>
     <string name="f_ring_sub">Web yönetim sayfasından (şifre + onay ile) telefonu sessizde bile 30 sn tam sesle çaldır</string>
+    <string name="f_screen">Ekran paylaşımı</string>
+    <string name="f_screen_short">Ekran</string>
+    <string name="f_screen_sub">Telefonun ekranını web\'den izle. Android her seferinde telefonda onay ister.</string>
     <string name="f_search">Arama</string>
     <string name="f_search_sub">TV ve VLC\'den başlık, sanatçı ve albüme göre ara; web arayüzüne arama kutusu</string>
     <string name="f_status">Telefon durumu</string>
@@ -207,6 +215,10 @@
     <string name="kick_sub">Bağlantılarını koparır; hemen yeniden bağlanabilir</string>
     <string name="lang_system">Telefonun dili</string>
     <string name="language">Dil</string>
+    <string name="live_cam">Kamera (canlı)</string>
+    <string name="live_folder">Canlı</string>
+    <string name="live_mic">Mikrofon (canlı)</string>
+    <string name="live_screen">Ekran (canlı)</string>
     <string name="local_address">Yerel adres</string>
     <string name="log_admin_action">🔐 Yönetim: %1$s (%2$s)</string>
     <string name="log_admin_in">🔐 Yönetim oturumu açıldı: %1$s (%2$s)</string>
@@ -216,6 +228,8 @@
     <string name="log_banned">⛔ %3$s\'e kadar yasaklandı: %1$s (%2$s)</string>
     <string name="log_blocked">⛔ Engellendi: %1$s (%2$s)</string>
     <string name="log_kicked">⏏ Bağlantı kesildi: %1$s (%2$s)</string>
+    <string name="log_mic_off">🎙 Mikrofon kapandı</string>
+    <string name="log_mic_on">🎙 Mikrofon açıldı</string>
     <string name="log_new_device">Yeni cihaz: %1$s (%2$s)</string>
     <string name="log_pending">\? Onay bekliyor: %1$s (%2$s)</string>
     <string name="log_remote_err">🌐 Uzaktan erişim hatası: %1$s</string>
@@ -223,6 +237,8 @@
     <string name="log_remote_up">🌐 Uzaktan erişim bağlandı</string>
     <string name="log_remote_wrong">🌐 Yanlış uzaktan erişim şifresi (%1$s)</string>
     <string name="log_ring">🔔 Çaldırılıyor (%1$s)</string>
+    <string name="log_screen_off">🖥 Ekran paylaşımı bitti</string>
+    <string name="log_screen_on">🖥 Ekran paylaşımı başladı</string>
     <string name="log_search">🔎 “%1$s” arandı</string>
     <string name="log_share_created">🔗 Paylaşım bağlantısı: %1$s</string>
     <string name="log_share_dl">⬇ %1$s indirildi (%2$s)</string>
@@ -233,6 +249,7 @@
     <string name="log_upload_partial">Yükleme yarım kaldı: %1$s</string>
     <string name="log_upload_target_fail">Yükleme hedefi açılamadı: %1$s</string>
     <string name="media_library">Medya kitaplığı</string>
+    <string name="mic_live">🎙 Mikrofon açık</string>
     <string name="mode_dark">Koyu</string>
     <string name="mode_light">Açık</string>
     <string name="mode_system">Sistem</string>
@@ -351,6 +368,10 @@
     <string name="ring_text">%1$s istedi</string>
     <string name="ring_title">Akış telefonu çaldırıyor</string>
     <string name="save">Kaydet</string>
+    <string name="screen_ask_text">%1$s · Karar vermek için dokun</string>
+    <string name="screen_ask_title">Biri ekranını görmek istiyor</string>
+    <string name="screen_live">🖥 Ekran paylaşılıyor</string>
+    <string name="screen_stop">Paylaşımı durdur</string>
     <string name="sec_about">Hakkında</string>
     <string name="sec_appearance">Görünüm</string>
     <string name="sec_behavior">Davranış</string>
@@ -588,6 +609,10 @@
     <string name="web_look_theme">Tema</string>
     <string name="web_lost">Bağlantı koptu</string>
     <string name="web_memory">Bellek (RAM)</string>
+    <string name="web_mic">Mikrofon</string>
+    <string name="web_mic_note">Telefonun mikrofonundan canlı ses (birkaç saniye geriden).</string>
+    <string name="web_mic_off">Mikrofon kullanılamıyor.</string>
+    <string name="web_mic_sound">Ses</string>
     <string name="web_mode_dark">Koyu</string>
     <string name="web_mode_light">Açık</string>
     <string name="web_mode_system">Sistem</string>
@@ -630,6 +655,10 @@
     <string name="web_restart">Baştan başla</string>
     <string name="web_results">“{0}” için sonuçlar</string>
     <string name="web_resumed">Kaldığın yerden: {0}</string>
+    <string name="web_screen">Ekran</string>
+    <string name="web_screen_again">Yeniden iste</string>
+    <string name="web_screen_off">Ekran paylaşımı bitti ya da reddedildi.</string>
+    <string name="web_screen_wait">Telefonda onay bekleniyor…</string>
     <string name="web_search_ph">Film, şarkı, sanatçı ara…</string>
     <string name="web_see_all">Tümü</string>
     <string name="web_seek_back">10 saniye geri</string>

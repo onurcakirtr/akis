@@ -63,6 +63,8 @@
     cam: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="13" height="10" rx="2"/><path d="M16 11l5-3v8l-5-3z"/></svg>',
     apps: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>',
     battery: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 11v2M6 10v4M9 10v4"/></svg>',
+    screen: '<svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
+    mic: '<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
     link: '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>'
   };
   var CAT_ICON = { v: ICO.v, a: ICO.a, i: ICO.i, f: ICO.folder, 'h:u': ICO.unw, 'h:c': ICO.hist, r: ICO.recent, 'pd:': ICO.drive };
@@ -148,7 +150,7 @@
     var parts = h.split('/');
     var name = parts[0] || 'home';
     var arg = decodeURIComponent(parts.slice(1).join('/'));
-    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload', admin: 'admin', status: 'status', apps: 'apps', cam: 'cam' };
+    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload', admin: 'admin', status: 'status', apps: 'apps', cam: 'cam', screen: 'screen', mic: 'mic' };
     return { name: map[name] || 'home', arg: arg, p: params, key: location.hash };
   }
   var player = null, list = [], listFolder = '0', scrolls = {}, lastKey = '', softNext = false;
@@ -218,6 +220,8 @@
     else if (r.name === 'files') p = renderFiles(r.arg || '');
     else if (r.name === 'status') p = renderStatus();
     else if (r.name === 'cam') p = renderCam();
+    else if (r.name === 'screen') p = renderScreen();
+    else if (r.name === 'mic') p = renderMic();
     else if (r.name === 'apps') p = renderApps();
     else if (r.name === 'admin') p = window.AkisAdmin.render(view, { t: t, esc: esc, toast: toast, size: size, ICO: ICO });
     else p = renderHome();
@@ -300,6 +304,8 @@
       if (C.files) h += '<a class="tile nav" href="#/d/"><div class="icon-badge">' + ICO.drive + '</div><b>' + esc(t('all_files')) + '</b><span class="sub">' + esc(t('all_files_sub')) + '</span></a>';
       if (C.apps) h += '<a class="tile nav" href="#/apps"><div class="icon-badge">' + ICO.apps + '</div><b>' + esc(t('apps')) + '</b><span class="sub">APK</span></a>';
       if (C.camera) h += '<a class="tile nav" href="#/cam"><div class="icon-badge">' + ICO.cam + '</div><b>' + esc(t('camera')) + '</b><span class="sub">MJPEG</span></a>';
+      if (C.screen) h += '<a class="tile nav" href="#/screen"><div class="icon-badge">' + ICO.screen + '</div><b>' + esc(t('screen')) + '</b><span class="sub">MJPEG</span></a>';
+      if (C.mic) h += '<a class="tile nav" href="#/mic"><div class="icon-badge">' + ICO.mic + '</div><b>' + esc(t('mic')) + '</b><span class="sub">WAV</span></a>';
       if (C.status) h += '<a class="tile nav" href="#/status"><div class="icon-badge">' + ICO.battery + '</div><b>' + esc(t('status')) + '</b><span class="sub" id="batTile"></span></a>';
       h += '</div>';
       if (d.recent && d.recent.length) {
@@ -441,14 +447,16 @@
 
   // ======================= Canlı kamera =======================
   function renderCam() {
-    var front = get('camFront', C.camFront), q = get('camQ', C.camHeight || 720);
+    var front = get('camFront', C.camFront), q = get('camQ', C.camHeight || 720), sound = false;
     function draw() {
       view.innerHTML = '<div class="bar"><nav class="crumbs"><a class="nav" href="#/">' + esc(t('home')) + '</a><span>›</span><a>' + esc(t('camera')) + '</a></nav>' +
         '<button class="pill nav" data-cm="sw">' + esc(t('cam_switch')) + '</button>' +
         '<button class="pill nav" data-cm="q">' + (q >= 720 ? '720p' : '480p') + '</button>' +
         '<a class="pill nav" href="/cam/snap" download>' + esc(t('cam_snap')) + '</a>' +
+        (C.mic ? '<button class="pill nav' + (sound ? ' acc' : '') + '" data-cm="snd" aria-pressed="' + sound + '">' + ICO.mic + esc(t('mic_sound')) + '</button>' : '') +
         '<button class="pill nav" data-cm="fs">' + esc(t('fullscreen')) + '</button></div>' +
-        '<div class="camwrap"><img id="camImg" alt="" src="/cam/stream?f=' + (front ? 'front' : 'back') + '&q=' + q + '&_=' + Date.now() + '"></div>';
+        '<div class="camwrap"><img id="camImg" alt="" src="/cam/stream?f=' + (front ? 'front' : 'back') + '&q=' + q + '&_=' + Date.now() + '"></div>' +
+        (sound ? '<audio id="camSnd" autoplay src="/live/mic.wav?_=' + Date.now() + '"></audio>' : '');
       var img = document.getElementById('camImg');
       img.onerror = function () { view.querySelector('.camwrap').innerHTML = '<div class="empty">' + esc(t('cam_off')) + '</div>'; };
       view.querySelectorAll('[data-cm]').forEach(function (b) {
@@ -456,11 +464,48 @@
           var a = b.getAttribute('data-cm');
           if (a === 'sw') { front = !front; put('camFront', front); draw(); }
           else if (a === 'q') { q = q >= 720 ? 480 : 720; put('camQ', q); draw(); }
+          else if (a === 'snd') { sound = !sound; draw(); }
           else if (a === 'fs') { var w = view.querySelector('.camwrap'); (w.requestFullscreen || w.webkitRequestFullscreen || function () { }).call(w); }
         });
       });
     }
     draw();
+    return Promise.resolve();
+  }
+
+  // ======================= Ekran paylaşımı =======================
+  function renderScreen() {
+    function draw() {
+      view.innerHTML = '<div class="bar"><nav class="crumbs"><a class="nav" href="#/">' + esc(t('home')) + '</a><span>›</span><a>' + esc(t('screen')) + '</a></nav>' +
+        '<button class="pill nav" data-sc="fs">' + esc(t('fullscreen')) + '</button></div>' +
+        '<div class="camwrap"><div class="empty" id="scWait">' + esc(t('screen_wait')) + '</div>' +
+        '<img id="scImg" alt="" hidden src="/live/screen?_=' + Date.now() + '"></div>';
+      var img = document.getElementById('scImg');
+      img.onload = function () { img.hidden = false; var w = document.getElementById('scWait'); if (w) w.remove(); };
+      img.onerror = function () {
+        view.querySelector('.camwrap').innerHTML = '<div class="empty">' + esc(t('screen_off')) +
+          '<div style="margin-top:12px"><button class="pill nav" data-sc="again">' + esc(t('screen_again')) + '</button></div></div>';
+      };
+    }
+    view.onclick = function (e) {
+      var b = e.target.closest && e.target.closest('[data-sc]');
+      if (!b || route().name !== 'screen') return;
+      var a = b.getAttribute('data-sc');
+      if (a === 'again') draw();
+      else if (a === 'fs') { var w = view.querySelector('.camwrap'); (w.requestFullscreen || w.webkitRequestFullscreen || function () { }).call(w); }
+    };
+    draw();
+    return Promise.resolve();
+  }
+
+  // ======================= Mikrofon (bebek telsizi) =======================
+  function renderMic() {
+    view.innerHTML = '<div class="bar"><nav class="crumbs"><a class="nav" href="#/">' + esc(t('home')) + '</a><span>›</span><a>' + esc(t('mic')) + '</a></nav></div>' +
+      '<div class="camwrap" style="flex-direction:column;gap:16px;padding:28px"><div class="icon-badge" style="width:72px;height:72px">' + ICO.mic + '</div>' +
+      '<audio id="micAud" controls autoplay src="/live/mic.wav?_=' + Date.now() + '" style="width:min(420px,100%)"></audio>' +
+      '<div class="note" style="color:#bbb;text-align:center">' + esc(t('mic_note')) + '</div></div>';
+    var a = document.getElementById('micAud');
+    a.onerror = function () { a.insertAdjacentHTML('afterend', '<div class="empty">' + esc(t('mic_off')) + '</div>'); a.remove(); };
     return Promise.resolve();
   }
 

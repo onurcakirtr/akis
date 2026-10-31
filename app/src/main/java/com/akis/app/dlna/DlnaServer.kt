@@ -151,7 +151,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     private val appIcons = setOf(180, 192, 512)
 
     private fun webPath(p: String) =
-        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/") || p == "/raw" || p == "/zip" || p == "/zipget" || p == "/tf" || p == "/appicon" || p == "/apk" || p.startsWith("/cam/") || p == "/zipsel" || p.startsWith("/admin/")
+        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/") || p == "/raw" || p == "/zip" || p == "/zipget" || p == "/tf" || p == "/appicon" || p == "/apk" || p.startsWith("/cam/") || p.startsWith("/live/") || p == "/zipsel" || p.startsWith("/admin/")
 
     /** @return true ise istek işlenebilir; false ise cevap zaten verildi. */
     private fun checkAccess(req: HttpRequest, res: HttpResponder, settings: Settings): Boolean {
@@ -215,7 +215,10 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             else res.text(401, Lang.s(R.string.http_pin_required))
             return false
         }
-        val denied = (p.startsWith("/cam/") && !s.remoteCamera) ||
+        val denied = p.startsWith("/m/live") ||
+            (p == "/live/screen" && !s.remoteScreen) ||
+            (p == "/live/mic.wav" && !s.remoteMic) ||
+            (p.startsWith("/cam/") && !s.remoteCamera) ||
             (p == "/api/status" && !s.remoteStatus) ||
             ((p == "/api/apps" || p == "/appicon" || p == "/apk") && !s.remoteApps) ||
             (m == "PUT" && !s.remoteUpload)
@@ -435,6 +438,10 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     }
 
     private fun serveMedia(req: HttpRequest, res: HttpResponder, id: String, base: String) {
+        if (id.startsWith("live:")) {
+            if (!Prefs.current.liveUpnp || !webApi.live(id.removePrefix("live:"), req, res)) res.text(404, Lang.s(R.string.http_file_not_found))
+            return
+        }
         val e = lib.lookup(id) ?: return res.text(404, Lang.s(R.string.http_file_not_found))
         val uri = e.uri ?: return res.text(404, Lang.s(R.string.http_file_not_found))
         val pfd = try { ctx.contentResolver.openFileDescriptor(uri, "r") } catch (ex: Exception) { null }

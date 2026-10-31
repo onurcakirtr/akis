@@ -49,6 +49,11 @@ data class Settings(
     val fileReq: Boolean,           // dosya isteme bağlantıları
     val wifiQr: Boolean,            // QR penceresinde Wi-Fi sekmesi
     val ring: Boolean,              // yönetim sayfasından telefonu çaldır
+    val screen: Boolean,            // web: ekran paylaşımı (hassas)
+    val mic: Boolean,               // web: canlı mikrofon (hassas)
+    val liveUpnp: Boolean,          // kamera/ekran/mikrofon UPnP'de "Canlı" klasöründe
+    val remoteScreen: Boolean,
+    val remoteMic: Boolean,
     val wifiSsid: String,
     val wifiPass: String,
     val rateOn: Boolean,            // bağlantı başına hız sınırı
@@ -131,6 +136,11 @@ object Prefs {
         fileReq = sp.getBoolean("fileReq", true),
         wifiQr = sp.getBoolean("wifiQr", true),
         ring = sp.getBoolean("ring", false),
+        screen = sp.getBoolean("screen", false),
+        mic = sp.getBoolean("mic", false),
+        liveUpnp = sp.getBoolean("liveUpnp", false),
+        remoteScreen = sp.getBoolean("remoteScreen", false),
+        remoteMic = sp.getBoolean("remoteMic", false),
         wifiSsid = sp.getString("wifiSsid", "") ?: "",
         wifiPass = sp.getString("wifiPass", "") ?: "",
         rateOn = sp.getBoolean("rateOn", false),

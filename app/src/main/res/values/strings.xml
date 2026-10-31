@@ -126,8 +126,13 @@
     <string name="f_history_sub">Resume where you left off; \"Continue watching\" and \"Unwatched\" folders on the TV</string>
     <string name="f_keys">Shortcut help</string>
     <string name="f_keys_sub">Press ? in the web interface to see all keyboard shortcuts</string>
+    <string name="f_live_upnp">Live streams on UPnP</string>
+    <string name="f_live_upnp_sub">Camera, screen and microphone appear in a \"Live\" folder for VLC and other players. Most TVs can\'t play these (MJPEG / WAV); VLC can.</string>
     <string name="f_look">Language and theme per browser</string>
     <string name="f_look_sub">Each browser can pick its own language, theme and light/dark mode. By default the web follows the phone.</string>
+    <string name="f_mic">Microphone (baby monitor)</string>
+    <string name="f_mic_short">Microphone</string>
+    <string name="f_mic_sub">Listen to the phone\'s microphone live from the web, with or without the camera. On only while someone listens.</string>
     <string name="f_notif">Notification details</string>
     <string name="f_notif_sub">Progress, device count and what\'s playing in the notification and quick settings tile</string>
     <string name="f_pin">Web PIN</string>
@@ -140,6 +145,9 @@
     <string name="f_remote_sub">Reach the web interface from anywhere over the internet</string>
     <string name="f_ring">Ring the phone</string>
     <string name="f_ring_sub">From the web admin page (password + approval) ring the phone at full volume for 30 s, even on silent</string>
+    <string name="f_screen">Screen sharing</string>
+    <string name="f_screen_short">Screen</string>
+    <string name="f_screen_sub">Watch the phone\'s screen from the web. Android asks for your approval on the phone every time.</string>
     <string name="f_search">Search</string>
     <string name="f_search_sub">Search by title, artist and album from TVs and VLC; search box in the web interface</string>
     <string name="f_status">Phone status</string>
@@ -208,6 +216,10 @@
     <string name="kick_sub">Drops its connections; it can reconnect right away</string>
     <string name="lang_system">Phone language</string>
     <string name="language">Language</string>
+    <string name="live_cam">Camera (live)</string>
+    <string name="live_folder">Live</string>
+    <string name="live_mic">Microphone (live)</string>
+    <string name="live_screen">Screen (live)</string>
     <string name="local_address">Local address</string>
     <string name="log_admin_action">🔐 Admin: %1$s (%2$s)</string>
     <string name="log_admin_in">🔐 Admin signed in: %1$s (%2$s)</string>
@@ -217,6 +229,8 @@
     <string name="log_banned">⛔ Banned until %3$s: %1$s (%2$s)</string>
     <string name="log_blocked">⛔ Blocked: %1$s (%2$s)</string>
     <string name="log_kicked">⏏ Disconnected: %1$s (%2$s)</string>
+    <string name="log_mic_off">🎙 Microphone off</string>
+    <string name="log_mic_on">🎙 Microphone on</string>
     <string name="log_new_device">New device: %1$s (%2$s)</string>
     <string name="log_pending">\? Waiting for approval: %1$s (%2$s)</string>
     <string name="log_remote_err">🌐 Remote access error: %1$s</string>
@@ -224,6 +238,8 @@
     <string name="log_remote_up">🌐 Remote access connected</string>
     <string name="log_remote_wrong">🌐 Wrong remote password (%1$s)</string>
     <string name="log_ring">🔔 Ringing (%1$s)</string>
+    <string name="log_screen_off">🖥 Screen sharing ended</string>
+    <string name="log_screen_on">🖥 Screen sharing started</string>
     <string name="log_search">🔎 Searched for “%1$s”</string>
     <string name="log_share_created">🔗 Share link created: %1$s</string>
     <string name="log_share_dl">⬇ %1$s downloaded (%2$s)</string>
@@ -234,6 +250,7 @@
     <string name="log_upload_partial">Upload incomplete: %1$s</string>
     <string name="log_upload_target_fail">Couldn\'t open the upload destination: %1$s</string>
     <string name="media_library">Media library</string>
+    <string name="mic_live">🎙 Microphone is on</string>
     <string name="mode_dark">Dark</string>
     <string name="mode_light">Light</string>
     <string name="mode_system">System</string>
@@ -352,6 +369,10 @@
     <string name="ring_text">Requested from %1$s</string>
     <string name="ring_title">Akış is ringing the phone</string>
     <string name="save">Save</string>
+    <string name="screen_ask_text">%1$s · Tap to decide</string>
+    <string name="screen_ask_title">Someone wants to see your screen</string>
+    <string name="screen_live">🖥 Screen is being shared</string>
+    <string name="screen_stop">Stop sharing</string>
     <string name="sec_about">About</string>
     <string name="sec_appearance">Appearance</string>
     <string name="sec_behavior">Behavior</string>
@@ -589,6 +610,10 @@
     <string name="web_look_theme">Theme</string>
     <string name="web_lost">Connection lost</string>
     <string name="web_memory">Memory (RAM)</string>
+    <string name="web_mic">Microphone</string>
+    <string name="web_mic_note">Live sound from the phone\'s microphone (a few seconds behind).</string>
+    <string name="web_mic_off">The microphone isn\'t available.</string>
+    <string name="web_mic_sound">Sound</string>
     <string name="web_mode_dark">Dark</string>
     <string name="web_mode_light">Light</string>
     <string name="web_mode_system">System</string>
@@ -631,6 +656,10 @@
     <string name="web_restart">Start over</string>
     <string name="web_results">Results for “{0}”</string>
     <string name="web_resumed">Resumed at {0}</string>
+    <string name="web_screen">Screen</string>
+    <string name="web_screen_again">Ask again</string>
+    <string name="web_screen_off">Screen sharing ended or was declined.</string>
+    <string name="web_screen_wait">Waiting for approval on the phone…</string>
     <string name="web_search_ph">Search movies, songs, artists…</string>
     <string name="web_see_all">See all</string>
     <string name="web_seek_back">Back 10 seconds</string>

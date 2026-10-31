@@ -13,6 +13,9 @@
     <!-- Web'den canlı kamera (isteğe bağlı, Ayarlar'dan açılır) -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
@@ -52,6 +55,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Ekran paylaşımı onayı (görünmez ara ekran) -->
+        <activity
+            android:name=".ui.ScreenConsentActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity=""
+            android:theme="@style/Theme.Akis.Overlay" />
+
         <!-- Paylaş → Akış: süreli indirme bağlantısı -->
         <activity
             android:name=".ui.ShareActivity"
@@ -70,7 +81,7 @@
         <service
             android:name=".service.DlnaService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice|camera" />
+            android:foregroundServiceType="connectedDevice|camera|microphone|mediaProjection" />
 
         <!-- Android 12 ve altında seçilen uygulama dilini saklar -->
         <service

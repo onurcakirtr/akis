@@ -55,6 +55,8 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.LiveTv
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Wifi
 import androidx.compose.material.icons.rounded.MoveToInbox
@@ -146,6 +148,7 @@ fun SettingsScreen() {
     var remoteConfirm by remember { mutableStateOf(false) }
     var totpSetup by remember { mutableStateOf<String?>(null) }
     val camPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) Prefs.set("camera", true) }
+    val micPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) Prefs.set("mic", true) }
     var editAdminPw by remember { mutableStateOf(false) }
     val adminSession by Admin.active.collectAsStateWithLifecycle()
     var pickIcon by remember { mutableStateOf(false) }
@@ -472,6 +475,24 @@ fun SettingsScreen() {
                     }
                 }
                 FeatureRow(
+                    Icons.Rounded.Smartphone, stringResource(R.string.f_screen), stringResource(R.string.f_screen_sub), s.screen, divider = true,
+                    extra = { Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                ) { Prefs.set("screen", it) }
+                FeatureRow(
+                    Icons.Rounded.Mic, stringResource(R.string.f_mic), stringResource(R.string.f_mic_sub), s.mic, divider = true,
+                    extra = {
+                        Text(stringResource(R.string.cam_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    },
+                ) { on ->
+                    if (on && ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                        micPerm.launch(android.Manifest.permission.RECORD_AUDIO)
+                    } else {
+                        Prefs.set("mic", on)
+                    }
+                }
+                FeatureRow(Icons.Rounded.LiveTv, stringResource(R.string.f_live_upnp), stringResource(R.string.f_live_upnp_sub), s.liveUpnp, divider = true) { Prefs.set("liveUpnp", it) }
+                FeatureRow(
                     Icons.Rounded.NotificationsActive, stringResource(R.string.f_ring), stringResource(R.string.f_ring_sub), s.ring, divider = true,
                     extra = { if (!s.adminOn) Text(stringResource(R.string.ring_need_admin), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) },
                 ) { Prefs.set("ring", it) }
@@ -569,6 +590,8 @@ fun SettingsScreen() {
                                 Triple("remoteCamera", stringResource(R.string.f_camera), s.remoteCamera),
                                 Triple("remoteStatus", stringResource(R.string.f_status), s.remoteStatus),
                                 Triple("remoteApps", stringResource(R.string.f_apps), s.remoteApps),
+                                Triple("remoteScreen", stringResource(R.string.f_screen_short), s.remoteScreen),
+                                Triple("remoteMic", stringResource(R.string.f_mic_short), s.remoteMic),
                             ).forEach { (key, label, on) ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))

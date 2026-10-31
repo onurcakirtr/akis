@@ -117,12 +117,21 @@ class MediaLibrary(private val ctx: Context) {
         if (s.shareImage) add(folder("i", "0", Lang.s(R.string.photos)))
         if (s.folders.isNotEmpty()) add(folder("f", "0", Lang.s(R.string.my_folders), s.folders.size))
         if (s.allFilesUpnp && FileAccess.granted(ctx)) add(folder("pd:", "0", Lang.s(R.string.all_files)))
+        if (s.liveUpnp) liveEntries().takeIf { it.isNotEmpty() }?.let { add(folder("live", "0", Lang.s(R.string.live_folder), it.size)) }
+    }
+
+    /** UPnP "Canlı" klasörü: açık olan kamera / ekran / mikrofon akışları (VLC gibi oynatıcılar için). */
+    private fun liveEntries(): List<Entry> = buildList {
+        if (com.akis.app.CameraStream.allowed(ctx)) add(Entry("live:cam", "live", Lang.s(R.string.live_cam), Kind.VIDEO, mime = "video/x-motion-jpeg", ext = "mjpg"))
+        if (com.akis.app.ScreenStream.allowed()) add(Entry("live:screen", "live", Lang.s(R.string.live_screen), Kind.VIDEO, mime = "video/x-motion-jpeg", ext = "mjpg"))
+        if (com.akis.app.MicStream.allowed(ctx)) add(Entry("live:mic", "live", Lang.s(R.string.live_mic), Kind.AUDIO, mime = "audio/wav", ext = "wav"))
     }
 
     fun children(id: String): List<Entry> = try {
         when {
             id == "0" -> root()
             id == "r" -> recent()
+            id == "live" -> if (s.liveUpnp) liveEntries() else emptyList()
             id == "v" && s.shareVideo -> listOf(folder("v:all", "v", Lang.s(R.string.all_videos))) + buckets(VIDEO, "v")
             id == "a" && s.shareAudio -> listOf(
                 folder("a:all", "a", Lang.s(R.string.all_songs)),
@@ -225,6 +234,7 @@ class MediaLibrary(private val ctx: Context) {
                 else queryMedia(kind, "${MediaStore.MediaColumns._ID}=?", arrayOf(parts[2]), parentOf(id)).firstOrNull()
             }
             id.startsWith("fd:") -> lookupDocument(id)
+            id.startsWith("live:") -> if (s.liveUpnp) liveEntries().firstOrNull { it.id == id } else null
             id.startsWith("p:") && pathAllowed(id.substring(2)) -> FileAccess.resolve(id.substring(2))?.takeIf { it.isFile }?.let { f ->
                 fileEntry(f, parentOf(id), emptyMap(), allowSub = true)
             }

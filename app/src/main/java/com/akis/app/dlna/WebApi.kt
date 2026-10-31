@@ -83,6 +83,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
                 val name = "akis-" + java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date()) + ".jpg"
                 res.bytes(200, "image/jpeg", it, mapOf("Content-Disposition" to "attachment; filename=\"$name\""))
             } ?: res.text(404, Lang.s(R.string.http_not_found))
+            p == "/live/screen" || p == "/live/mic.wav" -> if (!live(if (p == "/live/screen") "screen" else "mic", req, res)) res.text(404, Lang.s(R.string.http_not_found))
             p == "/api/status" -> if (Prefs.current.phoneStatus) json(res, PhoneInfo.status(ctx)) else res.text(404, Lang.s(R.string.http_not_found))
             p == "/api/apps" -> if (Prefs.current.appsList) json(res, PhoneInfo.apps(ctx, Prefs.current.appsSystem)) else res.text(404, Lang.s(R.string.http_not_found))
             p == "/appicon" -> if (Prefs.current.appsList) PhoneInfo.icon(ctx, param(req, "pkg"))?.let {
@@ -139,6 +140,8 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("status", s.phoneStatus && (!remote || s.remoteStatus)).put("apps", s.appsList && (!remote || s.remoteApps))
             .put("camera", com.akis.app.CameraStream.allowed(ctx) && (!remote || s.remoteCamera))
             .put("camFront", s.camFront).put("camHeight", s.camHeight)
+            .put("screen", com.akis.app.ScreenStream.allowed() && (!remote || s.remoteScreen))
+            .put("mic", com.akis.app.MicStream.allowed(ctx) && (!remote || s.remoteMic))
             .put("docs", s.docPreview).put("zipView", s.zipView).put("thumbs", s.richThumbs).put("keys", s.keysHelp)
             .put("subLang", s.subLang)
             .put("lang", Lang.locale.language)
@@ -179,6 +182,32 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("lang", Lang.locale.language)
             .put("icons", icons)
         res.bytes(200, "application/manifest+json; charset=utf-8", o.toString().toByteArray(Charsets.UTF_8), mapOf("Cache-Control" to "no-cache"))
+    }
+
+    /** Canlı akışlar (web ve UPnP "Canlı" klasörü): "cam", "screen", "mic". @return false ise kapalı */
+    fun live(what: String, req: HttpRequest, res: HttpResponder): Boolean {
+        val who = ServerState.clientName(req.remote)
+        val mjpeg = "multipart/x-mixed-replace; boundary=akisframe"
+        val nc = mapOf("Cache-Control" to "no-store")
+        when (what) {
+            "cam" -> {
+                if (!com.akis.app.CameraStream.allowed(ctx)) return false
+                ServerState.log("📷 $who")
+                res.stream(200, mjpeg, nc) { out -> com.akis.app.CameraStream.stream(ctx, Prefs.current.camFront, Prefs.current.camHeight, out) }
+            }
+            "screen" -> {
+                if (!com.akis.app.ScreenStream.allowed()) return false
+                ServerState.log("🖥 $who")
+                res.stream(200, mjpeg, nc) { out -> com.akis.app.ScreenStream.stream(ctx, who, out) }
+            }
+            "mic" -> {
+                if (!com.akis.app.MicStream.allowed(ctx)) return false
+                ServerState.log("🎙 $who")
+                res.stream(200, "audio/wav", nc) { out -> com.akis.app.MicStream.stream(out) }
+            }
+            else -> return false
+        }
+        return true
     }
 
     private fun esc(s: String) = s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;")
@@ -223,7 +252,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             o.put("cont", items(WatchHistory.inProgress().take(16).mapNotNull { lib.lookup(it.id) }))
         }
         val cats = JSONArray()
-        for (f in lib.root()) {
+        for (f in lib.root().filter { it.id != "live" }) {
             val n = when (f.id) {
                 "v" -> lib.count(Kind.VIDEO)
                 "a" -> lib.count(Kind.AUDIO)

@@ -46,6 +46,8 @@ class DlnaService : Service() {
         const val ACTION_START = "com.akis.app.START"
         const val ACTION_STOP = "com.akis.app.STOP"
         const val ACTION_RESTART = "com.akis.app.RESTART"
+        const val ACTION_PROJECTION = "com.akis.app.PROJECTION"
+        const val ACTION_SCREEN_STOP = "com.akis.app.SCREEN_STOP"
         private const val NOTIF_ID = 42
 
         fun start(ctx: Context) =
@@ -57,6 +59,12 @@ class DlnaService : Service() {
 
         fun restart(ctx: Context) =
             ContextCompat.startForegroundService(ctx, Intent(ctx, DlnaService::class.java).setAction(ACTION_RESTART))
+
+        /** Ekran paylaşımı onaylandı: ön plan türüne ekran yansıtma eklenir, sonra paylaşım başlar. */
+        fun startProjection(ctx: Context, code: Int, data: Intent) =
+            ContextCompat.startForegroundService(
+                ctx, Intent(ctx, DlnaService::class.java).setAction(ACTION_PROJECTION).putExtra("code", code).putExtra("data", data),
+            )
     }
 
     private var server: DlnaServer? = null
@@ -82,6 +90,16 @@ class DlnaService : Service() {
                 shutdown(waitForStop = true)
                 startServer()
             }
+            ACTION_PROJECTION -> {
+                projectionPending = true
+                goForeground()
+                projectionPending = false
+                val data = androidx.core.content.IntentCompat.getParcelableExtra(intent, "data", Intent::class.java)
+                if (data != null) com.akis.app.ScreenStream.begin(this, intent.getIntExtra("code", 0), data)
+                else com.akis.app.ScreenStream.decline()
+                if (server == null) startServer()
+            }
+            ACTION_SCREEN_STOP -> com.akis.app.ScreenStream.close()
             else -> {
                 goForeground()
                 if (server == null) startServer()
@@ -90,17 +108,23 @@ class DlnaService : Service() {
         return START_NOT_STICKY
     }
 
+    @Volatile private var projectionPending = false
+
     private fun goForeground() {
-        // Kamera açıksa (ve izin varsa) kamera türü de eklenir; arka plandan başlatıldıysa Android buna izin vermez → yalnızca ağ
-        val cam = com.akis.app.CameraStream.allowed(this)
-        try {
-            ServiceCompat.startForeground(
-                this, NOTIF_ID, buildNotification(),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE or (if (cam) ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA else 0),
-            )
-        } catch (e: Exception) {
-            if (!cam) throw e
-            ServiceCompat.startForeground(this, NOTIF_ID, buildNotification(), ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE)
+        // Kamera / mikrofon açıksa (ve izin varsa) o türler de eklenir; arka plandan başlatıldıysa Android buna izin vermez → yalnızca ağ.
+        // Ekran yansıtma türü yalnızca kullanıcı onay verdikten sonra eklenebilir.
+        val base = ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE
+        val screen = if (projectionPending || com.akis.app.ScreenStream.live.value) ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION else 0
+        var type = base or screen
+        if (com.akis.app.CameraStream.allowed(this)) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
+        if (com.akis.app.MicStream.allowed(this)) type = type or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+        for (t in listOf(type, base or screen, base).distinct()) {
+            try {
+                ServiceCompat.startForeground(this, NOTIF_ID, buildNotification(), t)
+                return
+            } catch (e: Exception) {
+                if (t == base) throw e
+            }
         }
     }
 
@@ -155,6 +179,20 @@ class DlnaService : Service() {
                 if (Prefs.current.remoteOn) com.akis.app.Tunnel.restart(Prefs.current.port) else com.akis.app.Tunnel.stop()
             }
         }
+        // Ekran / mikrofon açılıp kapanınca bildirim ve ön plan türü güncellensin
+        sc.launch {
+            combine(com.akis.app.ScreenStream.live, com.akis.app.MicStream.live) { a, b -> a to b }.distinctUntilChanged().drop(1).collect {
+                runCatching { goForeground() }
+                updateNotification()
+            }
+        }
+        sc.launch {
+            Prefs.settings.map { it.mic to it.screen }.distinctUntilChanged().drop(1).collect { (mic, screen) ->
+                runCatching { goForeground() }
+                if (!mic) com.akis.app.MicStream.stop()
+                if (!screen) com.akis.app.ScreenStream.close()
+            }
+        }
         // Kamera ayarı açılınca ön plan türünü güncelle (kullanıcı uygulamadayken)
         sc.launch {
             Prefs.settings.map { it.camera }.distinctUntilChanged().drop(1).collect {
@@ -168,7 +206,7 @@ class DlnaService : Service() {
                 listOf(
                     it.shareVideo, it.shareAudio, it.shareImage, it.showRecent, it.folders, it.name,
                     it.hideFolders, it.hiddenBuckets, it.subtitles, it.subLang, it.search, it.history, it.historyMarks,
-                    it.allFilesUpnp, it.iconStyle,
+                    it.allFilesUpnp, it.iconStyle, it.liveUpnp, it.camera, it.screen, it.mic,
                 )
             }
                 .distinctUntilChanged().drop(1).collect { server?.contentChanged() }
@@ -311,7 +349,14 @@ class DlnaService : Service() {
         val addr = ServerState.address.value
         val stream = ServerState.streams.value.firstOrNull()
         val clients = ServerState.clients.value.size
-        val title = if (ServerState.cameraLive.value) Lang.s(R.string.cam_live) else if (stream != null) "▶ ${stream.title}" else Lang.s(R.string.notif_on)
+        val screenLive = com.akis.app.ScreenStream.live.value
+        val title = when {
+            screenLive -> Lang.s(R.string.screen_live)
+            ServerState.cameraLive.value -> Lang.s(R.string.cam_live) + if (com.akis.app.MicStream.live.value) " · 🎙" else ""
+            com.akis.app.MicStream.live.value -> Lang.s(R.string.mic_live)
+            stream != null -> "▶ ${stream.title}"
+            else -> Lang.s(R.string.notif_on)
+        }
         val text = when {
             stream != null -> Lang.s(R.string.notif_playing_on, stream.client)
             addr != null -> "${s.name} • $addr" + if (clients > 0) " • " + Lang.q(R.plurals.count_devices, clients) else ""
@@ -330,6 +375,15 @@ class DlnaService : Service() {
             .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
             .setContentIntent(open)
             .addAction(0, Lang.s(R.string.stop), stop)
+        if (screenLive) {
+            b.addAction(
+                0, Lang.s(R.string.screen_stop),
+                PendingIntent.getService(
+                    this, 2, Intent(this, DlnaService::class.java).setAction(ACTION_SCREEN_STOP),
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+                ),
+            )
+        }
         if (s.notifDetails) {
             if (stream != null && stream.size > 0) b.setProgress(1000, (stream.position * 1000 / stream.size).toInt(), false)
             if (addr != null) b.setSubText(Lang.s(R.string.notif_sent, Lang.q(R.plurals.count_devices, clients), formatBytes(ServerState.bytesSent.value)))
