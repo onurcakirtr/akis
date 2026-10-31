@@ -55,6 +55,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.MoveToInbox
 import androidx.compose.material.icons.rounded.AddToHomeScreen
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Public
@@ -468,6 +469,7 @@ fun SettingsScreen() {
                         Prefs.set("camera", on)
                     }
                 }
+                FeatureRow(Icons.Rounded.MoveToInbox, stringResource(R.string.f_filereq), stringResource(R.string.f_filereq_sub), s.fileReq, divider = true) { Prefs.set("fileReq", it) }
                 FeatureRow(Icons.Rounded.AddToHomeScreen, stringResource(R.string.f_pwa), stringResource(R.string.f_pwa_sub), s.pwa, divider = true) { Prefs.set("pwa", it) }
                 FeatureRow(
                     Icons.Rounded.Speed, stringResource(R.string.f_rate), stringResource(R.string.f_rate_sub), s.rateOn, divider = true,

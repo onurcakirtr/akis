@@ -172,6 +172,8 @@ class HttpResponder(private val out: OutputStream, private val head: Boolean) {
             403 -> "Forbidden"
             404 -> "Not Found"
             405 -> "Method Not Allowed"
+            410 -> "Gone"
+            413 -> "Payload Too Large"
             412 -> "Precondition Failed"
             416 -> "Range Not Satisfiable"
             500 -> "Internal Server Error"

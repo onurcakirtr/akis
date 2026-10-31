@@ -62,6 +62,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.ClientInfo
 import com.akis.app.DeviceAccess
 import com.akis.app.QuickShare
+import com.akis.app.FileRequests
+import androidx.compose.material.icons.rounded.MoveToInbox
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Block
@@ -96,6 +98,9 @@ fun HomeScreen() {
     var qrRemote by remember { mutableStateOf(false) }
     val shares by QuickShare.shares.collectAsStateWithLifecycle()
     var qrFor by remember { mutableStateOf<String?>(null) }
+    val requests by FileRequests.list.collectAsStateWithLifecycle()
+    var newRequest by remember { mutableStateOf(false) }
+    var qrRequest by remember { mutableStateOf<String?>(null) }
 
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(running) {
@@ -163,12 +168,42 @@ fun HomeScreen() {
                     StatPill(Icons.Rounded.Schedule, formatDuration((now - startedAt).coerceAtLeast(0)), stringResource(R.string.stat_uptime), Modifier.weight(1f))
                 }
             }
+            if (settings.fileReq) {
+                item(key = "req-new") {
+                    ExpressiveCard(modifier = Modifier.animateItem(), onClick = { newRequest = true }) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconBadge(Icons.Rounded.MoveToInbox, size = 44.dp)
+                            Gap(14.dp)
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(R.string.req_new), style = MaterialTheme.typography.titleMedium)
+                                Text(stringResource(R.string.req_new_sub), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                    }
+                }
+            }
             if (streams.isNotEmpty()) {
                 item(key = "st-title") { SectionTitle(stringResource(R.string.now_playing), Modifier.animateItem()) }
                 items(streams, key = { "s-" + it.key }) { StreamCard(it, Modifier.animateItem()) }
             }
-            if (shares.isNotEmpty()) {
+            if (shares.isNotEmpty() || requests.isNotEmpty()) {
                 item(key = "sh-title") { SectionTitle(stringResource(R.string.active_shares), Modifier.animateItem()) }
+                items(requests, key = { "rq-" + it.token }) { rq ->
+                    ExpressiveCard(modifier = Modifier.animateItem()) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconBadge(Icons.Rounded.MoveToInbox, size = 44.dp)
+                            Gap(14.dp)
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(R.string.req_item), style = MaterialTheme.typography.titleMedium)
+                                val left = formatDuration((rq.expires - now).coerceAtLeast(0))
+                                val extra = plural(R.plurals.req_files_n, rq.files) + (if (rq.bytes > 0) " • " + formatBytes(rq.bytes) else "")
+                                Text(stringResource(R.string.share_left, left, extra), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            FilledTonalIconButton(onClick = { qrRequest = rq.token }) { Icon(Icons.Rounded.QrCode2, stringResource(R.string.show_qr)) }
+                            FilledTonalIconButton(onClick = { FileRequests.remove(rq.token) }) { Icon(Icons.Rounded.LinkOff, stringResource(R.string.req_stop)) }
+                        }
+                    }
+                }
                 items(shares, key = { "sh-" + it.token }) { sh ->
                     ExpressiveCard(modifier = Modifier.animateItem()) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -212,23 +247,39 @@ fun HomeScreen() {
     }
 
     qrFor?.let { tk ->
-        val url = QuickShare.url(tk)
+        val up = remoteUrl != null && tunnelState == com.akis.app.Tunnel.State.UP
+        LinkQrDialog(stringResource(R.string.share_title), null, { r -> if (r) remoteUrl?.let { "${it.trimEnd('/')}/share/$tk" } else QuickShare.url(tk) }, up) { qrFor = null }
+    }
+    if (newRequest) {
+        var minutes by remember { mutableStateOf(60) }
+        var limit by remember { mutableStateOf(0L) }
+        var once by remember { mutableStateOf(false) }
         AlertDialog(
-            onDismissRequest = { qrFor = null },
-            confirmButton = { TextButton(onClick = { qrFor = null }) { Text(stringResource(R.string.close)) } },
-            title = { Text(stringResource(R.string.share_title)) },
+            onDismissRequest = { newRequest = false },
+            title = { Text(stringResource(R.string.req_new)) },
             text = {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                    if (url != null) {
-                        DotQrCode(url, Modifier.size(220.dp))
-                        Spacer(Modifier.height(12.dp))
-                        Text(url, style = MaterialTheme.typography.bodyMedium)
-                    } else {
-                        Text(stringResource(R.string.waiting_network))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.req_duration), style = MaterialTheme.typography.labelLarge)
+                    Choice(listOf(15 to stringResource(R.string.req_15m), 60 to stringResource(R.string.req_1h), 24 * 60 to stringResource(R.string.req_1d)), minutes) { minutes = it }
+                    Text(stringResource(R.string.req_limit), style = MaterialTheme.typography.labelLarge)
+                    Choice(listOf(0L to stringResource(R.string.req_nolimit), 100L shl 20 to "100 MB", 1L shl 30 to "1 GB", 10L shl 30 to "10 GB"), limit) { limit = it }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(stringResource(R.string.req_once), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        androidx.compose.material3.Switch(once, { once = it })
                     }
                 }
             },
+            confirmButton = {
+                TextButton(onClick = {
+                    qrRequest = FileRequests.create(minutes, limit, once).token
+                    newRequest = false
+                }) { Text(stringResource(R.string.req_create)) }
+            },
+            dismissButton = { TextButton(onClick = { newRequest = false }) { Text(stringResource(R.string.cancel)) } },
         )
+    }
+    qrRequest?.let { tk ->
+        LinkQrDialog(stringResource(R.string.req_new), stringResource(R.string.req_hint), { FileRequests.url(tk, it) }, remoteUrl != null && tunnelState == com.akis.app.Tunnel.State.UP) { qrRequest = null }
     }
     actFor?.let { c ->
         AlertDialog(
@@ -280,6 +331,51 @@ fun HomeScreen() {
             },
         )
     }
+}
+
+/** Seçenek düğmeleri (tek seçim). */
+@Composable
+private fun <T> Choice(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit) {
+    androidx.compose.material3.SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+        options.forEachIndexed { i, (v, label) ->
+            androidx.compose.material3.SegmentedButton(
+                selected = v == selected, onClick = { onSelect(v) },
+                shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, options.size),
+            ) { Text(label, maxLines = 1) }
+        }
+    }
+}
+
+/** Bağlantı + QR; uzaktan erişim açıksa Yerel / Uzak seçilebilir. */
+@Composable
+private fun LinkQrDialog(title: String, hint: String?, url: (remote: Boolean) -> String?, remoteUp: Boolean, onDismiss: () -> Unit) {
+    var remote by remember { mutableStateOf(false) }
+    val clipboard = LocalClipboardManager.current
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
+        title = { Text(title) },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                if (remoteUp) {
+                    Choice(listOf(false to stringResource(R.string.qr_local), true to stringResource(R.string.qr_remote)), remote) { remote = it }
+                    Spacer(Modifier.height(12.dp))
+                }
+                val u = url(remoteUp && remote)
+                if (u != null) {
+                    DotQrCode(u, Modifier.size(220.dp))
+                    Spacer(Modifier.height(12.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(u, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                        FilledTonalIconButton(onClick = { clipboard.setText(AnnotatedString(u)) }) { Icon(Icons.Rounded.ContentCopy, stringResource(R.string.copy)) }
+                    }
+                    if (hint != null) Text(hint, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                } else {
+                    Text(stringResource(R.string.waiting_network))
+                }
+            }
+        },
+    )
 }
 
 @Composable

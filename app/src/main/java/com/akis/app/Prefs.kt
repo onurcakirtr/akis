@@ -46,6 +46,7 @@ data class Settings(
     val keysHelp: Boolean,          // web: ? ile kısayol yardımı
     val webLook: Boolean,           // web: tarayıcı başına dil ve tema seçimi
     val pwa: Boolean,               // web: ana ekrana ekle (uygulama tanımı)
+    val fileReq: Boolean,           // dosya isteme bağlantıları
     val rateOn: Boolean,            // bağlantı başına hız sınırı
     val rateLocal: Int,             // Mbit/s (0 = sınırsız)
     val rateRemote: Int,            // Mbit/s, uzaktan erişim (0 = sınırsız)
@@ -123,6 +124,7 @@ object Prefs {
         keysHelp = sp.getBoolean("keysHelp", true),
         webLook = sp.getBoolean("webLook", true),
         pwa = sp.getBoolean("pwa", true),
+        fileReq = sp.getBoolean("fileReq", true),
         rateOn = sp.getBoolean("rateOn", false),
         rateLocal = sp.getInt("rateLocal", 0),
         rateRemote = sp.getInt("rateRemote", 5),

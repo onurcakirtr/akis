@@ -5,6 +5,7 @@ import com.akis.app.DeviceAccess
 import com.akis.app.FileAccess
 import com.akis.app.Lang
 import com.akis.app.R
+import com.akis.app.FileRequests
 import com.akis.app.Prefs
 import com.akis.app.RemoteAuth
 import com.akis.app.ServerIcon
@@ -118,6 +119,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                     else res.text(404, Lang.s(R.string.http_no_thumb))
                 }
                 p.startsWith("/share/") -> webApi.share(req, res)
+                p.startsWith("/drop/") -> drop(req, res)
                 !settings.webUi -> res.text(403, Lang.s(R.string.http_web_off))
                 adminApi.handle(req, res) -> Unit
                 webApi.handle(req, res) -> Unit
@@ -129,7 +131,11 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 p.startsWith("/admin/") && settings.webUi -> adminApi.handle(req, res)
                 else -> control(req, res, base)
             }
-            "PUT" -> if (p.startsWith("/yukle/") && settings.upload && settings.webUi) upload(req, res) else res.text(403, Lang.s(R.string.http_upload_off))
+            "PUT" -> when {
+                p.startsWith("/drop/") -> drop(req, res)
+                p.startsWith("/yukle/") && settings.upload && settings.webUi -> upload(req, res)
+                else -> res.text(403, Lang.s(R.string.http_upload_off))
+            }
             "SUBSCRIBE" -> gena.subscribe(req, res)
             "UNSUBSCRIBE" -> gena.unsubscribe(req, res)
             "OPTIONS" -> res.send(200, null, 0, mapOf("Allow" to "GET, HEAD, POST, PUT, SUBSCRIBE, UNSUBSCRIBE"))
@@ -157,7 +163,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             return false
         }
         if (req.tunnel) return remoteAccess(req, res, settings)
-        if (p in openPaths || p.startsWith("/static/") || p.startsWith("/share/") || iconSize(p) != null) return true
+        if (p in openPaths || p.startsWith("/static/") || p.startsWith("/share/") || p.startsWith("/drop/") || iconSize(p) != null) return true
         if (p == "/pin") {
             pinLogin(req, res, settings)
             return false
@@ -199,7 +205,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             res.text(403, Lang.s(R.string.http_remote_blocked))
             return false
         }
-        if (p == "/icon.png" || p == "/icon48.png" || p.startsWith("/static/") || p.startsWith("/share/")) return true
+        if (p == "/icon.png" || p == "/icon48.png" || p.startsWith("/static/") || p.startsWith("/share/") || p.startsWith("/drop/")) return true
         if (p == "/rlogin" || p.startsWith("/rlogin/")) {
             remoteLogin(req, res, s)
             return false
@@ -304,6 +310,24 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val uri = if (dir != null) Uploads.receiveToDir(ctx, dir, name, input, req.contentLength, ServerState.clientName(req.remote))
         else Uploads.receive(ctx, name, input, req.contentLength, ServerState.clientName(req.remote))
         if (uri == null) return res.text(500, "{\"ok\":false}", "application/json")
+        contentChanged()
+        res.text(200, "{\"ok\":true}", "application/json")
+    }
+
+    /** Dosya isteme bağlantısı: GET /drop/<anahtar> yükleme sayfası, PUT /drop/<anahtar>/<ad> dosya. */
+    private fun drop(req: HttpRequest, res: HttpResponder) {
+        val parts = req.path.removePrefix("/drop/").split('/', limit = 2)
+        val r = if (Prefs.current.fileReq) FileRequests.get(parts[0]) else null
+        if (req.method != "PUT") return res.html(WebUi.dropPage(Prefs.current.name, r))
+        fun fail(code: Int, e: String) = res.text(code, "{\"ok\":false,\"e\":\"$e\"}", "application/json")
+        if (r == null) return fail(410, "gone")
+        val input = req.bodyStream ?: return fail(400, "body")
+        if (req.contentLength <= 0) return fail(400, "empty")
+        FileRequests.reserve(r.token, req.contentLength)?.let { return fail(if (it == "big") 413 else 410, it) }
+        val name = Uploads.safeName(decode(parts.getOrElse(1) { "" }))
+        val uri = Uploads.receive(ctx, name, input, req.contentLength, ServerState.clientName(req.remote), Lang.s(R.string.drop_dir))
+        FileRequests.finish(r.token, req.contentLength, uri != null)
+        if (uri == null) return fail(500, "write")
         contentChanged()
         res.text(200, "{\"ok\":true}", "application/json")
     }

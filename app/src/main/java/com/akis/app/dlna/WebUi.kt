@@ -62,17 +62,56 @@ form.q input:focus{border-color:var(--acc)}
         if (name == null) {
             return page(server, Lang.s(R.string.w_share_title), "", "<div class=\"p\" style=\"max-width:520px\"><p>${h(Lang.s(R.string.w_share_gone))}</p></div>")
         }
-        val sz = when {
-            size >= 1L shl 30 -> String.format(java.util.Locale.US, "%.2f GB", size / 1073741824.0)
-            size >= 1L shl 20 -> String.format(java.util.Locale.US, "%.1f MB", size / 1048576.0)
-            else -> "${maxOf(1, size / 1024)} KB"
-        }
+        val sz = sizeText(size)
         val until = java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT, Lang.locale).format(java.util.Date(expires))
         val body = "<div class=\"p\" style=\"max-width:560px\"><h2>${h(Lang.s(R.string.w_share_title))}</h2>" +
             "<p style=\"font-size:18px;word-break:break-all\">${h(name)}</p><p class=\"s\">$sz • ${h(Lang.s(R.string.w_share_expires, until))}</p>" +
             "<div class=\"btns\"><a class=\"b\" href=\"${h(dl)}\">${h(Lang.s(R.string.web_download))}</a></div></div>"
         return page(server, name, "", body)
     }
+
+    private fun sizeText(size: Long) = when {
+        size >= 1L shl 30 -> String.format(java.util.Locale.US, "%.2f GB", size / 1073741824.0)
+        size >= 1L shl 20 -> String.format(java.util.Locale.US, "%.1f MB", size / 1048576.0)
+        else -> "${maxOf(1, size / 1024)} KB"
+    }
+
+    /** Dosya isteme sayfası: yalnızca yükleme. r null ise bağlantı geçersiz. */
+    fun dropPage(server: String, r: com.akis.app.FileRequests.Req?): String {
+        val title = Lang.s(R.string.w_drop_title)
+        if (r == null) return page(server, title, "", "<div class=\"p\" style=\"max-width:520px\"><h2>${h(title)}</h2><p>${h(Lang.s(R.string.w_drop_gone))}</p></div>")
+        val until = java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.MEDIUM, java.text.DateFormat.SHORT, Lang.locale).format(java.util.Date(r.expires))
+        val info = listOfNotNull(
+            if (r.maxBytes > 0) Lang.s(R.string.w_drop_limit, sizeText(r.maxBytes)) else null,
+            if (r.once) Lang.s(R.string.w_drop_once) else null,
+            Lang.s(R.string.w_drop_until, until),
+        ).joinToString(" • ")
+        val t = org.json.JSONObject()
+            .put("done", Lang.s(R.string.w_drop_done)).put("fail", Lang.s(R.string.w_drop_fail))
+            .put("big", Lang.s(R.string.w_drop_big)).put("closed", Lang.s(R.string.w_drop_closed)).put("once", r.once)
+        val body = "<div class=\"p\" style=\"max-width:620px\"><h2>${h(title)}</h2>" +
+            "<p class=\"s\">${h(Lang.s(R.string.w_drop_sub, server))}<br>${h(info)}</p>" +
+            "<label class=\"drop\" id=\"drop\"><input type=\"file\" id=\"pick\"${if (r.once) "" else " multiple"} hidden>" +
+            "<span>${h(Lang.s(R.string.w_drop_pick))}</span></label><div id=\"list\"></div></div>" +
+            "<script>" + DROP_JS.replace("@T@", t.toString().replace("</", "<\\/")).replace("@TOKEN@", r.token) + "</script>"
+        return page(server, title, "", body)
+    }
+
+    /** Sırayla yükler (PUT /drop/<anahtar>/<ad>), her dosyada ilerleme çubuğu. */
+    private const val DROP_JS = """(function(){var T=@T@,tk='@TOKEN@',d=document.getElementById('drop'),pick=document.getElementById('pick'),list=document.getElementById('list'),q=[],busy=false;
+function esc(s){var e=document.createElement('span');e.textContent=s;return e.innerHTML;}
+function add(files){for(var i=0;i<files.length;i++){var row=document.createElement('div');row.className='f';row.innerHTML='<div class="t">'+esc(files[i].name)+'</div><div class="s"></div><div class="bar"><i></i></div>';list.appendChild(row);q.push({f:files[i],row:row});}next();}
+function next(){if(busy||!q.length)return;busy=true;var it=q.shift(),x=new XMLHttpRequest(),bar=it.row.querySelector('i'),st=it.row.querySelector('.s');
+x.open('PUT','/drop/'+tk+'/'+encodeURIComponent(it.f.name));
+x.upload.onprogress=function(e){if(e.lengthComputable)bar.style.width=(e.loaded*100/e.total)+'%';};
+x.onload=function(){if(x.status===200){bar.style.width='100%';st.textContent=T.done;if(T.once)d.style.display='none';}
+else{st.textContent=x.status===413?T.big:x.status===410?T.closed:T.fail;st.style.color='var(--acc)';}
+busy=false;next();};
+x.onerror=function(){st.textContent=T.fail;st.style.color='var(--acc)';busy=false;next();};x.send(it.f);}
+pick.addEventListener('change',function(){add(pick.files);pick.value='';});
+['dragenter','dragover'].forEach(function(n){d.addEventListener(n,function(e){e.preventDefault();d.classList.add('on');});});
+['dragleave','drop'].forEach(function(n){d.addEventListener(n,function(e){e.preventDefault();d.classList.remove('on');});});
+d.addEventListener('drop',function(e){add(e.dataTransfer.files);});})();"""
 
     /** Uzaktan (tünel) giriş sayfası. */
     fun remoteLoginPage(server: String, msg: String?, totp: Boolean): String {

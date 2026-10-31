@@ -30,6 +30,7 @@ class AkisApplication : Application() {
         WatchHistory.init(this)
         DeviceAccess.init(this)
         QuickShare.init(this)
+        FileRequests.init(this)
         Admin.init(this)
         Tunnel.init(this)
         RemoteAuth.init(this)
@@ -59,6 +60,7 @@ class AkisApplication : Application() {
             while (true) {
                 kotlinx.coroutines.delay(60_000)
                 QuickShare.cleanup()
+                FileRequests.cleanup()
             }
         }
         CoroutineScope(SupervisorJob() + Dispatchers.Main).launch {

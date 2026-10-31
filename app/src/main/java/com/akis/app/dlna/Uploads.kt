@@ -28,12 +28,13 @@ object Uploads {
 
     /**
      * Gövdeyi hedefe akıtır.
+     * @param subDir doluysa seçilen yükleme klasörü yerine İndirilenler/Akış/<subDir> (dosya isteme bağlantıları)
      * @return kaydedilen dosyanın Uri'si; hata ya da yarım kalırsa null (yarım dosya silinir)
      */
-    fun receive(ctx: Context, name: String, input: InputStream, length: Long, from: String): Uri? {
+    fun receive(ctx: Context, name: String, input: InputStream, length: Long, from: String, subDir: String? = null): Uri? {
         val cr = ctx.contentResolver
         val mime = MediaLibrary.mimeFor(name, null)
-        val folder = Prefs.current.uploadFolder
+        val folder = if (subDir != null) "" else Prefs.current.uploadFolder
         val uri: Uri = try {
             if (folder.isNotEmpty()) {
                 val tree = Uri.parse(folder)
@@ -43,7 +44,7 @@ object Uploads {
                 val v = ContentValues().apply {
                     put(MediaStore.MediaColumns.DISPLAY_NAME, name)
                     put(MediaStore.MediaColumns.MIME_TYPE, mime)
-                    put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/$DEFAULT_DIR")
+                    put(MediaStore.MediaColumns.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/$DEFAULT_DIR" + (subDir?.let { "/$it" } ?: ""))
                     put(MediaStore.MediaColumns.IS_PENDING, 1)
                 }
                 cr.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, v)
