@@ -122,6 +122,7 @@ class DlnaService : Service() {
         server = srv
         ServerState.kicker = { ip -> srv.kick(ip) }
         watchLibrary()
+        com.akis.app.Tunnel.start(settings.port)
         if (ip == null) ServerState.error.value = Lang.s(R.string.err_no_wifi)
         acquireLocks(settings.keepAwake)
         registerNetworkCallback()
@@ -148,6 +149,12 @@ class DlnaService : Service() {
             }
         }
         sc.launch { ServerState.accessChanged.collect { server?.contentChanged() } }
+        // Uzaktan erişim ayarları değişince tüneli yeniden başlat
+        sc.launch {
+            Prefs.settings.map { listOf(it.remoteOn, it.remoteMode, it.remoteToken, it.remoteHost) }.distinctUntilChanged().drop(1).collect {
+                if (Prefs.current.remoteOn) com.akis.app.Tunnel.restart(Prefs.current.port) else com.akis.app.Tunnel.stop()
+            }
+        }
         // Kamera ayarı açılınca ön plan türünü güncelle (kullanıcı uygulamadayken)
         sc.launch {
             Prefs.settings.map { it.camera }.distinctUntilChanged().drop(1).collect {
@@ -268,6 +275,7 @@ class DlnaService : Service() {
         val srv = server
         server = null
         ServerState.kicker = null
+        com.akis.app.Tunnel.stop()
         libraryObserver?.let { runCatching { contentResolver.unregisterContentObserver(it) } }
         libraryObserver = null
         main.removeCallbacks(libraryChanged)

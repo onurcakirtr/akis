@@ -32,6 +32,10 @@ android {
     buildFeatures {
         compose = true
     }
+    // cloudflared (uzaktan erişim) çalıştırılabilmesi için yerel kütüphane klasörüne açılmalı
+    packaging {
+        jniLibs { useLegacyPackaging = true }
+    }
     // Android 13+ uygulama dili menüsü res/values-<dil> klasörlerinden kendiliğinden oluşturulur
     androidResources {
         generateLocaleConfig = true

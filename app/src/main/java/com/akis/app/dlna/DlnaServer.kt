@@ -6,7 +6,9 @@ import com.akis.app.FileAccess
 import com.akis.app.Lang
 import com.akis.app.R
 import com.akis.app.Prefs
+import com.akis.app.RemoteAuth
 import com.akis.app.ServerIcon
+import com.akis.app.Totp
 import com.akis.app.Settings
 import com.akis.app.ServerState
 import com.akis.app.WatchHistory
@@ -135,6 +137,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             res.text(403, Lang.s(R.string.http_blocked))
             return false
         }
+        if (req.tunnel) return remoteAccess(req, res, settings)
         if (p in openPaths || p.startsWith("/static/") || p.startsWith("/share/")) return true
         if (p == "/pin") {
             pinLogin(req, res, settings)
@@ -159,6 +162,70 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             else -> res.text(403, Lang.s(R.string.waiting_approval))
         }
         return false
+    }
+
+    // ---------------- Uzaktan erişim (Cloudflare Tunnel) ----------------
+
+    /** Tünelden gelen istekler: TV/DLNA ve yönetim kapalı; diğerleri uzaktan giriş + ayrı izinler ister. */
+    private fun remoteAccess(req: HttpRequest, res: HttpResponder, s: Settings): Boolean {
+        val p = req.path
+        val m = req.method
+        if (!s.remoteOn) {
+            res.text(403, Lang.s(R.string.http_remote_blocked))
+            return false
+        }
+        val never = p == "/desc.xml" || p == "/cd.xml" || p == "/cm.xml" || p.startsWith("/ctl/") || p.startsWith("/evt/") ||
+            p.startsWith("/admin/") || m == "SUBSCRIBE" || m == "UNSUBSCRIBE" || m == "NOTIFY"
+        if (never) {
+            res.text(403, Lang.s(R.string.http_remote_blocked))
+            return false
+        }
+        if (p == "/icon.png" || p == "/icon48.png" || p.startsWith("/static/") || p.startsWith("/share/")) return true
+        if (p == "/rlogin" || p.startsWith("/rlogin/")) {
+            remoteLogin(req, res, s)
+            return false
+        }
+        if (!RemoteAuth.valid(req.headers["cookie"])) {
+            if (m == "GET" && (p == "/" || p == "/index.html")) res.send(303, null, 0, mapOf("Location" to "/rlogin"))
+            else res.text(401, Lang.s(R.string.http_pin_required))
+            return false
+        }
+        val denied = (p.startsWith("/cam/") && !s.remoteCamera) ||
+            (p == "/api/status" && !s.remoteStatus) ||
+            ((p == "/api/apps" || p == "/appicon" || p == "/apk") && !s.remoteApps) ||
+            (m == "PUT" && !s.remoteUpload)
+        if (denied) {
+            res.text(403, Lang.s(R.string.http_remote_blocked))
+            return false
+        }
+        return true
+    }
+
+    private fun remoteCookie(t: String) = "akis_remote=$t; Path=/; Max-Age=604800; HttpOnly; Secure; SameSite=Lax"
+
+    private fun remoteLogin(req: HttpRequest, res: HttpResponder, s: Settings) {
+        val ip = req.remote
+        if (!RemoteAuth.hasPassword) return res.html(WebUi.remoteLoginPage(s.name, Lang.s(R.string.remote_no_pw), false))
+        if (req.path == "/rlogin/status") {
+            val st = RemoteAuth.status(queryParam(req.query, "r"), ip)
+            val ok = st.startsWith("ok:")
+            val body = "{\"s\":\"${if (ok) "ok" else st}\"}".toByteArray()
+            return res.bytes(200, "application/json", body, if (ok) mapOf("Set-Cookie" to remoteCookie(st.substring(3))) else emptyMap())
+        }
+        if (req.method != "POST") return res.html(WebUi.remoteLoginPage(s.name, null, Totp.enabled))
+        val form = String(req.body, Charsets.UTF_8)
+        val r = RemoteAuth.login(ip, queryParam(form, "pw"), queryParam(form, "code"))
+        when {
+            r.startsWith("ok:") -> res.send(303, null, 0, mapOf("Location" to "/", "Set-Cookie" to remoteCookie(r.substring(3))))
+            r.startsWith("wait:") -> res.html(WebUi.remoteWaitPage(s.name, r.substring(5)))
+            else -> res.html(
+                WebUi.remoteLoginPage(
+                    s.name,
+                    Lang.s(when (r) { "locked" -> R.string.w_pin_locked; "code" -> R.string.remote_wrong_code; else -> R.string.remote_wrong_pw }),
+                    Totp.enabled,
+                ),
+            )
+        }
     }
 
     private fun pinLogin(req: HttpRequest, res: HttpResponder, settings: Settings) {

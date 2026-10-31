@@ -38,7 +38,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
     fun handle(req: HttpRequest, res: HttpResponder): Boolean {
         val p = req.path
         when {
-            p == "/" || p == "/index.html" -> res.html(shell())
+            p == "/" || p == "/index.html" -> res.html(shell(req.tunnel))
             p.startsWith("/static/") -> static(p.removePrefix("/static/"), res)
             p == "/api/home" -> json(res, home())
             p == "/api/list" -> json(res, list(param(req, "id").ifEmpty { "0" }))
@@ -106,19 +106,21 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
         res.bytes(200, type, data, mapOf("Cache-Control" to "no-cache"))
     }
 
-    private fun shell(): String {
+    private fun shell(remote: Boolean): String {
         val s = Prefs.current
         val html = asset("index.html")?.toString(Charsets.UTF_8) ?: return "Akış"
         val conf = JSONObject()
             .put("name", s.name)
             .put("search", s.search)
-            .put("upload", s.upload)
+            .put("upload", s.upload && (!remote || s.remoteUpload))
             .put("history", s.history)
             .put("subtitles", s.subtitles)
             .put("files", filesOn())
-            .put("admin", s.adminOn && s.adminHash.isNotEmpty())
+            .put("admin", !remote && s.adminOn && s.adminHash.isNotEmpty())
+            .put("remote", remote)
             .put("totp", s.totpSecret.isNotEmpty())
-            .put("status", s.phoneStatus).put("apps", s.appsList).put("camera", com.akis.app.CameraStream.allowed(ctx))
+            .put("status", s.phoneStatus && (!remote || s.remoteStatus)).put("apps", s.appsList && (!remote || s.remoteApps))
+            .put("camera", com.akis.app.CameraStream.allowed(ctx) && (!remote || s.remoteCamera))
             .put("camFront", s.camFront).put("camHeight", s.camHeight)
             .put("docs", s.docPreview).put("zipView", s.zipView).put("thumbs", s.richThumbs).put("keys", s.keysHelp)
             .put("subLang", s.subLang)

@@ -27,6 +27,8 @@ class AkisApplication : Application() {
         DeviceAccess.init(this)
         QuickShare.init(this)
         Admin.init(this)
+        Tunnel.init(this)
+        RemoteAuth.init(this)
         watchState()
         val nm = getSystemService(NotificationManager::class.java)
         nm.createNotificationChannel(

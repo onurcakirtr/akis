@@ -55,6 +55,8 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Public
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.Pin
 import androidx.compose.material.icons.rounded.Widgets
 import androidx.compose.material.icons.rounded.Password
@@ -98,6 +100,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.Admin
 import com.akis.app.Totp
+import com.akis.app.Tunnel
+import com.akis.app.RemoteAuth
 import androidx.compose.ui.graphics.Color
 import com.akis.app.DeviceAccess
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -126,6 +130,15 @@ fun SettingsScreen() {
     var confirmClear by remember { mutableStateOf(false) }
     var editPin by remember { mutableStateOf(false) }
     var pickLang by remember { mutableStateOf(false) }
+    val tunnelState by Tunnel.state.collectAsStateWithLifecycle()
+    val tunnelUrl by Tunnel.url.collectAsStateWithLifecycle()
+    val tunnelError by Tunnel.lastError.collectAsStateWithLifecycle()
+    var tokenDraft by remember(s.remoteToken) { mutableStateOf(s.remoteToken) }
+    var hostDraft by remember(s.remoteHost) { mutableStateOf(s.remoteHost) }
+    var remoteSessions by remember { mutableStateOf(RemoteAuth.count) }
+    var editRemotePw by remember { mutableStateOf(false) }
+    var remoteAfterPw by remember { mutableStateOf(false) }
+    var remoteConfirm by remember { mutableStateOf(false) }
     var totpSetup by remember { mutableStateOf<String?>(null) }
     val camPerm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) Prefs.set("camera", true) }
     var editAdminPw by remember { mutableStateOf(false) }
@@ -456,6 +469,101 @@ fun SettingsScreen() {
             }
         }
 
+        item { SectionTitle(stringResource(R.string.sec_remote)) }
+        item {
+            ExpressiveCard(color = MaterialTheme.colorScheme.errorContainer) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Rounded.Warning, null, tint = MaterialTheme.colorScheme.onErrorContainer)
+                    Spacer(Modifier.width(10.dp))
+                    Text(stringResource(R.string.remote_warn_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onErrorContainer)
+                }
+                Spacer(Modifier.height(8.dp))
+                Text(stringResource(R.string.remote_warn_text), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onErrorContainer)
+            }
+        }
+        item {
+            ExpressiveCard {
+                if (!Tunnel.supported) {
+                    Text(stringResource(R.string.remote_unsupported), style = MaterialTheme.typography.bodyMedium)
+                } else {
+                    FeatureRow(
+                        Icons.Rounded.Public, stringResource(R.string.f_remote), stringResource(R.string.f_remote_sub), s.remoteOn,
+                        extra = {
+                            val stateText = when (tunnelState) {
+                                Tunnel.State.OFF -> stringResource(R.string.remote_state_off)
+                                Tunnel.State.STARTING -> stringResource(R.string.remote_state_starting)
+                                Tunnel.State.UP -> stringResource(R.string.remote_state_up)
+                                Tunnel.State.ERROR -> stringResource(R.string.remote_state_error, tunnelError.orEmpty())
+                            }
+                            Text(stateText, style = MaterialTheme.typography.bodyMedium,
+                                color = if (tunnelState == Tunnel.State.ERROR) MaterialTheme.colorScheme.error else if (tunnelState == Tunnel.State.UP) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
+                            tunnelUrl?.let { u ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(u, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                    TextButton(onClick = {
+                                        ctx.getSystemService(android.content.ClipboardManager::class.java)
+                                            .setPrimaryClip(android.content.ClipData.newPlainText("Akış", u))
+                                    }) { Text(stringResource(R.string.copy)) }
+                                }
+                            }
+                            Segmented(
+                                options = listOf("quick" to stringResource(R.string.remote_mode_quick), "token" to stringResource(R.string.remote_mode_token)),
+                                selected = s.remoteMode,
+                            ) { v -> Prefs.update { putString("remoteMode", v) } }
+                            if (s.remoteMode == "token") {
+                                Text(stringResource(R.string.remote_token_note, s.port), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                OutlinedTextField(
+                                    value = tokenDraft, onValueChange = { tokenDraft = it.trim() }, singleLine = true,
+                                    label = { Text(stringResource(R.string.remote_token)) }, visualTransformation = PasswordVisualTransformation(),
+                                    shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth(),
+                                )
+                                OutlinedTextField(
+                                    value = hostDraft, onValueChange = { hostDraft = it.trim() }, singleLine = true,
+                                    label = { Text(stringResource(R.string.remote_host)) },
+                                    shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth(),
+                                )
+                                if (tokenDraft != s.remoteToken || hostDraft != s.remoteHost) {
+                                    Button(onClick = { Prefs.update { putString("remoteToken", tokenDraft); putString("remoteHost", hostDraft) } }) { Text(stringResource(R.string.save)) }
+                                }
+                            } else {
+                                Text(stringResource(R.string.remote_quick_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f))
+                            Text(stringResource(R.string.remote_sessions, remoteSessions), style = MaterialTheme.typography.bodyMedium)
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                FilledTonalButton(onClick = { editRemotePw = true }) { Text(stringResource(R.string.remote_pw_change)) }
+                                if (remoteSessions > 0) TextButton(onClick = { RemoteAuth.endAll(); remoteSessions = 0 }) { Text(stringResource(R.string.remote_end_all)) }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(stringResource(R.string.remote_approve), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                Switch(s.remoteApprove, { v -> Prefs.set("remoteApprove", v) })
+                            }
+                            if (s.totpSecret.isEmpty()) Text(stringResource(R.string.remote_totp_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                            Text(stringResource(R.string.remote_allow), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            listOf(
+                                Triple("remoteUpload", stringResource(R.string.f_upload), s.remoteUpload),
+                                Triple("remoteCamera", stringResource(R.string.f_camera), s.remoteCamera),
+                                Triple("remoteStatus", stringResource(R.string.f_status), s.remoteStatus),
+                                Triple("remoteApps", stringResource(R.string.f_apps), s.remoteApps),
+                            ).forEach { (key, label, on) ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                    Switch(on, { v -> Prefs.set(key, v) })
+                                }
+                            }
+                        },
+                    ) { on ->
+                        when {
+                            !on -> Prefs.set("remoteOn", false)
+                            !RemoteAuth.hasPassword -> { remoteAfterPw = true; editRemotePw = true }
+                            !s.remoteWarned -> remoteConfirm = true
+                            else -> Prefs.set("remoteOn", true)
+                        }
+                    }
+                }
+            }
+        }
+
         val blocked = devices.filter { !it.allowed }
         if (blocked.isNotEmpty() && !s.deviceApproval) {
             item { SectionTitle(stringResource(R.string.blocked_devices)) }
@@ -656,6 +764,68 @@ fun SettingsScreen() {
                 }) { Text(stringResource(R.string.totp_verify)) }
             },
             dismissButton = { TextButton(onClick = { totpSetup = null }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+    if (remoteConfirm) {
+        AlertDialog(
+            onDismissRequest = { remoteConfirm = false },
+            icon = { Icon(Icons.Rounded.Warning, null) },
+            title = { Text(stringResource(R.string.remote_warn_title)) },
+            text = { Text(stringResource(R.string.remote_warn_text)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    Prefs.update { putBoolean("remoteWarned", true); putBoolean("remoteOn", true) }
+                    remoteConfirm = false
+                }) { Text(stringResource(R.string.remote_confirm)) }
+            },
+            dismissButton = { TextButton(onClick = { remoteConfirm = false }) { Text(stringResource(R.string.cancel)) } },
+        )
+    }
+    if (editRemotePw) {
+        var pw1 by remember { mutableStateOf("") }
+        var pw2 by remember { mutableStateOf("") }
+        var errText by remember { mutableStateOf<String?>(null) }
+        val mismatch = stringResource(R.string.admin_pw_mismatch)
+        val minMsg = stringResource(R.string.remote_pw_dialog)
+        AlertDialog(
+            onDismissRequest = { editRemotePw = false; remoteAfterPw = false },
+            title = { Text(stringResource(R.string.remote_pw_dialog)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = pw1, onValueChange = { pw1 = it; errText = null }, singleLine = true,
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
+                        value = pw2, onValueChange = { pw2 = it; errText = null }, singleLine = true,
+                        placeholder = { Text(stringResource(R.string.admin_pw_repeat)) },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth(),
+                    )
+                    errText?.let { Text(it, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    when {
+                        pw1.length < 8 -> errText = minMsg
+                        pw1 != pw2 -> errText = mismatch
+                        else -> {
+                            RemoteAuth.setPassword(pw1)
+                            remoteSessions = 0
+                            editRemotePw = false
+                            if (remoteAfterPw) {
+                                remoteAfterPw = false
+                                if (s.remoteWarned) Prefs.set("remoteOn", true) else remoteConfirm = true
+                            }
+                        }
+                    }
+                }) { Text(stringResource(R.string.save)) }
+            },
+            dismissButton = { TextButton(onClick = { editRemotePw = false; remoteAfterPw = false }) { Text(stringResource(R.string.cancel)) } },
         )
     }
     if (pickLang) {

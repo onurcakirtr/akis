@@ -51,6 +51,17 @@ data class Settings(
     val camFront: Boolean,          // varsayılan ön kamera
     val camHeight: Int,             // 480 / 720
     val totpSecret: String,         // iki adımlı doğrulama anahtarı (boşsa kapalı)
+    val remoteOn: Boolean,          // uzaktan erişim (Cloudflare Tunnel)
+    val remoteMode: String,         // "quick" | "token"
+    val remoteToken: String,
+    val remoteHost: String,         // kendi alan adı modunda gösterilecek adres
+    val remoteHash: String,         // uzaktan erişim şifresi "tuz:pbkdf2"
+    val remoteApprove: Boolean,     // yeni girişte telefondan onay
+    val remoteCamera: Boolean,
+    val remoteStatus: Boolean,
+    val remoteApps: Boolean,
+    val remoteUpload: Boolean,
+    val remoteWarned: Boolean,      // uyarı penceresi onaylandı
     val adminHash: String,          // yönetici şifresi "tuz:pbkdf2" (boşsa belirlenmemiş)
 )
 
@@ -112,6 +123,17 @@ object Prefs {
         camFront = sp.getBoolean("camFront", false),
         camHeight = sp.getInt("camHeight", 720),
         totpSecret = sp.getString("totpSecret", "") ?: "",
+        remoteOn = sp.getBoolean("remoteOn", false),
+        remoteMode = sp.getString("remoteMode", "quick") ?: "quick",
+        remoteToken = sp.getString("remoteToken", "") ?: "",
+        remoteHost = sp.getString("remoteHost", "") ?: "",
+        remoteHash = sp.getString("remoteHash", "") ?: "",
+        remoteApprove = sp.getBoolean("remoteApprove", false),
+        remoteCamera = sp.getBoolean("remoteCamera", false),
+        remoteStatus = sp.getBoolean("remoteStatus", false),
+        remoteApps = sp.getBoolean("remoteApps", false),
+        remoteUpload = sp.getBoolean("remoteUpload", false),
+        remoteWarned = sp.getBoolean("remoteWarned", false),
         adminHash = sp.getString("adminHash", "") ?: "",
     )
 

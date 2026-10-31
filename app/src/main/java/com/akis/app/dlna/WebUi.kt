@@ -71,6 +71,27 @@ form.q input:focus{border-color:var(--acc)}
         return page(server, name, "", body)
     }
 
+    /** Uzaktan (tünel) giriş sayfası. */
+    fun remoteLoginPage(server: String, msg: String?, totp: Boolean): String {
+        val input = "style=\"padding:12px 18px;border-radius:999px;border:0;background:var(--card);color:var(--fg);font-size:16px\""
+        val body = "<div class=\"p\" style=\"max-width:420px\"><h2>${h(Lang.s(R.string.remote_login_title))}</h2>" +
+            (if (msg != null) "<p class=\"s\" style=\"color:var(--acc)\">${h(msg)}</p>" else "") +
+            "<form method=\"post\" action=\"/rlogin\" style=\"display:flex;flex-direction:column;gap:10px\">" +
+            "<input name=\"pw\" type=\"password\" autocomplete=\"current-password\" autofocus $input>" +
+            (if (totp) "<input name=\"code\" inputmode=\"numeric\" autocomplete=\"one-time-code\" maxlength=\"6\" placeholder=\"${h(Lang.s(R.string.web_ad_code))}\" $input>" else "") +
+            "<button class=\"b\">${h(Lang.s(R.string.remote_login_title))}</button></form></div>"
+        return page(server, Lang.s(R.string.remote_login_title), "", body)
+    }
+
+    /** Telefondan onay beklenirken: durumu yoklar, onaylanınca ana sayfaya geçer. */
+    fun remoteWaitPage(server: String, id: String): String {
+        val body = "<div class=\"p\" style=\"max-width:520px\"><h2>${h(Lang.s(R.string.remote_waiting))}</h2></div>" +
+            "<script>(function p(){fetch('/rlogin/status?r=${id}').then(function(r){return r.json()}).then(function(j){" +
+            "if(j.s==='ok')location.href='/';else if(j.s==='pending')setTimeout(p,1500);else location.href='/rlogin';})" +
+            ".catch(function(){setTimeout(p,3000)})})();</script>"
+        return page(server, Lang.s(R.string.remote_login_title), "", body)
+    }
+
     /** PIN giriş sayfası. */
     fun pinPage(server: String, wrong: Boolean, locked: Boolean): String {
         val msg = when {

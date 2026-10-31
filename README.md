@@ -23,6 +23,9 @@ Telefonundaki videoları, müzikleri ve fotoğrafları yerel ağdaki **VLC, akı
 - **Anında yenileme:** yeni dosyalar TV/VLC'ye (UPnP olay bildirimi) ve açık web sayfasına kendiliğinden yansır
 - **Web'de çoklu seçim:** seçilenleri ZIP indirme, müzik sırasına ekleme
 - **Web'den yönetim:** ayrı yönetici şifresi + telefonda onay, tek ve süreli oturum; güvenlik ayarları yalnızca telefondan
+- **Uzaktan erişim (Cloudflare Tunnel):** hızlı tünel (rastgele trycloudflare.com adresi) ya da kendi alan adın; ayrı şifre + iki adımlı doğrulama + isteğe bağlı telefonda onay; TV/DLNA ve yönetim uzaktan kapalı
+- **Web'de ekstralar (ayrı ayrı açılıp kapanır):** belge önizleme, ZIP içine bakma, APK/PDF/klasör küçük resimleri, ? ile kısayol yardımı, telefon durumu, yüklü uygulamalar/APK, canlı kamera
+- **İlk açılış tanıtımı:** Ayarlar → Hakkında'dan yeniden gösterilebilir
 - **Web'den yükleme:** bilgisayarın tarayıcısından telefona sürükle-bırak dosya gönder
 - **Güvenlik:** yeni cihazlar için *İzin ver / Engelle* onayı, web PIN'i
 - **Gizli klasörler:** `.nomedia` içerenler ve elle gizlediklerin paylaşılmaz
@@ -56,6 +59,9 @@ Projeyi bir GitHub reposuna yükle. `Actions` sekmesinde **APK derle** iş akı�
 
 ## Yeni tema eklemek
 `ui/theme/Theme.kt` içindeki `Themes.ALL` listesine bir `AppTheme` kaydı, `strings.xml` dosyalarına da `theme_<id>` adını ekle.
+
+## cloudflared hakkında
+`app/src/main/jniLibs/arm64-v8a/libcloudflared.so`, Termux'un Cloudflare kaynak kodundan Android için derlediği `cloudflared` paketinden (2026.10.7, SHA-256 Termux deposundaki kayıtla doğrulandı) alınmıştır. Yalnızca 64 bit ARM telefonlarda çalışır; diğerlerinde uzaktan erişim seçeneği gizlenir.
 
 ## Kod yapısı
 ```

@@ -62,6 +62,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.ClientInfo
 import com.akis.app.DeviceAccess
 import com.akis.app.QuickShare
+import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Block
 import androidx.compose.material.icons.rounded.LinkOff
@@ -90,6 +91,9 @@ fun HomeScreen() {
     val settings by Prefs.settings.collectAsStateWithLifecycle()
     var showQr by remember { mutableStateOf(false) }
     var actFor by remember { mutableStateOf<ClientInfo?>(null) }
+    val tunnelState by com.akis.app.Tunnel.state.collectAsStateWithLifecycle()
+    val remoteUrl by com.akis.app.Tunnel.url.collectAsStateWithLifecycle()
+    var qrRemote by remember { mutableStateOf(false) }
     val shares by QuickShare.shares.collectAsStateWithLifecycle()
     var qrFor by remember { mutableStateOf<String?>(null) }
 
@@ -149,7 +153,7 @@ fun HomeScreen() {
         if (running) {
             address?.let { addr ->
                 item(key = "addr") {
-                    AddressCard(addr, settings.webUi, onQr = { showQr = true }, modifier = Modifier.animateItem())
+                    AddressCard(addr, remoteUrl.takeIf { tunnelState == com.akis.app.Tunnel.State.UP }, settings.webUi, onQr = { showQr = true }, modifier = Modifier.animateItem())
                 }
             }
             item(key = "stats") {
@@ -251,9 +255,22 @@ fun HomeScreen() {
             title = { Text(stringResource(R.string.open_in_browser)) },
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                    DotQrCode(address!!, Modifier.size(240.dp))
+                    val remoteUp = remoteUrl != null && tunnelState == com.akis.app.Tunnel.State.UP
+                    if (remoteUp) {
+                        androidx.compose.material3.SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                            listOf(false to R.string.qr_local, true to R.string.qr_remote).forEachIndexed { i, (r, label) ->
+                                androidx.compose.material3.SegmentedButton(
+                                    selected = qrRemote == r, onClick = { qrRemote = r },
+                                    shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 2),
+                                ) { Text(stringResource(label)) }
+                            }
+                        }
+                        Spacer(Modifier.height(12.dp))
+                    }
+                    val target = if (remoteUp && qrRemote) remoteUrl!! else address!!
+                    DotQrCode(target, Modifier.size(240.dp))
                     Spacer(Modifier.height(14.dp))
-                    Text(address!!, style = MaterialTheme.typography.titleMedium)
+                    Text(target, style = MaterialTheme.typography.titleMedium)
                     Text(
                         stringResource(R.string.qr_hint),
                         style = MaterialTheme.typography.bodySmall,
@@ -278,14 +295,17 @@ private fun Header(running: Boolean, name: String) {
 }
 
 @Composable
-private fun AddressCard(address: String, webUi: Boolean, onQr: () -> Unit, modifier: Modifier = Modifier) {
+private fun AddressCard(address: String, remote: String?, webUi: Boolean, onQr: () -> Unit, modifier: Modifier = Modifier) {
     val clipboard = LocalClipboardManager.current
     ExpressiveCard(modifier = modifier, color = MaterialTheme.colorScheme.secondaryContainer) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconBadge(Icons.Rounded.Wifi, bg = MaterialTheme.colorScheme.primary, tint = MaterialTheme.colorScheme.onPrimary)
             Gap(14.dp)
             Column(Modifier.weight(1f)) {
-                Text(stringResource(R.string.network_address), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
+                Text(
+                    stringResource(if (remote != null) R.string.local_address else R.string.network_address),
+                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                )
                 Text(address.removePrefix("http://"), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
             }
             FilledTonalIconButton(onClick = { clipboard.setText(AnnotatedString(address)) }) {
@@ -293,6 +313,20 @@ private fun AddressCard(address: String, webUi: Boolean, onQr: () -> Unit, modif
             }
             if (webUi) {
                 FilledTonalIconButton(onClick = onQr) { Icon(Icons.Rounded.QrCode2, stringResource(R.string.qr_code)) }
+            }
+        }
+        if (remote != null) {
+            Spacer(Modifier.height(10.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconBadge(Icons.Rounded.Public, bg = MaterialTheme.colorScheme.tertiary, tint = MaterialTheme.colorScheme.onTertiary)
+                Gap(14.dp)
+                Column(Modifier.weight(1f)) {
+                    Text(stringResource(R.string.remote_address), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f))
+                    Text(remote.removePrefix("https://"), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSecondaryContainer, maxLines = 2)
+                }
+                FilledTonalIconButton(onClick = { clipboard.setText(AnnotatedString(remote)) }) {
+                    Icon(Icons.Rounded.ContentCopy, stringResource(R.string.copy))
+                }
             }
         }
     }

@@ -27,6 +27,8 @@ class HttpRequest(
     val headers: Map<String, String>, // anahtarlar küçük harf
     val body: ByteArray,
     val remote: String,
+    /** Cloudflare Tunnel üzerinden geldi (remote = ziyaretçinin gerçek IP'si). */
+    val tunnel: Boolean = false,
     /** PUT isteklerinde gövde belleğe alınmaz; buradan akıtılır (contentLength bayt). */
     val bodyStream: InputStream? = null,
     val contentLength: Long = 0,
@@ -206,13 +208,16 @@ class HttpServer(
                 val body = if (!streaming && len > 0) readFully(input, len.toInt()) ?: return else ByteArray(0)
                 val target = parts[1]
                 val q = target.indexOf('?')
+                val cfIp = headers["cf-connecting-ip"]?.trim()?.takeIf { it.isNotEmpty() && it.length < 64 }
+                val viaTunnel = cfIp != null && (sock.inetAddress?.isLoopbackAddress == true)
                 val req = HttpRequest(
                     method = method,
                     path = if (q >= 0) target.substring(0, q) else target,
                     query = if (q >= 0) target.substring(q + 1) else "",
                     headers = headers,
                     body = body,
-                    remote = remote,
+                    remote = if (viaTunnel) cfIp!! else remote,
+                    tunnel = viaTunnel,
                     bodyStream = stream,
                     contentLength = if (streaming) len else body.size.toLong(),
                 )
