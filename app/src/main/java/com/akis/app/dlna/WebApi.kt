@@ -54,6 +54,12 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             p == "/api/zipls" -> zipList(param(req, "p"), res)
             p == "/zipget" -> zipGet(req, res, param(req, "p"), param(req, "e"))
             p == "/tf" -> fileThumb(param(req, "p"), res)
+            p == "/api/status" -> if (Prefs.current.phoneStatus) json(res, PhoneInfo.status(ctx)) else res.text(404, Lang.s(R.string.http_not_found))
+            p == "/api/apps" -> if (Prefs.current.appsList) json(res, PhoneInfo.apps(ctx, Prefs.current.appsSystem)) else res.text(404, Lang.s(R.string.http_not_found))
+            p == "/appicon" -> if (Prefs.current.appsList) PhoneInfo.icon(ctx, param(req, "pkg"))?.let {
+                res.bytes(200, "image/png", it, mapOf("Cache-Control" to "max-age=86400"))
+            } ?: res.text(404, Lang.s(R.string.http_not_found)) else res.text(404, Lang.s(R.string.http_not_found))
+            p == "/apk" -> if (Prefs.current.appsList) apk(req, res, param(req, "pkg")) else res.text(404, Lang.s(R.string.http_not_found))
             p == "/zip" -> zip(req, res, param(req, "p"))
             // Eski adresler yeni uygulamaya yönlensin
             p.startsWith("/w/") -> res.send(303, null, 0, mapOf("Location" to "/#/f/" + p.removePrefix("/w/")))
@@ -99,6 +105,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("subtitles", s.subtitles)
             .put("files", filesOn())
             .put("admin", s.adminOn && s.adminHash.isNotEmpty())
+            .put("status", s.phoneStatus).put("apps", s.appsList)
             .put("docs", s.docPreview).put("zipView", s.zipView).put("thumbs", s.richThumbs).put("keys", s.keysHelp)
             .put("subLang", s.subLang)
             .put("lang", Lang.locale.language)
@@ -355,6 +362,28 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             return
         }
         res.html(WebUi.sharePage(Prefs.current.name, sh.name, sh.size, sh.expires, "/share/${sh.token}/dl"))
+    }
+
+    /** Uygulamanın APK'sı; parçalıysa (split) tüm parçalar tek .apks arşivinde. */
+    private fun apk(req: HttpRequest, res: HttpResponder, pkg: String) {
+        val info = PhoneInfo.apkFiles(ctx, pkg) ?: return res.text(404, Lang.s(R.string.http_not_found))
+        val (label, files) = info
+        ServerState.log("⬇ APK: $label → ${ServerState.clientName(req.remote)}")
+        if (files.size == 1) {
+            serveFile(req, res, files[0], "$label.apk")
+            return
+        }
+        val name = "$label.apks"
+        res.stream(200, "application/zip", mapOf("Content-Disposition" to "attachment; filename*=UTF-8''" + Xml.enc(name), "Cache-Control" to "no-store")) { out ->
+            val z = java.util.zip.ZipOutputStream(out)
+            z.setLevel(java.util.zip.Deflater.NO_COMPRESSION)
+            for (f in files) {
+                z.putNextEntry(java.util.zip.ZipEntry(f.name))
+                f.inputStream().use { it.copyTo(z, 256 * 1024) }
+                z.closeEntry()
+            }
+            z.finish()
+        }
     }
 
     // ---------------- ZIP içine bakma ----------------

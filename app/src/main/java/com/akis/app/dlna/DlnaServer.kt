@@ -124,7 +124,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     private val openPaths = setOf("/desc.xml", "/cd.xml", "/cm.xml", "/icon.png", "/icon48.png")
 
     private fun webPath(p: String) =
-        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/") || p == "/raw" || p == "/zip" || p == "/zipget" || p == "/tf" || p == "/zipsel" || p.startsWith("/admin/")
+        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/") || p == "/raw" || p == "/zip" || p == "/zipget" || p == "/tf" || p == "/appicon" || p == "/apk" || p == "/zipsel" || p.startsWith("/admin/")
 
     /** @return true ise istek işlenebilir; false ise cevap zaten verildi. */
     private fun checkAccess(req: HttpRequest, res: HttpResponder, settings: Settings): Boolean {

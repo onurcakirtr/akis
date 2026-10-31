@@ -60,6 +60,8 @@
     dl: '<svg viewBox="0 0 24 24"><path d="M12 4v12M6 10l6 6 6-6M4 20h16"/></svg>',
     info: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5h.01"/></svg>',
     check: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>',
+    apps: '<svg viewBox="0 0 24 24"><rect x="4" y="4" width="6" height="6" rx="1.5"/><rect x="14" y="4" width="6" height="6" rx="1.5"/><rect x="4" y="14" width="6" height="6" rx="1.5"/><rect x="14" y="14" width="6" height="6" rx="1.5"/></svg>',
+    battery: '<svg viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 11v2M6 10v4M9 10v4"/></svg>',
     link: '<svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></svg>'
   };
   var CAT_ICON = { v: ICO.v, a: ICO.a, i: ICO.i, f: ICO.folder, 'h:u': ICO.unw, 'h:c': ICO.hist, r: ICO.recent, 'pd:': ICO.drive };
@@ -104,7 +106,7 @@
     var parts = h.split('/');
     var name = parts[0] || 'home';
     var arg = decodeURIComponent(parts.slice(1).join('/'));
-    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload', admin: 'admin' };
+    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload', admin: 'admin', status: 'status', apps: 'apps' };
     return { name: map[name] || 'home', arg: arg, p: params, key: location.hash };
   }
   var player = null, list = [], listFolder = '0', scrolls = {}, lastKey = '', softNext = false;
@@ -172,6 +174,8 @@
     else if (r.name === 'search') { if (document.activeElement !== q) q.value = r.arg; p = renderSearch(r.arg); }
     else if (r.name === 'watch') p = renderWatch(r.arg, r.p['in'] || '');
     else if (r.name === 'files') p = renderFiles(r.arg || '');
+    else if (r.name === 'status') p = renderStatus();
+    else if (r.name === 'apps') p = renderApps();
     else if (r.name === 'admin') p = window.AkisAdmin.render(view, { t: t, esc: esc, toast: toast, size: size, ICO: ICO });
     else p = renderHome();
     Promise.resolve(p).then(done).catch(function (e) {
@@ -251,6 +255,8 @@
         h += '<a class="tile nav" href="#/f/' + enc(c.id) + '"><div class="icon-badge">' + (CAT_ICON[c.id] || ICO.folder) + '</div><b>' + esc(c.t) + '</b><span class="sub">' + esc(n) + '</span></a>';
       });
       if (C.files) h += '<a class="tile nav" href="#/d/"><div class="icon-badge">' + ICO.drive + '</div><b>' + esc(t('all_files')) + '</b><span class="sub">' + esc(t('all_files_sub')) + '</span></a>';
+      if (C.apps) h += '<a class="tile nav" href="#/apps"><div class="icon-badge">' + ICO.apps + '</div><b>' + esc(t('apps')) + '</b><span class="sub">APK</span></a>';
+      if (C.status) h += '<a class="tile nav" href="#/status"><div class="icon-badge">' + ICO.battery + '</div><b>' + esc(t('status')) + '</b><span class="sub" id="batTile"></span></a>';
       h += '</div>';
       if (d.recent && d.recent.length) {
         var flt = get('recentFilter', 'all');
@@ -355,6 +361,60 @@
         view.querySelectorAll('a[data-i]').forEach(function (a) { var it = list[+a.getAttribute('data-i')]; if (it && it.raw && !it.k) a.setAttribute('download', it.t); });
         bindToolbar(draw);
       };
+      draw();
+    });
+  }
+
+  // ======================= Telefon durumu =======================
+  var statusTimer = 0;
+  function renderStatus() {
+    clearTimeout(statusTimer);
+    return api('/api/status').then(function (s) {
+      if (route().name !== 'status') return;
+      function card(title, rows) { return '<div class="card2"><h2>' + esc(title) + '</h2>' + rows.filter(Boolean).join('') + '</div>'; }
+      function row(k, v, bar) {
+        return '<div class="row"><span class="grow">' + esc(k) + '</span><b>' + esc(v) + '</b></div>' +
+          (bar != null ? '<div class="meter"><i style="width:' + Math.round(bar * 100) + '%"></i></div>' : '');
+      }
+      var h = '<div class="adm"><div class="bar"><nav class="crumbs"><a class="nav" href="#/">' + esc(t('home')) + '</a><span>›</span><a>' + esc(t('status')) + '</a></nav></div>';
+      h += card(t('battery'), [
+        s.battery != null ? row(t('battery'), s.battery + '%', s.battery / 100) : '',
+        row(s.charging ? t('charging') : t('not_charging'), ''),
+        s.temp != null ? row(t('temperature'), (Math.round(s.temp * 10) / 10) + ' °C') : '',
+      ]);
+      h += card(t('storage'), (s.storage || []).map(function (d) {
+        return row(d.name, t('free_of', size(d.free), size(d.total)), 1 - d.free / d.total);
+      }).concat([row(t('memory'), t('free_of', size(s.ramFree), size(s.ramTotal)), 1 - s.ramFree / s.ramTotal)]));
+      h += card(t('wifi'), [
+        s.rssi != null ? row(t('signal'), s.rssi + ' dBm', (s.signal + 1) / 5) : row(t('signal'), '—'),
+        s.linkSpeed ? row(t('link_speed'), s.linkSpeed + ' Mbit/s') : '',
+      ]);
+      h += card(t('device'), [row(t('device'), s.device + ' • Android ' + s.android), s.uptime ? row(t('uptime'), fmt(s.uptime / 1000)) : '']);
+      view.innerHTML = h + '</div>';
+      statusTimer = setTimeout(function () { if (route().name === 'status' && !document.hidden) renderStatus(); }, 5000);
+    });
+  }
+
+  // ======================= Yüklü uygulamalar =======================
+  function renderApps() {
+    return api('/api/apps').then(function (d) {
+      var all = d.items, q2 = '';
+      function draw() {
+        var items = all.filter(function (a) { return !q2 || (a.name + ' ' + a.pkg).toLowerCase().indexOf(q2) >= 0; });
+        var listEl = document.getElementById('appList');
+        var h = items.map(function (a) {
+          return '<div class="card app"><img loading="lazy" alt="" src="/appicon?pkg=' + enc(a.pkg) + '">' +
+            '<div class="meta"><div class="title">' + esc(a.name) + '</div><div class="sub">' + esc(t('app_version', a.ver || '?') + ' • ' + size(a.sz)) +
+            (a.split ? ' • ' + esc(t('split_apk')) : '') + '</div><div class="sub">' + esc(a.pkg) + '</div></div>' +
+            '<a class="pill nav" href="/apk?pkg=' + enc(a.pkg) + '" download>' + ICO.dl + '</a></div>';
+        }).join('') || '<div class="empty">' + esc(t('nothing_found')) + '</div>';
+        if (listEl) listEl.innerHTML = h;
+      }
+      view.innerHTML = '<div class="bar"><nav class="crumbs"><a class="nav" href="#/">' + esc(t('home')) + '</a><span>›</span><a>' + esc(t('apps')) + '</a></nav>' +
+        '<input class="pill nav" id="appQ" placeholder="' + esc(t('filter_apps')) + '" style="border:0;outline:0;color:var(--fg)"><span class="sub">' + esc(plural('items', all.length)) + '</span></div>' +
+        '<div class="list" id="appList"></div>';
+      var inp = document.getElementById('appQ');
+      inp.addEventListener('input', function () { q2 = inp.value.trim().toLowerCase(); draw(); });
       draw();
     });
   }

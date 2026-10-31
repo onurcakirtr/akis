@@ -36,6 +36,7 @@
     <string name="allfiles_warn">Sunucuyu açabilen herkes bu dosyaları görebilir. Cihaz onayını ya da web PIN\'ini açman önerilir.</string>
     <string name="allfiles_web">Web arayüzünde (her dosya türü, indirme)</string>
     <string name="allow">İzin ver</string>
+    <string name="apps_system">Sistem uygulamalarını da göster</string>
     <string name="artists">Sanatçılar</string>
     <string name="auto_start">Açılışta başlat</string>
     <string name="auto_start_sub">Uygulamayı açınca yayın kendiliğinden başlasın</string>
@@ -105,6 +106,8 @@
     <string name="f_allfiles_sub">Telefonun tüm depolamasını (dahili, SD kart, USB) bir dosya sunucusu gibi paylaş</string>
     <string name="f_approval">Cihaz onayı</string>
     <string name="f_approval_sub">Yeni bir cihaz bağlanınca telefona \"İzin ver / Engelle\" sorulsun</string>
+    <string name="f_apps">Yüklü uygulamalar</string>
+    <string name="f_apps_sub">Web arayüzünde yüklü uygulamaları listele ve APK\'larını indir</string>
     <string name="f_docs">Belge önizleme</string>
     <string name="f_docs_sub">PDF, metin, kod, Markdown ve JSON dosyalarını indirmeden tarayıcıda aç</string>
     <string name="f_hidden">Gizli klasörler</string>
@@ -119,6 +122,8 @@
     <string name="f_pin_sub">Tarayıcıdan girenlerden 4–6 haneli PIN iste</string>
     <string name="f_search">Arama</string>
     <string name="f_search_sub">TV ve VLC\'den başlık, sanatçı ve albüme göre ara; web arayüzüne arama kutusu</string>
+    <string name="f_status">Telefon durumu</string>
+    <string name="f_status_sub">Web arayüzünde pil, sıcaklık, depolama ve Wi-Fi bilgisi</string>
     <string name="f_subs">Gelişmiş altyazı</string>
     <string name="f_subs_sub">.srt, .vtt, .ass, .sub ve film.tr.srt gibi dilli adlar; Türkçe karakterler düzeltilir</string>
     <string name="f_thumbs">Daha iyi küçük resimler</string>
@@ -264,6 +269,7 @@
     <string name="sec_features">Özellikler</string>
     <string name="sec_server">Sunucu</string>
     <string name="sec_web_features">Web özellikleri</string>
+    <string name="sensitive_note">Hassas: web arayüzünü açabilen herkes bunu görür. Cihaz onayı ya da web PIN\'i önerilir.</string>
     <string name="settings_title">Ayarlar</string>
     <string name="share_15m">15 dk</string>
     <string name="share_1d">1 gün</string>
@@ -383,6 +389,8 @@
     <string name="web_all_files">Tüm dosyalar</string>
     <string name="web_all_files_sub">Telefon depolaması</string>
     <string name="web_aperture">Diyafram</string>
+    <string name="web_app_version">Sürüm {0}</string>
+    <string name="web_apps">Yüklü uygulamalar</string>
     <string name="web_artist_t">Sanatçı</string>
     <string name="web_audio_converting">Ses telefonda dönüştürülüyor</string>
     <string name="web_audio_t">Ses</string>
@@ -390,6 +398,7 @@
     <string name="web_autoplay">Sıradakini otomatik oynat</string>
     <string name="web_back">Geri</string>
     <string name="web_background">Arka plan</string>
+    <string name="web_battery">Pil</string>
     <string name="web_bg_none">Yok</string>
     <string name="web_bg_semi">Gölgeli</string>
     <string name="web_bg_solid">Kutu</string>
@@ -398,12 +407,14 @@
     <string name="web_camera">Kamera</string>
     <string name="web_cancel">Vazgeç</string>
     <string name="web_cant_play_audio">Bu dosya tarayıcıda çalınamıyor</string>
+    <string name="web_charging">Şarj oluyor</string>
     <string name="web_close">Kapat</string>
     <string name="web_contains">İçerik</string>
     <string name="web_continue">Devam et</string>
     <string name="web_copied">Bağlantı kopyalandı</string>
     <string name="web_copy_link">Bağlantıyı kopyala</string>
     <string name="web_default_t">varsayılan</string>
+    <string name="web_device">Cihaz</string>
     <string name="web_download">İndir</string>
     <string name="web_drop">Dosyaları buraya sürükle ya da</string>
     <string name="web_duration">Süre</string>
@@ -411,6 +422,7 @@
     <string name="web_error">Hata</string>
     <string name="web_error_load">Yüklenemedi. Telefonda Akış\'ın açık olduğundan emin ol.</string>
     <string name="web_file_size">Boyut</string>
+    <string name="web_filter_apps">Uygulama ara…</string>
     <string name="web_fit">Görüntü boyutu</string>
     <string name="web_fit_contain">Sığdır</string>
     <string name="web_fit_cover">Doldur (kırp)</string>
@@ -419,6 +431,7 @@
     <string name="web_folder_t">Klasör</string>
     <string name="web_folders_one">{0} klasör</string>
     <string name="web_folders_other">{0} klasör</string>
+    <string name="web_free_of">{1} içinden {0} boş</string>
     <string name="web_fullscreen">Tam ekran</string>
     <string name="web_genre_t">Tür (müzik)</string>
     <string name="web_home">Ana sayfa</string>
@@ -450,7 +463,9 @@
     <string name="web_keys_title">Klavye kısayolları</string>
     <string name="web_left">{0} kaldı</string>
     <string name="web_library">Kitaplık</string>
+    <string name="web_link_speed">Bağlantı hızı</string>
     <string name="web_lost">Bağlantı koptu</string>
+    <string name="web_memory">Bellek (RAM)</string>
     <string name="web_modified">Değiştirilme</string>
     <string name="web_mono">Mono</string>
     <string name="web_mute">Sessiz</string>
@@ -460,6 +475,7 @@
     <string name="web_no_info">Bilgi yok</string>
     <string name="web_no_subs">Altyazı bulunamadı</string>
     <string name="web_normal">Normal</string>
+    <string name="web_not_charging">Şarj olmuyor</string>
     <string name="web_nothing_found">Sonuç yok</string>
     <string name="web_off">Kapalı</string>
     <string name="web_on">Açık</string>
@@ -500,6 +516,7 @@
     <string name="web_settings">Ayarlar</string>
     <string name="web_shuffle">Karıştır</string>
     <string name="web_shutter">Enstantane</string>
+    <string name="web_signal">Sinyal</string>
     <string name="web_size">Boyut</string>
     <string name="web_slideshow">Slayt gösterisi</string>
     <string name="web_songs_one">{0} şarkı</string>
@@ -510,7 +527,10 @@
     <string name="web_sort_name">Ad</string>
     <string name="web_sort_size">En büyük</string>
     <string name="web_speed">Hız</string>
+    <string name="web_split_apk">parçalı APK (.apks)</string>
+    <string name="web_status">Telefon durumu</string>
     <string name="web_stereo">Stereo</string>
+    <string name="web_storage">Depolama</string>
     <string name="web_sub_style">Altyazı görünümü</string>
     <string name="web_subs_count_one">{0} altyazı</string>
     <string name="web_subs_count_other">{0} altyazı</string>
@@ -522,6 +542,7 @@
     <string name="web_sync">Senkron</string>
     <string name="web_sync_val">Altyazı {0}</string>
     <string name="web_taken">Çekim</string>
+    <string name="web_temperature">Sıcaklık</string>
     <string name="web_title_t">Başlık</string>
     <string name="web_too_big">Yalnızca ilk 1 MB gösteriliyor</string>
     <string name="web_track">Parça {0}</string>
@@ -534,6 +555,7 @@
     <string name="web_upload">Yükle</string>
     <string name="web_upload_dest">Dosyalar telefonda şuraya kaydedilir: {0}</string>
     <string name="web_upload_title">Telefona dosya gönder</string>
+    <string name="web_uptime">Sunucu açık kalma süresi</string>
     <string name="web_video_t">Görüntü</string>
     <string name="web_videos_one">{0} video</string>
     <string name="web_videos_other">{0} video</string>
@@ -542,6 +564,7 @@
     <string name="web_view_list">Liste</string>
     <string name="web_volume">Ses düzeyi</string>
     <string name="web_volume_val">Ses {0}</string>
+    <string name="web_wifi">Wi-Fi</string>
     <string name="web_year_t">Yıl</string>
     <string name="web_zip">ZIP olarak indir</string>
     <string name="web_zip_bad">Bu ZIP okunamıyor</string>

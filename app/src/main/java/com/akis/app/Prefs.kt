@@ -44,6 +44,9 @@ data class Settings(
     val zipView: Boolean,           // web: ZIP içine bakma
     val richThumbs: Boolean,        // web: APK ikonu, PDF ilk sayfa, klasör kapağı
     val keysHelp: Boolean,          // web: ? ile kısayol yardımı
+    val phoneStatus: Boolean,       // web: telefon durumu (hassas)
+    val appsList: Boolean,          // web: yüklü uygulamalar ve APK indirme (hassas)
+    val appsSystem: Boolean,        // sistem uygulamaları da listelensin
     val adminHash: String,          // yönetici şifresi "tuz:pbkdf2" (boşsa belirlenmemiş)
 )
 
@@ -98,6 +101,9 @@ object Prefs {
         zipView = sp.getBoolean("zipView", true),
         richThumbs = sp.getBoolean("richThumbs", true),
         keysHelp = sp.getBoolean("keysHelp", true),
+        phoneStatus = sp.getBoolean("phoneStatus", false),
+        appsList = sp.getBoolean("appsList", false),
+        appsSystem = sp.getBoolean("appsSystem", false),
         adminHash = sp.getString("adminHash", "") ?: "",
     )
 

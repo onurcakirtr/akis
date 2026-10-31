@@ -17,6 +17,10 @@
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
+    <!-- Web'de yüklü uygulamalar listesi (isteğe bağlı, Ayarlar'dan açılır) -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
     <!-- "Tüm dosyalar" paylaşımı (isteğe bağlı, Ayarlar'dan açılır) -->
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"

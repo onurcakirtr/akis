@@ -36,6 +36,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AdminPanelSettings
+import androidx.compose.material.icons.rounded.Apps
+import androidx.compose.material.icons.rounded.BatteryStd
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Translate
@@ -404,6 +406,20 @@ fun SettingsScreen() {
                 FeatureRow(Icons.Rounded.FolderZip, stringResource(R.string.f_zipview), stringResource(R.string.f_zipview_sub), s.zipView, divider = true) { Prefs.set("zipView", it) }
                 FeatureRow(Icons.Rounded.Image, stringResource(R.string.f_thumbs), stringResource(R.string.f_thumbs_sub), s.richThumbs, divider = true) { Prefs.set("richThumbs", it) }
                 FeatureRow(Icons.Rounded.Keyboard, stringResource(R.string.f_keys), stringResource(R.string.f_keys_sub), s.keysHelp, divider = true) { Prefs.set("keysHelp", it) }
+                FeatureRow(
+                    Icons.Rounded.BatteryStd, stringResource(R.string.f_status), stringResource(R.string.f_status_sub), s.phoneStatus, divider = true,
+                    extra = { Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                ) { Prefs.set("phoneStatus", it) }
+                FeatureRow(
+                    Icons.Rounded.Apps, stringResource(R.string.f_apps), stringResource(R.string.f_apps_sub), s.appsList, divider = true,
+                    extra = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(stringResource(R.string.apps_system), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                            Switch(s.appsSystem, { v -> Prefs.set("appsSystem", v) })
+                        }
+                        Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    },
+                ) { Prefs.set("appsList", it) }
                 // WEBFEATURES
             }
         }

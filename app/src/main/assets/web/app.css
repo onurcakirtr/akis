@@ -339,6 +339,14 @@ a.zr:hover { background: var(--soft) }
 .keys h3 { margin: 10px 0 2px; font-size: 13px; color: var(--mut); font-weight: 500 }
 .keys kbd { font: 12px var(--font); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 6px; padding: 1px 7px; background: var(--soft) }
 
+/* ---------- Telefon durumu / uygulamalar ---------- */
+.meter { height: 6px; border-radius: 3px; background: var(--soft2); overflow: hidden; margin: 0 0 6px }
+.meter i { display: block; height: 100%; background: var(--acc) }
+.card.app { flex-direction: row; align-items: center; gap: 12px; padding: 10px 12px; cursor: default }
+.card.app:hover { transform: none }
+.card.app img { width: 44px; height: 44px; border-radius: 12px; flex: none }
+.card.app .meta { flex: 1; padding: 0 }
+
 /* ---------- Bildirim ---------- */
 .toast { position: fixed; left: 50%; bottom: 110px; transform: translate(-50%, 20px); z-index: 60; background: var(--fg); color: var(--bg); padding: 10px 18px; border-radius: 999px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .25s, transform .35s var(--ease); max-width: calc(100% - 32px) }
 .toast.on { opacity: 1; transform: translate(-50%, 0) }
