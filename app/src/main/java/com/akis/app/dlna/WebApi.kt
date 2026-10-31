@@ -51,6 +51,9 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             p.startsWith("/x/") -> stream(req, res, decode(p.removePrefix("/x/")))
             p == "/api/files" -> files(param(req, "p"), res)
             p == "/raw" -> raw(req, res, param(req, "p"))
+            p == "/api/zipls" -> zipList(param(req, "p"), res)
+            p == "/zipget" -> zipGet(req, res, param(req, "p"), param(req, "e"))
+            p == "/tf" -> fileThumb(param(req, "p"), res)
             p == "/zip" -> zip(req, res, param(req, "p"))
             // Eski adresler yeni uygulamaya yönlensin
             p.startsWith("/w/") -> res.send(303, null, 0, mapOf("Location" to "/#/f/" + p.removePrefix("/w/")))
@@ -96,6 +99,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("subtitles", s.subtitles)
             .put("files", filesOn())
             .put("admin", s.adminOn && s.adminHash.isNotEmpty())
+            .put("docs", s.docPreview).put("zipView", s.zipView).put("thumbs", s.richThumbs).put("keys", s.keysHelp)
             .put("subLang", s.subLang)
             .put("lang", Lang.locale.language)
             .put("uploadTarget", if (s.uploadFolder.isEmpty()) Lang.s(R.string.downloads_dir, Uploads.DEFAULT_DIR) else MediaLibrary.treeName(ctx, s.uploadFolder))
@@ -351,6 +355,107 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             return
         }
         res.html(WebUi.sharePage(Prefs.current.name, sh.name, sh.size, sh.expires, "/share/${sh.token}/dl"))
+    }
+
+    // ---------------- ZIP içine bakma ----------------
+
+    private fun zipFile(path: String): java.io.File? =
+        if (!filesOn() || !Prefs.current.zipView) null
+        else FileAccess.resolve(path)?.takeIf { it.isFile && it.name.endsWith(".zip", true) }
+
+    /** ZIP içindekiler: liste dosyanın sonundaki dizinden okunur, telefonu yormaz. */
+    private fun zipList(path: String, res: HttpResponder) {
+        val f = zipFile(path) ?: return res.text(404, Lang.s(R.string.http_not_found))
+        val items = JSONArray()
+        try {
+            java.util.zip.ZipFile(f).use { z ->
+                var n = 0
+                for (e in z.entries()) {
+                    if (n++ >= 5000) break
+                    items.put(JSONObject().put("n", e.name).put("dir", e.isDirectory).put("sz", e.size).put("m", e.time / 1000))
+                }
+            }
+        } catch (_: Exception) {
+            return json(res, JSONObject().put("err", "bad"))
+        }
+        json(res, JSONObject().put("name", f.name).put("items", items))
+    }
+
+    private fun zipGet(req: HttpRequest, res: HttpResponder, path: String, entry: String) {
+        val f = zipFile(path) ?: return res.text(404, Lang.s(R.string.http_not_found))
+        try {
+            java.util.zip.ZipFile(f).use { z ->
+                val e = z.getEntry(entry)?.takeIf { !it.isDirectory } ?: return res.text(404, Lang.s(R.string.http_not_found))
+                val name = e.name.substringAfterLast('/')
+                val ascii = name.replace(Regex("[^A-Za-z0-9._ -]"), "_")
+                val headers = mapOf(
+                    "Content-Disposition" to "attachment; filename=\"$ascii\"; filename*=UTF-8''" + Xml.enc(name),
+                    "Cache-Control" to "no-store",
+                )
+                val type = MediaLibrary.mimeFor(name, null)
+                val body: (java.io.OutputStream) -> Unit = { out -> z.getInputStream(e).use { it.copyTo(out, 256 * 1024) } }
+                if (e.size >= 0) res.send(200, type, e.size, headers, body) else res.stream(200, type, headers, body)
+            }
+        } catch (_: java.util.zip.ZipException) {
+            res.text(404, Lang.s(R.string.http_not_found))
+        }
+    }
+
+    // ---------------- Daha iyi küçük resimler (dosya gezgini) ----------------
+
+    private val fileThumbs = android.util.LruCache<String, ByteArray>(4 * 1024 * 1024)
+
+    /** APK → uygulama ikonu, PDF → ilk sayfa, klasör → içindeki ilk fotoğraf. */
+    private fun fileThumb(path: String, res: HttpResponder) {
+        if (!filesOn() || !Prefs.current.richThumbs) return res.text(404, Lang.s(R.string.http_not_found))
+        val f = FileAccess.resolve(path) ?: return res.text(404, Lang.s(R.string.http_not_found))
+        val key = f.path + "|" + f.lastModified()
+        fileThumbs.get(key)?.let { return res.bytes(200, "image/png", it, mapOf("Cache-Control" to "max-age=3600")) }
+        val bmp: android.graphics.Bitmap? = try {
+            when {
+                f.isDirectory -> FileAccess.list(f).firstOrNull { it.isFile && MediaLibrary.kindOf(it.name, null) == Kind.IMAGE }?.let {
+                    android.media.ThumbnailUtils.createImageThumbnail(it, android.util.Size(256, 256), null)
+                }
+                f.name.endsWith(".apk", true) -> {
+                    val pm = ctx.packageManager
+                    pm.getPackageArchiveInfo(f.path, 0)?.applicationInfo?.let { ai ->
+                        ai.sourceDir = f.path
+                        ai.publicSourceDir = f.path
+                        drawableToBitmap(ai.loadIcon(pm))
+                    }
+                }
+                f.name.endsWith(".pdf", true) -> android.os.ParcelFileDescriptor.open(f, android.os.ParcelFileDescriptor.MODE_READ_ONLY).use { pfd ->
+                    android.graphics.pdf.PdfRenderer(pfd).use { r ->
+                        if (r.pageCount == 0) null else r.openPage(0).use { page ->
+                            val w = 256
+                            val h = (w.toFloat() * page.height / page.width).toInt().coerceIn(64, 512)
+                            val b = android.graphics.Bitmap.createBitmap(w, h, android.graphics.Bitmap.Config.ARGB_8888)
+                            b.eraseColor(android.graphics.Color.WHITE)
+                            page.render(b, null, null, android.graphics.pdf.PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                            b
+                        }
+                    }
+                }
+                else -> null
+            }
+        } catch (_: Exception) {
+            null
+        }
+        if (bmp == null) return res.text(404, Lang.s(R.string.http_not_found))
+        val o = java.io.ByteArrayOutputStream()
+        bmp.compress(android.graphics.Bitmap.CompressFormat.PNG, 90, o)
+        bmp.recycle()
+        val data = o.toByteArray()
+        fileThumbs.put(key, data)
+        res.bytes(200, "image/png", data, mapOf("Cache-Control" to "max-age=3600"))
+    }
+
+    private fun drawableToBitmap(d: android.graphics.drawable.Drawable): android.graphics.Bitmap {
+        val b = android.graphics.Bitmap.createBitmap(192, 192, android.graphics.Bitmap.Config.ARGB_8888)
+        val c = android.graphics.Canvas(b)
+        d.setBounds(0, 0, 192, 192)
+        d.draw(c)
+        return b
     }
 
     /** Klasörü (alt klasörleriyle, gizli dosyalar hariç) telefonda geçici dosya oluşturmadan ZIP olarak akıtır. */

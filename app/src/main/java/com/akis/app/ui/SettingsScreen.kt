@@ -42,7 +42,10 @@ import androidx.compose.material.icons.rounded.Translate
 import androidx.compose.material.icons.rounded.ClosedCaption
 import androidx.compose.material.icons.rounded.DarkMode
 import androidx.compose.material.icons.rounded.DeleteSweep
+import androidx.compose.material.icons.rounded.Description
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.FolderZip
+import androidx.compose.material.icons.rounded.Keyboard
 import androidx.compose.material.icons.rounded.Image
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.History
@@ -391,6 +394,17 @@ fun SettingsScreen() {
                     stringResource(R.string.f_notif_sub),
                     s.notifDetails, divider = true,
                 ) { Prefs.set("notifDetails", it) }
+            }
+        }
+
+        item { SectionTitle(stringResource(R.string.sec_web_features)) }
+        item {
+            ExpressiveCard {
+                FeatureRow(Icons.Rounded.Description, stringResource(R.string.f_docs), stringResource(R.string.f_docs_sub), s.docPreview) { Prefs.set("docPreview", it) }
+                FeatureRow(Icons.Rounded.FolderZip, stringResource(R.string.f_zipview), stringResource(R.string.f_zipview_sub), s.zipView, divider = true) { Prefs.set("zipView", it) }
+                FeatureRow(Icons.Rounded.Image, stringResource(R.string.f_thumbs), stringResource(R.string.f_thumbs_sub), s.richThumbs, divider = true) { Prefs.set("richThumbs", it) }
+                FeatureRow(Icons.Rounded.Keyboard, stringResource(R.string.f_keys), stringResource(R.string.f_keys_sub), s.keysHelp, divider = true) { Prefs.set("keysHelp", it) }
+                // WEBFEATURES
             }
         }
 

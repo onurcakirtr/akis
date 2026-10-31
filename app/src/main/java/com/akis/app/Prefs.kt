@@ -40,6 +40,10 @@ data class Settings(
     val iconStyle: String,          // sunucu simgesi: "default", renk adı, "theme" ya da "custom"
     val adminOn: Boolean,           // web'den yönetim
     val onboarded: Boolean,         // ilk açılış tanıtımı görüldü
+    val docPreview: Boolean,        // web: belge önizleme
+    val zipView: Boolean,           // web: ZIP içine bakma
+    val richThumbs: Boolean,        // web: APK ikonu, PDF ilk sayfa, klasör kapağı
+    val keysHelp: Boolean,          // web: ? ile kısayol yardımı
     val adminHash: String,          // yönetici şifresi "tuz:pbkdf2" (boşsa belirlenmemiş)
 )
 
@@ -90,6 +94,10 @@ object Prefs {
         iconStyle = sp.getString("iconStyle", "default") ?: "default",
         adminOn = sp.getBoolean("adminOn", false),
         onboarded = sp.getBoolean("onboarded", false),
+        docPreview = sp.getBoolean("docPreview", true),
+        zipView = sp.getBoolean("zipView", true),
+        richThumbs = sp.getBoolean("richThumbs", true),
+        keysHelp = sp.getBoolean("keysHelp", true),
         adminHash = sp.getString("adminHash", "") ?: "",
     )
 

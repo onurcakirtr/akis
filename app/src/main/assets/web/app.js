@@ -181,8 +181,16 @@
   }
 
   // ======================= Kartlar =======================
+  var RICH = /\.(apk|pdf)$/i;
   function thumb(it) {
-    if (it.k === 'f') return '<div class="thumb"><div class="icon-badge">' + (CAT_ICON[it.id] || ICO.folder) + '</div></div>';
+    if (it.k === 'f') {
+      var cover = C.thumbs && it.path ? '<img loading="lazy" alt="" class="cover" src="/tf?p=' + enc(it.path) + '" onload="this.classList.add(\'ok\')" onerror="this.remove()">' : '';
+      return '<div class="thumb"><div class="icon-badge">' + (CAT_ICON[it.id] || ICO.folder) + '</div>' + cover + '</div>';
+    }
+    if (!it.k && C.thumbs && it.raw && RICH.test(it.t)) {
+      var p = decodeURIComponent(it.raw.split('p=')[1] || '');
+      return '<div class="thumb">' + ICO.file + '<img loading="lazy" alt="" class="fit" src="/tf?p=' + enc(p) + '" onload="this.classList.add(\'ok\')" onerror="this.remove()"></div>';
+    }
     var img = (it.k === 'v' || it.k === 'i' || it.k === 'a') && it.id
       ? '<img loading="lazy" alt="" src="/t/' + enc(it.id) + '.jpg" onload="this.classList.add(\'ok\')" onerror="this.remove()">' : '';
     var badge = '';
@@ -219,6 +227,7 @@
     if (!it) return;
     if (it.k === 'a') { e.preventDefault(); Music.play(src.filter(function (x) { return x.k === 'a'; }), it); }
     else if (it.k === 'i') { e.preventDefault(); Lightbox.open(src.filter(function (x) { return x.k === 'i'; }), it); }
+    else if (!it.k && it.raw && Docs.can(it.t)) { e.preventDefault(); Docs.open(it); }
   });
 
   // ======================= Ana sayfa =======================
@@ -512,6 +521,95 @@
       active: function () { return !bar.hidden && !audio.paused; },
       pause: function () { audio.pause(); }
     };
+  })();
+
+  // ======================= Belge önizleme ve ZIP içi =======================
+  var Docs = (function () {
+    var TEXT = /\.(txt|log|md|markdown|json|xml|csv|tsv|ini|conf|cfg|yml|yaml|toml|srt|vtt|ass|ssa|sub|html?|css|js|ts|kt|kts|java|py|c|h|cpp|hpp|cs|go|rs|rb|php|sh|bat|ps1|sql|gradle|properties)$/i;
+    var wrap = document.createElement('div');
+    wrap.className = 'props docv'; wrap.hidden = true;
+    document.body.appendChild(wrap);
+    function close() { wrap.hidden = true; wrap.innerHTML = ''; }
+    wrap.addEventListener('click', function (e) { if (e.target === wrap || e.target.closest('[data-dc]')) close(); });
+    document.addEventListener('keydown', function (e) { if (!wrap.hidden && e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); } }, true);
+    function pathOf(it) { return decodeURIComponent((it.raw || '').split('p=')[1] || ''); }
+    function shell(title, dl, body) {
+      wrap.innerHTML = '<div class="box wide"><div class="hd"><h2>' + esc(title) + '</h2>' +
+        (dl ? '<a class="pill nav" href="' + esc(dl) + '" download>' + ICO.dl + esc(t('download')) + '</a>' : '') +
+        '<button class="pill nav" data-dc="1" aria-label="' + esc(t('close')) + '">' + ICO.x + '</button></div><div class="docbody">' + body + '</div></div>';
+      wrap.hidden = false;
+    }
+    function md(src) {
+      var h = esc(src);
+      h = h.replace(/^```[\s\S]*?^```/gm, function (m) { return '<pre>' + m.replace(/^```.*$/gm, '') + '</pre>'; });
+      h = h.replace(/^###### (.*)$/gm, '<h6>$1</h6>').replace(/^##### (.*)$/gm, '<h5>$1</h5>').replace(/^#### (.*)$/gm, '<h4>$1</h4>')
+        .replace(/^### (.*)$/gm, '<h3>$1</h3>').replace(/^## (.*)$/gm, '<h2>$1</h2>').replace(/^# (.*)$/gm, '<h1>$1</h1>');
+      h = h.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>').replace(/\*([^*]+)\*/g, '<i>$1</i>').replace(/`([^`]+)`/g, '<code>$1</code>');
+      h = h.replace(/\[([^\]]+)\]\((https?:[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+      h = h.replace(/^\s*[-*] (.*)$/gm, '<li>$1</li>');
+      return '<div class="md">' + h.split(/\n{2,}/).map(function (p) { return /^<(h\d|pre|li)/.test(p) ? p : '<p>' + p.replace(/\n/g, '<br>') + '</p>'; }).join('') + '</div>';
+    }
+    function code(src) {
+      var lines = src.split('\n');
+      return '<pre class="code">' + lines.map(function (l, i) { return '<span class="ln">' + (i + 1) + '</span>' + esc(l); }).join('\n') + '</pre>';
+    }
+    function openText(it) {
+      shell(it.t, it.raw, '<div class="spin"></div>');
+      fetch(it.raw, { headers: { Range: 'bytes=0-1048575' } }).then(function (r) { return r.arrayBuffer(); }).then(function (buf) {
+        var txt = new TextDecoder('utf-8').decode(buf);
+        var big = buf.byteLength >= 1048576 ? '<div class="note">' + esc(t('too_big')) + '</div>' : '';
+        var body;
+        if (/\.(md|markdown)$/i.test(it.t)) body = md(txt);
+        else if (/\.json$/i.test(it.t)) { try { body = code(JSON.stringify(JSON.parse(txt), null, 2)); } catch (e) { body = code(txt); } }
+        else body = code(txt);
+        var b = wrap.querySelector('.docbody'); if (b) b.innerHTML = big + body;
+      }).catch(function () { var b = wrap.querySelector('.docbody'); if (b) b.textContent = t('error_load'); });
+    }
+    function openZip(it) {
+      var p = pathOf(it);
+      shell(it.t, it.raw, '<div class="spin"></div>');
+      api('/api/zipls?p=' + enc(p)).then(function (d) {
+        var b = wrap.querySelector('.docbody'); if (!b) return;
+        if (d.err) { b.textContent = t('zip_bad'); return; }
+        b.innerHTML = '<div class="note">' + esc(t('zip_items')) + ' • ' + esc(plural('items', d.items.length)) + '</div><div class="ziplist">' +
+          d.items.map(function (x) {
+            return x.dir ? '<div class="zr dir">' + ICO.folder + '<span>' + esc(x.n) + '</span></div>'
+              : '<a class="zr nav" download href="/zipget?p=' + enc(p) + '&e=' + enc(x.n) + '">' + ICO.file + '<span>' + esc(x.n) + '</span><b>' + esc(size(x.sz)) + '</b></a>';
+          }).join('') + '</div>';
+      }).catch(function () { var b = wrap.querySelector('.docbody'); if (b) b.textContent = t('zip_bad'); });
+    }
+    return {
+      can: function (name) { return (C.docs && (/\.pdf$/i.test(name) || TEXT.test(name))) || (C.zipView && /\.zip$/i.test(name)); },
+      open: function (it) {
+        if (/\.zip$/i.test(it.t)) openZip(it);
+        else if (/\.pdf$/i.test(it.t)) shell(it.t, it.raw, '<iframe class="pdf" src="' + esc(it.raw) + '"></iframe>');
+        else openText(it);
+      }
+    };
+  })();
+
+  // ======================= Kısayol yardımı (?) =======================
+  (function () {
+    if (!C.keys) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'props'; wrap.hidden = true;
+    document.body.appendChild(wrap);
+    function row(k, d) { return '<div><span><kbd>' + k.split(' ').join('</kbd> <kbd>') + '</kbd></span><b>' + esc(t(d)) + '</b></div>'; }
+    function open() {
+      wrap.innerHTML = '<div class="box"><div class="hd"><h2>' + esc(t('keys_title')) + '</h2><button class="pill nav" data-kc="1">' + ICO.x + '</button></div><div class="body keys">' +
+        '<h3>' + esc(t('keys_general')) + '</h3>' + row('/', 'k_search') + row('← ↑ → ↓', 'k_arrows') + row('Backspace', 'k_back') + row('I', 'k_info') + row('?', 'k_help') +
+        '<h3>' + esc(t('keys_player')) + '</h3>' + row('Space K', 'k_play') + row('← →', 'k_seek') + row('↑ ↓', 'k_vol') + row('M', 'k_mute') + row('F', 'k_fs') +
+        row('C', 'k_subs') + row('G H', 'k_sync') + row('N', 'k_next') + row('0…9', 'k_jump') + row('< >', 'k_speed') +
+        '<h3>' + esc(t('keys_photos')) + '</h3>' + row('← →', 'k_photo_nav') + row('Space', 'k_slides') + row('I', 'k_info') + row('Esc', 'k_close') +
+        '</div></div>';
+      wrap.hidden = false;
+    }
+    wrap.addEventListener('click', function (e) { if (e.target === wrap || e.target.closest('[data-kc]')) { wrap.hidden = true; } });
+    document.addEventListener('keydown', function (e) {
+      var tag = (e.target && e.target.tagName) || '';
+      if (e.key === '?' && tag !== 'INPUT' && tag !== 'TEXTAREA') { e.preventDefault(); if (wrap.hidden) open(); else wrap.hidden = true; }
+      else if (!wrap.hidden && e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); wrap.hidden = true; }
+    }, true);
   })();
 
   // ======================= Çoklu seçim =======================
