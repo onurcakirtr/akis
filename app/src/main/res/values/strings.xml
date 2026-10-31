@@ -152,6 +152,8 @@
     <string name="f_upload_sub">Drag and drop files from a computer\'s browser to the phone</string>
     <string name="f_widget">Home screen widgets</string>
     <string name="f_widget_sub">Small: on/off • Large: status, connected devices and what\'s playing</string>
+    <string name="f_wifiqr">Wi-Fi QR</string>
+    <string name="f_wifiqr_sub">A Wi-Fi tab in the QR window: scanning it joins the network (or your hotspot), then Akış\'s address is right below</string>
     <string name="f_zipview">Look inside ZIP files</string>
     <string name="f_zipview_sub">List what\'s in a ZIP and download a single file from it</string>
     <string name="file_received">File received</string>
@@ -284,6 +286,7 @@
     <string name="qr_hint">Scan it with a phone, PC or TV browser on the same network.</string>
     <string name="qr_local">Local</string>
     <string name="qr_remote">Remote</string>
+    <string name="qr_wifi">Wi-Fi</string>
     <string name="rate_local">Local network</string>
     <string name="rate_note">Mbit/s per connection · ∞ = unlimited. The phone itself is never limited.</string>
     <string name="rate_remote">Remote access</string>
@@ -685,4 +688,9 @@
     <string name="widget_large_label">Akış • status</string>
     <string name="widget_small_desc">Turn sharing on or off with one tap</string>
     <string name="widget_small_label">Akış • on/off</string>
+    <string name="wifi_edit">Change network</string>
+    <string name="wifi_note">Android doesn\'t let apps read saved Wi-Fi passwords, so enter them once. They are kept only on this phone. For a hotspot, enter the hotspot\'s name and password.</string>
+    <string name="wifi_pass">Password (empty if open)</string>
+    <string name="wifi_ssid">Network name</string>
+    <string name="wifi_then">After joining, open:</string>
 </resources>

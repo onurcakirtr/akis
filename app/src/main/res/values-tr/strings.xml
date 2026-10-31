@@ -151,6 +151,8 @@
     <string name="f_upload_sub">Bilgisayarın tarayıcısından telefona sürükle-bırak dosya gönder</string>
     <string name="f_widget">Ana ekran widget\'ları</string>
     <string name="f_widget_sub">Küçük: aç/kapat • Büyük: durum, bağlı cihazlar ve oynatılan dosya</string>
+    <string name="f_wifiqr">Wi-Fi QR\'ı</string>
+    <string name="f_wifiqr_sub">QR penceresinde Wi-Fi sekmesi: okutan telefon ağa (ya da hotspot\'una) bağlanır, Akış\'ın adresi hemen altında</string>
     <string name="f_zipview">ZIP içine bakma</string>
     <string name="f_zipview_sub">ZIP içindekileri listele, tek bir dosyasını indir</string>
     <string name="file_received">Dosya alındı</string>
@@ -283,6 +285,7 @@
     <string name="qr_hint">Aynı ağdaki telefon, PC ya da TV tarayıcısıyla okut.</string>
     <string name="qr_local">Yerel</string>
     <string name="qr_remote">Uzak</string>
+    <string name="qr_wifi">Wi-Fi</string>
     <string name="rate_local">Yerel ağ</string>
     <string name="rate_note">Bağlantı başına Mbit/s · ∞ = sınırsız. Telefonun kendisi sınırlanmaz.</string>
     <string name="rate_remote">Uzaktan erişim</string>
@@ -684,4 +687,9 @@
     <string name="widget_large_label">Akış • durum</string>
     <string name="widget_small_desc">Yayını tek dokunuşla aç / kapat</string>
     <string name="widget_small_label">Akış • aç/kapat</string>
+    <string name="wifi_edit">Ağı değiştir</string>
+    <string name="wifi_note">Android uygulamaların kayıtlı Wi-Fi şifresini okumasına izin vermiyor; bir kez gir. Yalnızca bu telefonda saklanır. Hotspot için hotspot\'un adını ve şifresini gir.</string>
+    <string name="wifi_pass">Şifre (açık ağsa boş)</string>
+    <string name="wifi_ssid">Ağ adı</string>
+    <string name="wifi_then">Bağlandıktan sonra aç:</string>
 </resources>

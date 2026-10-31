@@ -47,6 +47,9 @@ data class Settings(
     val webLook: Boolean,           // web: tarayıcı başına dil ve tema seçimi
     val pwa: Boolean,               // web: ana ekrana ekle (uygulama tanımı)
     val fileReq: Boolean,           // dosya isteme bağlantıları
+    val wifiQr: Boolean,            // QR penceresinde Wi-Fi sekmesi
+    val wifiSsid: String,
+    val wifiPass: String,
     val rateOn: Boolean,            // bağlantı başına hız sınırı
     val rateLocal: Int,             // Mbit/s (0 = sınırsız)
     val rateRemote: Int,            // Mbit/s, uzaktan erişim (0 = sınırsız)
@@ -125,6 +128,9 @@ object Prefs {
         webLook = sp.getBoolean("webLook", true),
         pwa = sp.getBoolean("pwa", true),
         fileReq = sp.getBoolean("fileReq", true),
+        wifiQr = sp.getBoolean("wifiQr", true),
+        wifiSsid = sp.getString("wifiSsid", "") ?: "",
+        wifiPass = sp.getString("wifiPass", "") ?: "",
         rateOn = sp.getBoolean("rateOn", false),
         rateLocal = sp.getInt("rateLocal", 0),
         rateRemote = sp.getInt("rateRemote", 5),

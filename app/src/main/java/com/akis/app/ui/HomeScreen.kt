@@ -95,7 +95,7 @@ fun HomeScreen() {
     var actFor by remember { mutableStateOf<ClientInfo?>(null) }
     val tunnelState by com.akis.app.Tunnel.state.collectAsStateWithLifecycle()
     val remoteUrl by com.akis.app.Tunnel.url.collectAsStateWithLifecycle()
-    var qrRemote by remember { mutableStateOf(false) }
+    var qrTab by remember { mutableStateOf("local") }
     val shares by QuickShare.shares.collectAsStateWithLifecycle()
     var qrFor by remember { mutableStateOf<String?>(null) }
     val requests by FileRequests.list.collectAsStateWithLifecycle()
@@ -307,30 +307,68 @@ fun HomeScreen() {
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                     val remoteUp = remoteUrl != null && tunnelState == com.akis.app.Tunnel.State.UP
-                    if (remoteUp) {
-                        androidx.compose.material3.SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                            listOf(false to R.string.qr_local, true to R.string.qr_remote).forEachIndexed { i, (r, label) ->
-                                androidx.compose.material3.SegmentedButton(
-                                    selected = qrRemote == r, onClick = { qrRemote = r },
-                                    shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, 2),
-                                ) { Text(stringResource(label)) }
-                            }
-                        }
+                    val tabs = buildList {
+                        add("local" to stringResource(R.string.qr_local))
+                        if (remoteUp) add("remote" to stringResource(R.string.qr_remote))
+                        if (settings.wifiQr) add("wifi" to stringResource(R.string.qr_wifi))
+                    }
+                    val tab = qrTab.takeIf { t -> tabs.any { it.first == t } } ?: "local"
+                    if (tabs.size > 1) {
+                        Choice(tabs, tab) { qrTab = it }
                         Spacer(Modifier.height(12.dp))
                     }
-                    val target = if (remoteUp && qrRemote) remoteUrl!! else address!!
-                    DotQrCode(target, Modifier.size(240.dp))
-                    Spacer(Modifier.height(14.dp))
-                    Text(target, style = MaterialTheme.typography.titleMedium)
-                    Text(
-                        stringResource(R.string.qr_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    if (tab == "wifi") {
+                        WifiQr(settings.wifiSsid, settings.wifiPass, address!!)
+                    } else {
+                        val target = if (tab == "remote") remoteUrl!! else address!!
+                        DotQrCode(target, Modifier.size(240.dp))
+                        Spacer(Modifier.height(14.dp))
+                        Text(target, style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            stringResource(R.string.qr_hint),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             },
         )
     }
+}
+
+/** Ağa bağlanma QR'ı (WIFI:… biçimi; telefon kameraları tanır) ve ardından açılacak adres. */
+@Composable
+private fun WifiQr(ssid: String, pass: String, address: String) {
+    var editing by remember { mutableStateOf(ssid.isEmpty()) }
+    if (editing) {
+        var s by remember { mutableStateOf(ssid) }
+        var p by remember { mutableStateOf(pass) }
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            androidx.compose.material3.OutlinedTextField(
+                value = s, onValueChange = { s = it }, singleLine = true, label = { Text(stringResource(R.string.wifi_ssid)) },
+                shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth(),
+            )
+            androidx.compose.material3.OutlinedTextField(
+                value = p, onValueChange = { p = it }, singleLine = true, label = { Text(stringResource(R.string.wifi_pass)) },
+                shape = MaterialTheme.shapes.medium, modifier = Modifier.fillMaxWidth(),
+            )
+            Text(stringResource(R.string.wifi_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            androidx.compose.material3.Button(
+                enabled = s.isNotBlank(),
+                onClick = { Prefs.update { putString("wifiSsid", s.trim()); putString("wifiPass", p) }; editing = false },
+            ) { Text(stringResource(R.string.save)) }
+        }
+        return
+    }
+    fun e(v: String) = v.replace("\\", "\\\\").replace(";", "\\;").replace(",", "\\,").replace(":", "\\:").replace("\"", "\\\"")
+    val code = if (pass.isEmpty()) "WIFI:T:nopass;S:${e(ssid)};;" else "WIFI:T:WPA;S:${e(ssid)};P:${e(pass)};;"
+    DotQrCode(code, Modifier.size(240.dp))
+    Spacer(Modifier.height(10.dp))
+    Text(ssid, style = MaterialTheme.typography.titleMedium)
+    Spacer(Modifier.height(6.dp))
+    Text(stringResource(R.string.wifi_then), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(address, style = MaterialTheme.typography.titleMedium)
+    TextButton(onClick = { editing = true }) { Text(stringResource(R.string.wifi_edit)) }
 }
 
 /** Seçenek düğmeleri (tek seçim). */
