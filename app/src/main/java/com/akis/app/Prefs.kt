@@ -45,6 +45,9 @@ data class Settings(
     val richThumbs: Boolean,        // web: APK ikonu, PDF ilk sayfa, klasör kapağı
     val keysHelp: Boolean,          // web: ? ile kısayol yardımı
     val webLook: Boolean,           // web: tarayıcı başına dil ve tema seçimi
+    val rateOn: Boolean,            // bağlantı başına hız sınırı
+    val rateLocal: Int,             // Mbit/s (0 = sınırsız)
+    val rateRemote: Int,            // Mbit/s, uzaktan erişim (0 = sınırsız)
     val phoneStatus: Boolean,       // web: telefon durumu (hassas)
     val appsList: Boolean,          // web: yüklü uygulamalar ve APK indirme (hassas)
     val appsSystem: Boolean,        // sistem uygulamaları da listelensin
@@ -118,6 +121,9 @@ object Prefs {
         richThumbs = sp.getBoolean("richThumbs", true),
         keysHelp = sp.getBoolean("keysHelp", true),
         webLook = sp.getBoolean("webLook", true),
+        rateOn = sp.getBoolean("rateOn", false),
+        rateLocal = sp.getInt("rateLocal", 0),
+        rateRemote = sp.getInt("rateRemote", 5),
         phoneStatus = sp.getBoolean("phoneStatus", false),
         appsList = sp.getBoolean("appsList", false),
         appsSystem = sp.getBoolean("appsSystem", false),

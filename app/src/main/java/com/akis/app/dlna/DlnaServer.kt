@@ -29,7 +29,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     private val lib = MediaLibrary(ctx)
     private val webApi = WebApi(ctx, lib)
     private val adminApi = AdminApi(ctx, lib)
-    private val http = HttpServer(port, ::handle)
+    private val http = HttpServer(port, ::handle, ::rateFor)
     private var ssdp: Ssdp? = null
     @Volatile private var currentIp: Inet4Address? = null
     private val updateId = AtomicInteger(1)
@@ -79,6 +79,18 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     }
 
     private fun decode(s: String) = URLDecoder.decode(s, "UTF-8")
+
+    /** Ayarlar → Hız sınırı: bağlantı başına bayt/sn (0 = sınırsız). Telefonun kendisi sınırlanmaz. */
+    private fun rateFor(req: HttpRequest): Long {
+        val s = Prefs.current
+        if (!s.rateOn) return 0
+        val mbit = when {
+            req.tunnel -> s.rateRemote
+            req.remote.startsWith("127.") || req.remote == currentIp?.hostAddress -> 0
+            else -> s.rateLocal
+        }
+        return mbit * 125_000L
+    }
 
     private fun handle(req: HttpRequest, res: HttpResponder) {
         ServerState.touchClient(req.remote, req.headers["user-agent"] ?: "")

@@ -129,6 +129,8 @@
     <string name="f_notif_sub">Progress, device count and what\'s playing in the notification and quick settings tile</string>
     <string name="f_pin">Web PIN</string>
     <string name="f_pin_sub">Ask browser visitors for a 4–6 digit PIN</string>
+    <string name="f_rate">Speed limit</string>
+    <string name="f_rate_sub">Cap how fast each connection can download (videos, files, ZIPs, camera, TVs too)</string>
     <string name="f_remote">Remote access (Cloudflare Tunnel)</string>
     <string name="f_remote_sub">Reach the web interface from anywhere over the internet</string>
     <string name="f_search">Search</string>
@@ -277,6 +279,9 @@
     <string name="qr_hint">Scan it with a phone, PC or TV browser on the same network.</string>
     <string name="qr_local">Local</string>
     <string name="qr_remote">Remote</string>
+    <string name="rate_local">Local network</string>
+    <string name="rate_note">Mbit/s per connection · ∞ = unlimited. The phone itself is never limited.</string>
+    <string name="rate_remote">Remote access</string>
     <string name="reading_folders">Reading folders…</string>
     <string name="recent">Recently added</string>
     <string name="recent_sub">Newest videos and photos in one folder</string>

@@ -55,6 +55,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.Pin
@@ -466,6 +467,17 @@ fun SettingsScreen() {
                         Prefs.set("camera", on)
                     }
                 }
+                FeatureRow(
+                    Icons.Rounded.Speed, stringResource(R.string.f_rate), stringResource(R.string.f_rate_sub), s.rateOn, divider = true,
+                    extra = {
+                        val opts = listOf(0, 2, 5, 10, 20, 50).map { it.toString() to if (it == 0) "∞" else it.toString() }
+                        Text(stringResource(R.string.rate_local), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Segmented(opts, s.rateLocal.toString()) { v -> Prefs.update { putInt("rateLocal", v.toInt()) } }
+                        Text(stringResource(R.string.rate_remote), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Segmented(opts, s.rateRemote.toString()) { v -> Prefs.update { putInt("rateRemote", v.toInt()) } }
+                        Text(stringResource(R.string.rate_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    },
+                ) { Prefs.set("rateOn", it) }
                 // WEBFEATURES
             }
         }

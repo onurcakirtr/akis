@@ -128,6 +128,8 @@
     <string name="f_notif_sub">Bildirimde ve hızlı ayar kutucuğunda ilerleme, cihaz sayısı, oynatılan dosya</string>
     <string name="f_pin">Web PIN\'i</string>
     <string name="f_pin_sub">Tarayıcıdan girenlerden 4–6 haneli PIN iste</string>
+    <string name="f_rate">Hız sınırı</string>
+    <string name="f_rate_sub">Her bağlantının indirme hızını sınırla (videolar, dosyalar, ZIP, kamera; TV\'ler de)</string>
     <string name="f_remote">Uzaktan erişim (Cloudflare Tunnel)</string>
     <string name="f_remote_sub">Web arayüzüne internet üzerinden her yerden eriş</string>
     <string name="f_search">Arama</string>
@@ -276,6 +278,9 @@
     <string name="qr_hint">Aynı ağdaki telefon, PC ya da TV tarayıcısıyla okut.</string>
     <string name="qr_local">Yerel</string>
     <string name="qr_remote">Uzak</string>
+    <string name="rate_local">Yerel ağ</string>
+    <string name="rate_note">Bağlantı başına Mbit/s · ∞ = sınırsız. Telefonun kendisi sınırlanmaz.</string>
+    <string name="rate_remote">Uzaktan erişim</string>
     <string name="reading_folders">Klasörler okunuyor…</string>
     <string name="recent">Son eklenenler</string>
     <string name="recent_sub">En yeni video ve fotoğraflar tek klasörde</string>

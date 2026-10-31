@@ -55,6 +55,51 @@ class LimitedInputStream(private val input: InputStream, private var left: Long)
     override fun close() {}
 }
 
+/**
+ * Gönderimi saniyede en çok [bytesPerSec] bayta sınırlar (0 = sınırsız).
+ * Boşta kalınan süre en fazla 1 saniyelik birikmiş hak sayılır; ani patlama olmaz.
+ */
+class ThrottledOutputStream(private val out: OutputStream) : OutputStream() {
+    @Volatile var bytesPerSec = 0L
+        set(v) {
+            if (field != v) { field = v; start = System.currentTimeMillis(); sent = 0 }
+        }
+    private var start = System.currentTimeMillis()
+    private var sent = 0L
+
+    override fun write(b: Int) {
+        pace(1)
+        out.write(b)
+    }
+
+    override fun write(b: ByteArray, off: Int, len: Int) {
+        var o = off
+        var left = len
+        while (left > 0) {
+            val n = if (bytesPerSec > 0) minOf(left, 16 * 1024) else left
+            pace(n)
+            out.write(b, o, n)
+            o += n
+            left -= n
+        }
+    }
+
+    private fun pace(n: Int) {
+        val r = bytesPerSec
+        if (r <= 0) return
+        sent += n
+        val due = sent * 1000 / r
+        val now = System.currentTimeMillis()
+        val elapsed = now - start
+        if (elapsed > due + 1000) start = now - due - 1000
+        else if (due > elapsed) Thread.sleep(due - elapsed)
+    }
+
+    override fun flush() = out.flush()
+
+    override fun close() = out.close()
+}
+
 class HttpResponder(private val out: OutputStream, private val head: Boolean) {
     var committed = false
         private set
@@ -139,6 +184,8 @@ class HttpResponder(private val out: OutputStream, private val head: Boolean) {
 class HttpServer(
     private val port: Int,
     private val handler: (HttpRequest, HttpResponder) -> Unit,
+    /** İstek başına gönderim sınırı (bayt/sn; 0 = sınırsız). */
+    private val rateFor: (HttpRequest) -> Long = { 0L },
 ) {
     @Volatile private var server: ServerSocket? = null
     private var pool: ExecutorService? = null
@@ -185,7 +232,8 @@ class HttpServer(
             sock.soTimeout = 60_000
             sock.tcpNoDelay = true
             val input = BufferedInputStream(sock.getInputStream())
-            val output = BufferedOutputStream(sock.getOutputStream(), 64 * 1024)
+            val throttle = ThrottledOutputStream(sock.getOutputStream())
+            val output = BufferedOutputStream(throttle, 64 * 1024)
             val remote = sock.inetAddress?.hostAddress ?: "?"
             while (true) {
                 val line = try { readLine(input) } catch (e: IOException) { null } ?: return
@@ -221,6 +269,7 @@ class HttpServer(
                     bodyStream = stream,
                     contentLength = if (streaming) len else body.size.toLong(),
                 )
+                throttle.bytesPerSec = rateFor(req)
                 val resp = HttpResponder(output, req.method == "HEAD")
                 try {
                     handler(req, resp)
