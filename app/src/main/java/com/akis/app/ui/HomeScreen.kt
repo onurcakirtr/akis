@@ -38,6 +38,9 @@ import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -492,11 +495,11 @@ private fun WifiQr(ssid: String, pass: String, address: String) {
 /** Seçenek düğmeleri (tek seçim). */
 @Composable
 private fun <T> Choice(options: List<Pair<T, String>>, selected: T, onSelect: (T) -> Unit) {
-    androidx.compose.material3.SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
         options.forEachIndexed { i, (v, label) ->
-            androidx.compose.material3.SegmentedButton(
+            SegmentedButton(
                 selected = v == selected, onClick = { onSelect(v) },
-                shape = androidx.compose.material3.SegmentedButtonDefaults.itemShape(i, options.size),
+                shape = SegmentedButtonDefaults.itemShape(i, options.size),
             ) { Text(label, maxLines = 1) }
         }
     }
