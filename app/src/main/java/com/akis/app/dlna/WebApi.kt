@@ -84,6 +84,8 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
                 res.bytes(200, "image/jpeg", it, mapOf("Content-Disposition" to "attachment; filename=\"$name\""))
             } ?: res.text(404, Lang.s(R.string.http_not_found))
             p == "/live/screen" || p == "/live/mic.wav" -> if (!live(if (p == "/live/screen") "screen" else "mic", req, res)) res.text(404, Lang.s(R.string.http_not_found))
+            p == "/api/inbox" -> if (Prefs.current.inboxWeb) json(res, inboxList()) else res.text(404, Lang.s(R.string.http_not_found))
+            p.startsWith("/inbox/") -> inboxFile(req, res, p.removePrefix("/inbox/"))
             p == "/api/status" -> if (Prefs.current.phoneStatus) json(res, PhoneInfo.status(ctx)) else res.text(404, Lang.s(R.string.http_not_found))
             p == "/api/apps" -> if (Prefs.current.appsList) json(res, PhoneInfo.apps(ctx, Prefs.current.appsSystem)) else res.text(404, Lang.s(R.string.http_not_found))
             p == "/appicon" -> if (Prefs.current.appsList) PhoneInfo.icon(ctx, param(req, "pkg"))?.let {
@@ -140,6 +142,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("status", s.phoneStatus && (!remote || s.remoteStatus)).put("apps", s.appsList && (!remote || s.remoteApps))
             .put("camera", com.akis.app.CameraStream.allowed(ctx) && (!remote || s.remoteCamera))
             .put("camFront", s.camFront).put("camHeight", s.camHeight)
+            .put("inbox", s.inboxWeb && (!remote || s.remoteInbox))
             .put("screen", com.akis.app.ScreenStream.allowed() && (!remote || s.remoteScreen))
             .put("mic", com.akis.app.MicStream.allowed(ctx) && (!remote || s.remoteMic))
             .put("docs", s.docPreview).put("zipView", s.zipView).put("thumbs", s.richThumbs).put("keys", s.keysHelp)
@@ -182,6 +185,38 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("lang", Lang.locale.language)
             .put("icons", icons)
         res.bytes(200, "application/manifest+json; charset=utf-8", o.toString().toByteArray(Charsets.UTF_8), mapOf("Cache-Control" to "no-cache"))
+    }
+
+    // ---------------- Gelenler (dosya isteme bağlantıları) ----------------
+
+    private fun inboxList(): JSONObject {
+        com.akis.app.Inbox.refresh()
+        val a = JSONArray()
+        for (x in com.akis.app.Inbox.items.value) {
+            a.put(JSONObject().put("id", x.id).put("n", x.name).put("sz", x.size).put("m", x.mime).put("from", x.from).put("t", x.time))
+        }
+        return JSONObject().put("items", a)
+    }
+
+    /** Görüntülenebilen türler tarayıcıda açılır; diğerleri (HTML vb.) yalnızca indirilir, sayfada çalışamaz. */
+    private fun inboxFile(req: HttpRequest, res: HttpResponder, id: String) {
+        val x = com.akis.app.Inbox.get(id)?.takeIf { Prefs.current.inboxWeb } ?: return res.text(404, Lang.s(R.string.http_not_found))
+        val pfd = try { ctx.contentResolver.openFileDescriptor(android.net.Uri.parse(x.uri), "r") } catch (_: Exception) { null }
+            ?: return res.text(404, Lang.s(R.string.http_file_not_found))
+        pfd.use { fd ->
+            val viewable = (x.mime.startsWith("image/") && x.mime != "image/svg+xml") || x.mime.startsWith("video/") ||
+                x.mime.startsWith("audio/") || x.mime == "application/pdf"
+            val inline = viewable && param(req, "dl") != "1"
+            val headers = mapOf(
+                "Content-Disposition" to (if (inline) "inline" else "attachment") + "; filename*=UTF-8''" + Xml.enc(x.name),
+                "Cache-Control" to "no-store",
+                "X-Content-Type-Options" to "nosniff",
+            )
+            val type = if (viewable) x.mime else "application/octet-stream"
+            java.io.FileInputStream(fd.fileDescriptor).use { inp ->
+                res.send(200, type, fd.statSize, headers) { out -> inp.copyTo(out, 256 * 1024) }
+            }
+        }
     }
 
     /** Canlı akışlar (web ve UPnP "Canlı" klasörü): "cam", "screen", "mic". @return false ise kapalı */

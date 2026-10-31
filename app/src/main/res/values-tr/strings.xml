@@ -134,6 +134,9 @@
     <string name="f_hidden_sub">.nomedia içeren ve Kaynaklar\'da gizlediğin klasörler paylaşılmasın</string>
     <string name="f_history">İzleme geçmişi</string>
     <string name="f_history_sub">Kaldığın yerden devam; TV\'de \"Devam et\" ve \"İzlenmemiş\" klasörleri</string>
+    <string name="f_inbox_short">Gelen dosyalar</string>
+    <string name="f_inbox_web">Gelenler web\'de</string>
+    <string name="f_inbox_web_sub">Dosya isteme bağlantılarıyla gelen dosyaları web\'de göster (yalnızca görüntüleme ve indirme)</string>
     <string name="f_keys">Kısayol yardımı</string>
     <string name="f_keys_sub">Web arayüzünde ? tuşuyla tüm klavye kısayollarını gör</string>
     <string name="f_live_upnp">UPnP\'de canlı yayın</string>
@@ -221,6 +224,12 @@
     <string name="icon_sub">VLC, Gezgin ve TV\'lerde adın yanında görünür</string>
     <string name="icon_theme">Tema</string>
     <string name="icon_title">Sunucu simgesi</string>
+    <string name="inbox">Gelenler</string>
+    <string name="inbox_delete">Sil</string>
+    <string name="inbox_empty">Henüz bir şey gelmedi.</string>
+    <string name="inbox_n">Gelenler (%1$d)</string>
+    <string name="inbox_open">Aç</string>
+    <string name="inbox_share">Paylaş</string>
     <string name="internal_storage">Dahili depolama</string>
     <string name="keep_awake">Uyanık tut</string>
     <string name="keep_awake_sub">Ekran kapalıyken yayın kesilmesin</string>
@@ -584,6 +593,10 @@
     <string name="web_fullscreen">Tam ekran</string>
     <string name="web_genre_t">Tür (müzik)</string>
     <string name="web_home">Ana sayfa</string>
+    <string name="web_inbox">Gelenler</string>
+    <string name="web_inbox_empty">Henüz bir şey gelmedi.</string>
+    <string name="web_inbox_from">%s gönderdi</string>
+    <string name="web_inbox_sub">İstek bağlantılarıyla gelenler</string>
     <string name="web_info">Özellikler</string>
     <string name="web_iso">ISO</string>
     <string name="web_items_one">{0} öğe</string>

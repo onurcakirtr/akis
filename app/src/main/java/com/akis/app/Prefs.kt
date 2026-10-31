@@ -47,6 +47,8 @@ data class Settings(
     val webLook: Boolean,           // web: tarayıcı başına dil ve tema seçimi
     val pwa: Boolean,               // web: ana ekrana ekle (uygulama tanımı)
     val fileReq: Boolean,           // dosya isteme bağlantıları
+    val inboxWeb: Boolean,          // gelen dosyalar web'de
+    val remoteInbox: Boolean,
     val wifiQr: Boolean,            // QR penceresinde Wi-Fi sekmesi
     val qrCard: Boolean,            // yazdırılabilir QR kartı
     val ring: Boolean,              // yönetim sayfasından telefonu çaldır
@@ -135,6 +137,8 @@ object Prefs {
         webLook = sp.getBoolean("webLook", true),
         pwa = sp.getBoolean("pwa", true),
         fileReq = sp.getBoolean("fileReq", true),
+        inboxWeb = sp.getBoolean("inboxWeb", false),
+        remoteInbox = sp.getBoolean("remoteInbox", false),
         wifiQr = sp.getBoolean("wifiQr", true),
         qrCard = sp.getBoolean("qrCard", true),
         ring = sp.getBoolean("ring", false),

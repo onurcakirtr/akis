@@ -150,7 +150,7 @@
     var parts = h.split('/');
     var name = parts[0] || 'home';
     var arg = decodeURIComponent(parts.slice(1).join('/'));
-    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload', admin: 'admin', status: 'status', apps: 'apps', cam: 'cam', screen: 'screen', mic: 'mic' };
+    var map = { '': 'home', home: 'home', f: 'folder', s: 'search', v: 'watch', d: 'files', up: 'upload', admin: 'admin', status: 'status', apps: 'apps', cam: 'cam', screen: 'screen', mic: 'mic', inbox: 'inbox' };
     return { name: map[name] || 'home', arg: arg, p: params, key: location.hash };
   }
   var player = null, list = [], listFolder = '0', scrolls = {}, lastKey = '', softNext = false;
@@ -221,6 +221,7 @@
     else if (r.name === 'status') p = renderStatus();
     else if (r.name === 'cam') p = renderCam();
     else if (r.name === 'screen') p = renderScreen();
+    else if (r.name === 'inbox') p = renderInbox();
     else if (r.name === 'mic') p = renderMic();
     else if (r.name === 'apps') p = renderApps();
     else if (r.name === 'admin') p = window.AkisAdmin.render(view, { t: t, esc: esc, toast: toast, size: size, ICO: ICO });
@@ -304,6 +305,7 @@
       if (C.files) h += '<a class="tile nav" href="#/d/"><div class="icon-badge">' + ICO.drive + '</div><b>' + esc(t('all_files')) + '</b><span class="sub">' + esc(t('all_files_sub')) + '</span></a>';
       if (C.apps) h += '<a class="tile nav" href="#/apps"><div class="icon-badge">' + ICO.apps + '</div><b>' + esc(t('apps')) + '</b><span class="sub">APK</span></a>';
       if (C.camera) h += '<a class="tile nav" href="#/cam"><div class="icon-badge">' + ICO.cam + '</div><b>' + esc(t('camera')) + '</b><span class="sub">MJPEG</span></a>';
+      if (C.inbox) h += '<a class="tile nav" href="#/inbox"><div class="icon-badge">' + ICO.dl + '</div><b>' + esc(t('inbox')) + '</b><span class="sub">' + esc(t('inbox_sub')) + '</span></a>';
       if (C.screen) h += '<a class="tile nav" href="#/screen"><div class="icon-badge">' + ICO.screen + '</div><b>' + esc(t('screen')) + '</b><span class="sub">MJPEG</span></a>';
       if (C.mic) h += '<a class="tile nav" href="#/mic"><div class="icon-badge">' + ICO.mic + '</div><b>' + esc(t('mic')) + '</b><span class="sub">WAV</span></a>';
       if (C.status) h += '<a class="tile nav" href="#/status"><div class="icon-badge">' + ICO.battery + '</div><b>' + esc(t('status')) + '</b><span class="sub" id="batTile"></span></a>';
@@ -507,6 +509,22 @@
     var a = document.getElementById('micAud');
     a.onerror = function () { a.insertAdjacentHTML('afterend', '<div class="empty">' + esc(t('mic_off')) + '</div>'); a.remove(); };
     return Promise.resolve();
+  }
+
+  // ======================= Gelenler =======================
+  function renderInbox() {
+    return api('/api/inbox').then(function (d) {
+      var h = d.items.map(function (x) {
+        var img = /^image\//.test(x.m) && x.m !== 'image/svg+xml';
+        var when = new Date(x.t).toLocaleString(C.lang || undefined, { dateStyle: 'short', timeStyle: 'short' });
+        return '<div class="card app">' + (img ? '<img loading="lazy" alt="" src="/inbox/' + enc(x.id) + '" style="object-fit:cover">' : '<div class="icon-badge">' + ICO.file + '</div>') +
+          '<div class="meta"><div class="title">' + esc(x.n) + '</div><div class="sub">' + esc([size(x.sz), when, t('inbox_from', x.from)].join(' • ')) + '</div></div>' +
+          '<a class="pill nav" href="/inbox/' + enc(x.id) + '" target="_blank" rel="noopener">' + esc(t('preview')) + '</a>' +
+          '<a class="pill nav" href="/inbox/' + enc(x.id) + '?dl=1" download>' + ICO.dl + '</a></div>';
+      }).join('') || '<div class="empty">' + esc(t('inbox_empty')) + '</div>';
+      view.innerHTML = '<div class="bar"><nav class="crumbs"><a class="nav" href="#/">' + esc(t('home')) + '</a><span>›</span><a>' + esc(t('inbox')) + '</a></nav>' +
+        '<span class="sub">' + esc(plural('items', d.items.length)) + '</span></div><div class="list">' + h + '</div>';
+    });
   }
 
   // ======================= Yüklü uygulamalar =======================

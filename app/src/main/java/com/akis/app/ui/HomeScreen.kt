@@ -62,6 +62,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akis.app.ClientInfo
 import com.akis.app.DeviceAccess
 import com.akis.app.QuickShare
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import com.akis.app.FileRequests
@@ -104,6 +105,8 @@ fun HomeScreen() {
     val requests by FileRequests.list.collectAsStateWithLifecycle()
     var newRequest by remember { mutableStateOf(false) }
     var qrRequest by remember { mutableStateOf<String?>(null) }
+    val inbox by com.akis.app.Inbox.items.collectAsStateWithLifecycle()
+    var inboxOpen by remember { mutableStateOf(false) }
 
     var now by remember { mutableLongStateOf(System.currentTimeMillis()) }
     LaunchedEffect(running) {
@@ -180,6 +183,9 @@ fun HomeScreen() {
                             Column(Modifier.weight(1f)) {
                                 Text(stringResource(R.string.req_new), style = MaterialTheme.typography.titleMedium)
                                 Text(stringResource(R.string.req_new_sub), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            if (inbox.isNotEmpty()) {
+                                androidx.compose.material3.FilledTonalButton(onClick = { inboxOpen = true }) { Text(stringResource(R.string.inbox_n, inbox.size)) }
                             }
                         }
                     }
@@ -287,6 +293,7 @@ fun HomeScreen() {
     if (cardOpen && address != null) {
         QrCardDialog(settings.name, address!!, remoteUrl.takeIf { tunnelState == com.akis.app.Tunnel.State.UP }, settings.wifiSsid, settings.wifiPass) { cardOpen = false }
     }
+    if (inboxOpen) InboxDialog(inbox) { inboxOpen = false }
     actFor?.let { c ->
         AlertDialog(
             onDismissRequest = { actFor = null },
@@ -341,6 +348,53 @@ fun HomeScreen() {
             },
         )
     }
+}
+
+/** Dosya isteme bağlantılarıyla gelenler: aç, paylaş, sil. */
+@Composable
+private fun InboxDialog(list: List<com.akis.app.Inbox.Item>, onDismiss: () -> Unit) {
+    val ctx = LocalContext.current
+    LaunchedEffect(Unit) { kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) { com.akis.app.Inbox.refresh() } }
+    val fmt = remember { java.text.DateFormat.getDateTimeInstance(java.text.DateFormat.SHORT, java.text.DateFormat.SHORT) }
+    val shareTitle = stringResource(R.string.inbox_share)
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.close)) } },
+        title = { Text(stringResource(R.string.inbox)) },
+        text = {
+            if (list.isEmpty()) Text(stringResource(R.string.inbox_empty))
+            else LazyColumn(Modifier.heightIn(max = 440.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                items(list, key = { it.id }) { x ->
+                    val uri = android.net.Uri.parse(x.uri)
+                    Column {
+                        Text(x.name, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(
+                            formatBytes(x.size) + " • " + x.from + " • " + fmt.format(Date(x.time)),
+                            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(onClick = {
+                                runCatching {
+                                    ctx.startActivity(
+                                        android.content.Intent(android.content.Intent.ACTION_VIEW).setDataAndType(uri, x.mime)
+                                            .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION or android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                                    )
+                                }
+                            }) { Text(stringResource(R.string.inbox_open)) }
+                            TextButton(onClick = {
+                                val send = android.content.Intent(android.content.Intent.ACTION_SEND).setType(x.mime).putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                    .addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                runCatching { ctx.startActivity(android.content.Intent.createChooser(send, shareTitle).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)) }
+                            }) { Text(stringResource(R.string.inbox_share)) }
+                            TextButton(onClick = { com.akis.app.Inbox.delete(x.id) }) {
+                                Text(stringResource(R.string.inbox_delete), color = MaterialTheme.colorScheme.error)
+                            }
+                        }
+                    }
+                }
+            }
+        },
+    )
 }
 
 /** WIFI:… biçimi (telefon kameraları tanır). */

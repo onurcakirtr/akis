@@ -31,6 +31,7 @@ class AkisApplication : Application() {
         DeviceAccess.init(this)
         QuickShare.init(this)
         FileRequests.init(this)
+        Inbox.init(this)
         Admin.init(this)
         Tunnel.init(this)
         RemoteAuth.init(this)

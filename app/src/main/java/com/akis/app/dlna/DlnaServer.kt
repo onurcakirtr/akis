@@ -151,7 +151,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     private val appIcons = setOf(180, 192, 512)
 
     private fun webPath(p: String) =
-        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/") || p == "/raw" || p == "/zip" || p == "/zipget" || p == "/tf" || p == "/appicon" || p == "/apk" || p.startsWith("/cam/") || p.startsWith("/live/") || p == "/zipsel" || p.startsWith("/admin/")
+        p == "/" || p == "/index.html" || p.startsWith("/w/") || p.startsWith("/p/") || p == "/ara" || p == "/h" || p.startsWith("/yukle") || p.startsWith("/api/") || p.startsWith("/x/") || p == "/raw" || p == "/zip" || p == "/zipget" || p == "/tf" || p == "/appicon" || p == "/apk" || p.startsWith("/cam/") || p.startsWith("/live/") || p.startsWith("/inbox/") || p == "/zipsel" || p.startsWith("/admin/")
 
     /** @return true ise istek işlenebilir; false ise cevap zaten verildi. */
     private fun checkAccess(req: HttpRequest, res: HttpResponder, settings: Settings): Boolean {
@@ -216,6 +216,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             return false
         }
         val denied = p.startsWith("/m/live") ||
+            ((p == "/api/inbox" || p.startsWith("/inbox/")) && !s.remoteInbox) ||
             (p == "/live/screen" && !s.remoteScreen) ||
             (p == "/live/mic.wav" && !s.remoteMic) ||
             (p.startsWith("/cam/") && !s.remoteCamera) ||
@@ -331,6 +332,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val uri = Uploads.receive(ctx, name, input, req.contentLength, ServerState.clientName(req.remote), Lang.s(R.string.drop_dir))
         FileRequests.finish(r.token, req.contentLength, uri != null)
         if (uri == null) return fail(500, "write")
+        com.akis.app.Inbox.add(uri, name, req.contentLength, MediaLibrary.mimeFor(name, null), ServerState.clientName(req.remote))
         contentChanged()
         res.text(200, "{\"ok\":true}", "application/json")
     }

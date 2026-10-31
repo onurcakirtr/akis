@@ -55,6 +55,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Notifications
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Inbox
 import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.LiveTv
@@ -499,6 +500,7 @@ fun SettingsScreen() {
                 ) { Prefs.set("ring", it) }
                 FeatureRow(Icons.Rounded.QrCode2, stringResource(R.string.f_qrcard), stringResource(R.string.f_qrcard_sub), s.qrCard, divider = true) { Prefs.set("qrCard", it) }
                 FeatureRow(Icons.Rounded.Wifi, stringResource(R.string.f_wifiqr), stringResource(R.string.f_wifiqr_sub), s.wifiQr, divider = true) { Prefs.set("wifiQr", it) }
+                FeatureRow(Icons.Rounded.Inbox, stringResource(R.string.f_inbox_web), stringResource(R.string.f_inbox_web_sub), s.inboxWeb, divider = true) { Prefs.set("inboxWeb", it) }
                 FeatureRow(Icons.Rounded.MoveToInbox, stringResource(R.string.f_filereq), stringResource(R.string.f_filereq_sub), s.fileReq, divider = true) { Prefs.set("fileReq", it) }
                 FeatureRow(Icons.Rounded.AddToHomeScreen, stringResource(R.string.f_pwa), stringResource(R.string.f_pwa_sub), s.pwa, divider = true) { Prefs.set("pwa", it) }
                 FeatureRow(
@@ -593,6 +595,7 @@ fun SettingsScreen() {
                                 Triple("remoteStatus", stringResource(R.string.f_status), s.remoteStatus),
                                 Triple("remoteApps", stringResource(R.string.f_apps), s.remoteApps),
                                 Triple("remoteScreen", stringResource(R.string.f_screen_short), s.remoteScreen),
+                                Triple("remoteInbox", stringResource(R.string.f_inbox_short), s.remoteInbox),
                                 Triple("remoteMic", stringResource(R.string.f_mic_short), s.remoteMic),
                             ).forEach { (key, label, on) ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {

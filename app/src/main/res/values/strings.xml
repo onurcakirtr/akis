@@ -135,6 +135,9 @@
     <string name="f_hidden_sub">Don\'t share folders containing .nomedia or ones you hid in Sources</string>
     <string name="f_history">Watch history</string>
     <string name="f_history_sub">Resume where you left off; \"Continue watching\" and \"Unwatched\" folders on the TV</string>
+    <string name="f_inbox_short">Received files</string>
+    <string name="f_inbox_web">Received files on the web</string>
+    <string name="f_inbox_web_sub">Show files that came through file request links on the web (view and download only)</string>
     <string name="f_keys">Shortcut help</string>
     <string name="f_keys_sub">Press ? in the web interface to see all keyboard shortcuts</string>
     <string name="f_live_upnp">Live streams on UPnP</string>
@@ -222,6 +225,12 @@
     <string name="icon_sub">Shown next to the name in VLC, Explorer and on TVs</string>
     <string name="icon_theme">Theme</string>
     <string name="icon_title">Server icon</string>
+    <string name="inbox">Received</string>
+    <string name="inbox_delete">Delete</string>
+    <string name="inbox_empty">Nothing has arrived yet.</string>
+    <string name="inbox_n">Received (%1$d)</string>
+    <string name="inbox_open">Open</string>
+    <string name="inbox_share">Share</string>
     <string name="internal_storage">Internal storage</string>
     <string name="keep_awake">Keep awake</string>
     <string name="keep_awake_sub">Keep streaming while the screen is off</string>
@@ -585,6 +594,10 @@
     <string name="web_fullscreen">Full screen</string>
     <string name="web_genre_t">Genre</string>
     <string name="web_home">Home</string>
+    <string name="web_inbox">Received</string>
+    <string name="web_inbox_empty">Nothing has arrived yet.</string>
+    <string name="web_inbox_from">from %s</string>
+    <string name="web_inbox_sub">Sent through request links</string>
     <string name="web_info">Properties</string>
     <string name="web_iso">ISO</string>
     <string name="web_items_one">{0} item</string>
