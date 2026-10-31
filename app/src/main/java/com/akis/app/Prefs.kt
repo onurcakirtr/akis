@@ -58,6 +58,8 @@ data class Settings(
     val screen: Boolean,            // web: ekran paylaşımı (hassas)
     val mic: Boolean,               // web: canlı mikrofon (hassas)
     val liveUpnp: Boolean,          // kamera/ekran/mikrofon UPnP'de "Canlı" klasöründe
+    val liveRes: Int,               // HD yayın: 720 / 1080
+    val liveBitrate: String,        // "low" | "mid" | "high"
     val remoteScreen: Boolean,
     val remoteMic: Boolean,
     val wifiSsid: String,
@@ -151,6 +153,8 @@ object Prefs {
         screen = sp.getBoolean("screen", false),
         mic = sp.getBoolean("mic", false),
         liveUpnp = sp.getBoolean("liveUpnp", false),
+        liveRes = sp.getInt("liveRes", 720),
+        liveBitrate = sp.getString("liveBitrate", "mid") ?: "mid",
         remoteScreen = sp.getBoolean("remoteScreen", false),
         remoteMic = sp.getBoolean("remoteMic", false),
         wifiSsid = sp.getString("wifiSsid", "") ?: "",

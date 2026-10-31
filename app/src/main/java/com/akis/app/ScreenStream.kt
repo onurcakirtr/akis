@@ -34,6 +34,10 @@ object ScreenStream {
     @Volatile private var frame: ByteArray? = null
     @Volatile private var frameNo = 0L
     @Volatile private var viewers = 0
+    /** HD yayın (LiveTs) bağlıyken ekran kodlayıcıya yansıtılır. */
+    @Volatile private var holders = 0
+    private var size = 0 to 0
+    private var dpi = 160
     @Volatile private var askedAt = 0L
     @Volatile private var declined = false
     private var lastFrameAt = 0L
@@ -124,11 +128,44 @@ object ScreenStream {
                 null
             }
             if (display == null) { close(); return decline() }
+            size = w to hgt
+            dpi = (m.densityDpi * scale).toInt().coerceAtLeast(120)
             ctx.getSystemService(NotificationManager::class.java).cancel(NOTIF_ASK)
             live.value = true
             ServerState.log(Lang.s(R.string.log_screen_on))
             lock.notifyAll()
         }
+    }
+
+    /**
+     * HD yayın için ekranı [surface]'e yansıtır; paylaşım yoksa telefonda onay ister ve en çok 60 sn bekler.
+     * Bağlıyken MJPEG izleyicileri son karede kalır.
+     */
+    fun attach(ctx: Context, from: String, surface: android.view.Surface, w: Int, h: Int): Boolean {
+        synchronized(lock) {
+            holders++
+            if (projection == null) ask(ctx, from)
+            val end = System.currentTimeMillis() + 60_000
+            while (display == null) {
+                val left = end - System.currentTimeMillis()
+                if (left <= 0 || (declined && projection == null)) { holders--; return false }
+                lock.wait(left)
+            }
+            val d = display!!
+            runCatching { d.resize(w, h, dpi); d.surface = surface }
+            return true
+        }
+    }
+
+    fun detach() {
+        synchronized(lock) {
+            holders = (holders - 1).coerceAtLeast(0)
+            if (holders == 0) display?.let { d -> runCatching { d.resize(size.first, size.second, dpi); d.surface = reader?.surface } }
+        }
+        if (viewers == 0 && holders == 0) Thread {
+            Thread.sleep(5000)
+            if (viewers == 0 && holders == 0) close()
+        }.start()
     }
 
     fun close() {
@@ -142,6 +179,7 @@ object ScreenStream {
             display = null; reader = null; thread = null
             frame = null
             askedAt = 0
+            holders = 0
             lock.notifyAll()
         }
         if (live.value) ServerState.log(Lang.s(R.string.log_screen_off))
@@ -186,7 +224,7 @@ object ScreenStream {
                     viewers = 0
                     Thread {
                         Thread.sleep(8000)
-                        if (viewers == 0) close()
+                        if (viewers == 0 && holders == 0) close()
                     }.start()
                 }
             }

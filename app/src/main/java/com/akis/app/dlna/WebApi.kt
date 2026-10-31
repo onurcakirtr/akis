@@ -253,6 +253,11 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
                 ServerState.log("🖥 $who")
                 res.stream(200, mjpeg, nc) { out -> com.akis.app.ScreenStream.stream(ctx, who, out) }
             }
+            "camhd", "screenhd" -> {
+                val src = what.removeSuffix("hd")
+                if (!com.akis.app.LiveTs.allowed(ctx, src)) return false
+                res.stream(200, "video/mpeg", nc) { out -> com.akis.app.LiveTs.stream(ctx, src, who, out) }
+            }
             "mic" -> {
                 if (!com.akis.app.MicStream.allowed(ctx)) return false
                 ServerState.log("🎙 $who")

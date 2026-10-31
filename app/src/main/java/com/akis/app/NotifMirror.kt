@@ -35,7 +35,7 @@ object NotifMirror {
     internal fun posted(ctx: Context, sbn: StatusBarNotification) {
         if (!Prefs.current.notifs || sbn.packageName == ctx.packageName) return
         val n = sbn.notification
-        if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return
+        if ((n.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
         val ex = n.extras
         val title = ex.getCharSequence(Notification.EXTRA_TITLE)?.toString().orEmpty()
         val text = (ex.getCharSequence(Notification.EXTRA_BIG_TEXT) ?: ex.getCharSequence(Notification.EXTRA_TEXT))?.toString().orEmpty()

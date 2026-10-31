@@ -122,6 +122,8 @@ class MediaLibrary(private val ctx: Context) {
 
     /** UPnP "Canlı" klasörü: açık olan kamera / ekran / mikrofon akışları (VLC gibi oynatıcılar için). */
     private fun liveEntries(): List<Entry> = buildList {
+        if (com.akis.app.CameraStream.allowed(ctx)) add(Entry("live:camhd", "live", Lang.s(R.string.live_cam_hd), Kind.VIDEO, mime = "video/mpeg", ext = "ts"))
+        if (com.akis.app.ScreenStream.allowed()) add(Entry("live:screenhd", "live", Lang.s(R.string.live_screen_hd), Kind.VIDEO, mime = "video/mpeg", ext = "ts"))
         if (com.akis.app.CameraStream.allowed(ctx)) add(Entry("live:cam", "live", Lang.s(R.string.live_cam), Kind.VIDEO, mime = "video/x-motion-jpeg", ext = "mjpg"))
         if (com.akis.app.ScreenStream.allowed()) add(Entry("live:screen", "live", Lang.s(R.string.live_screen), Kind.VIDEO, mime = "video/x-motion-jpeg", ext = "mjpg"))
         if (com.akis.app.MicStream.allowed(ctx)) add(Entry("live:mic", "live", Lang.s(R.string.live_mic), Kind.AUDIO, mime = "audio/wav", ext = "wav"))

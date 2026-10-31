@@ -241,9 +241,16 @@
     <string name="lang_system">Telefonun dili</string>
     <string name="language">Dil</string>
     <string name="live_cam">Kamera (canlı)</string>
+    <string name="live_cam_hd">Kamera (HD, sesli)</string>
     <string name="live_folder">Canlı</string>
+    <string name="live_hd">HD yayın (H.264, MPEG-TS)</string>
+    <string name="live_hd_note">HD öğeleri TV\'lerde ve VLC\'de oynar. Mikrofon özelliği açıksa ses eklenir. Aynı anda tek kamera yayını olabilir.</string>
     <string name="live_mic">Mikrofon (canlı)</string>
+    <string name="live_q_high">Yüksek</string>
+    <string name="live_q_low">Düşük</string>
+    <string name="live_q_mid">Orta</string>
     <string name="live_screen">Ekran (canlı)</string>
+    <string name="live_screen_hd">Ekran (HD, sesli)</string>
     <string name="local_address">Yerel adres</string>
     <string name="log_admin_action">🔐 Yönetim: %1$s (%2$s)</string>
     <string name="log_admin_in">🔐 Yönetim oturumu açıldı: %1$s (%2$s)</string>

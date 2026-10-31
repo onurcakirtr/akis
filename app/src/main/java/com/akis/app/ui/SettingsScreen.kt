@@ -493,7 +493,18 @@ fun SettingsScreen() {
                         Prefs.set("mic", on)
                     }
                 }
-                FeatureRow(Icons.Rounded.LiveTv, stringResource(R.string.f_live_upnp), stringResource(R.string.f_live_upnp_sub), s.liveUpnp, divider = true) { Prefs.set("liveUpnp", it) }
+                FeatureRow(
+                    Icons.Rounded.LiveTv, stringResource(R.string.f_live_upnp), stringResource(R.string.f_live_upnp_sub), s.liveUpnp, divider = true,
+                    extra = {
+                        Text(stringResource(R.string.live_hd), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Segmented(listOf("720" to "720p", "1080" to "1080p"), s.liveRes.toString()) { v -> Prefs.update { putInt("liveRes", v.toInt()) } }
+                        Segmented(
+                            listOf("low" to stringResource(R.string.live_q_low), "mid" to stringResource(R.string.live_q_mid), "high" to stringResource(R.string.live_q_high)),
+                            s.liveBitrate,
+                        ) { v -> Prefs.update { putString("liveBitrate", v) } }
+                        Text(stringResource(R.string.live_hd_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    },
+                ) { Prefs.set("liveUpnp", it) }
                 FeatureRow(
                     Icons.Rounded.NotificationsActive, stringResource(R.string.f_ring), stringResource(R.string.f_ring_sub), s.ring, divider = true,
                     extra = { if (!s.adminOn) Text(stringResource(R.string.ring_need_admin), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) },

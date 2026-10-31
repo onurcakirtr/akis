@@ -23,6 +23,8 @@ object MicStream {
     private val ring = arrayOfNulls<ByteArray>(32)
     @Volatile private var chunkNo = 0L
     @Volatile private var listeners = 0
+    /** Ham PCM alıcıları (HD yayındaki AAC kodlayıcı): (parça, yakalanma zamanı µs). */
+    private val sinks = java.util.concurrent.CopyOnWriteArrayList<(ByteArray, Long) -> Unit>()
     @Volatile private var running = false
 
     val live = MutableStateFlow(false)
@@ -60,9 +62,12 @@ object MicStream {
                         off += n
                     }
                     if (off <= 0) break
+                    val data = if (off == CHUNK) buf else buf.copyOf(off)
+                    val at = System.nanoTime() / 1000 - off * 1_000_000L / (RATE * 2)
+                    for (f in sinks) f(data, at)
                     synchronized(lock) {
                         chunkNo++
-                        ring[(chunkNo % ring.size).toInt()] = if (off == CHUNK) buf else buf.copyOf(off)
+                        ring[(chunkNo % ring.size).toInt()] = data
                         lock.notifyAll()
                     }
                 }
@@ -76,6 +81,21 @@ object MicStream {
                 ServerState.log(Lang.s(R.string.log_mic_off))
             }
         }
+    }
+
+    fun attach(sink: (ByteArray, Long) -> Unit) {
+        synchronized(lock) {
+            sinks += sink
+            startRecording()
+        }
+    }
+
+    fun detach(sink: (ByteArray, Long) -> Unit) {
+        sinks -= sink
+        if (listeners == 0 && sinks.isEmpty()) Thread {
+            Thread.sleep(3000)
+            if (listeners == 0 && sinks.isEmpty()) stop()
+        }.start()
     }
 
     fun stop() {
@@ -123,7 +143,7 @@ object MicStream {
                     listeners = 0
                     Thread {
                         Thread.sleep(3000)
-                        if (listeners == 0) stop()
+                        if (listeners == 0 && sinks.isEmpty()) stop()
                     }.start()
                 }
             }

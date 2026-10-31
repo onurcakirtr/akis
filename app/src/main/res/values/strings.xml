@@ -242,9 +242,16 @@
     <string name="lang_system">Phone language</string>
     <string name="language">Language</string>
     <string name="live_cam">Camera (live)</string>
+    <string name="live_cam_hd">Camera (HD, with sound)</string>
     <string name="live_folder">Live</string>
+    <string name="live_hd">HD stream (H.264, MPEG-TS)</string>
+    <string name="live_hd_note">HD items play on TVs and VLC. Sound is added when the microphone feature is on. Only one camera stream can run at a time.</string>
     <string name="live_mic">Microphone (live)</string>
+    <string name="live_q_high">High</string>
+    <string name="live_q_low">Low</string>
+    <string name="live_q_mid">Medium</string>
     <string name="live_screen">Screen (live)</string>
+    <string name="live_screen_hd">Screen (HD, with sound)</string>
     <string name="local_address">Local address</string>
     <string name="log_admin_action">🔐 Admin: %1$s (%2$s)</string>
     <string name="log_admin_in">🔐 Admin signed in: %1$s (%2$s)</string>
