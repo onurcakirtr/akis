@@ -100,7 +100,7 @@ fun Onboarding(onDone: () -> Unit) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                 LiveDot(true, 12.dp)
                 Spacer(Modifier.width(10.dp))
-                Text("Akış", style = MaterialTheme.typography.titleLarge, modifier = Modifier.weight(1f))
+                Text("Akış", style = MaterialTheme.typography.titleLarge, color = cs.onSurface, modifier = Modifier.weight(1f))
                 TextButton(onClick = onDone) { Text(stringResource(R.string.ob_skip)) }
             }
             HorizontalPager(state = pager, modifier = Modifier.weight(1f)) { i ->
@@ -112,7 +112,7 @@ fun Onboarding(onDone: () -> Unit) {
                 ) {
                     IconBadge(p.icon, size = 112.dp)
                     Spacer(Modifier.height(28.dp))
-                    Text(stringResource(p.title), style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+                    Text(stringResource(p.title), style = MaterialTheme.typography.headlineMedium, color = cs.onSurface, textAlign = TextAlign.Center)
                     Spacer(Modifier.height(12.dp))
                     Text(
                         stringResource(p.text), style = MaterialTheme.typography.bodyLarge,

@@ -201,7 +201,7 @@ fun SourcesScreen() {
         item { SectionTitle(stringResource(R.string.my_folders)) }
         item {
             Text(
-                stringResource(R.string.folders_hint) +
+                stringResource(R.string.folders_hint).trimEnd() + " " +
                     if (settings.subtitles) stringResource(R.string.folders_subs_smart)
                     else stringResource(R.string.folders_subs_basic),
                 style = MaterialTheme.typography.bodySmall,

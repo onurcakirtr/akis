@@ -561,7 +561,12 @@ private fun AddressCard(address: String, remote: String?, webUi: Boolean, onQr: 
                     stringResource(if (remote != null) R.string.local_address else R.string.network_address),
                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
                 )
-                Text(address.removePrefix("http://"), style = MaterialTheme.typography.titleLarge, color = MaterialTheme.colorScheme.onSecondaryContainer)
+                // Geniş (eş aralıklı) yazı tiplerinde ve uzun adreslerde tek satıra sığsın
+                val big = !com.akis.app.ui.theme.LocalAppTheme.current.mono && address.length < 26
+                Text(
+                    address.removePrefix("http://"), style = if (big) MaterialTheme.typography.titleLarge else MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer, maxLines = 1, softWrap = false,
+                )
             }
             FilledTonalIconButton(onClick = { clipboard.setText(AnnotatedString(address)) }) {
                 Icon(Icons.Rounded.ContentCopy, stringResource(R.string.copy))
