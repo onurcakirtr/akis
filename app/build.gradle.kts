@@ -12,8 +12,22 @@ android {
         applicationId = "com.akis.app"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        // GitHub'daki release iş akışı sürümü etiketten verir (v1.2.0 → 1.2.0); yerelde 1.0
+        versionCode = (findProperty("akisVersionCode") as String?)?.toIntOrNull() ?: 1
+        versionName = (findProperty("akisVersionName") as String?) ?: "1.0"
+    }
+
+    // Release imzası: AKIS_KEYSTORE ortam değişkeni varsa (GitHub sırları) o anahtar, yoksa debug anahtarı
+    val keystore = System.getenv("AKIS_KEYSTORE")?.let { file(it) }?.takeIf { it.exists() }
+    signingConfigs {
+        if (keystore != null) {
+            create("release") {
+                storeFile = keystore
+                storePassword = System.getenv("AKIS_KEYSTORE_PASSWORD")
+                keyAlias = System.getenv("AKIS_KEY_ALIAS")
+                keyPassword = System.getenv("AKIS_KEY_PASSWORD")
+            }
+        }
     }
 
     buildTypes {
@@ -21,8 +35,8 @@ android {
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-            // Kolay kurulum için debug anahtarıyla imzalanır. Mağazaya koyacaksan kendi anahtarını ekle.
-            signingConfig = signingConfigs.getByName("debug")
+            // Kendi anahtarın yoksa kolay kurulum için debug anahtarıyla imzalanır
+            signingConfig = if (keystore != null) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
     }
     compileOptions {
