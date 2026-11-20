@@ -88,6 +88,7 @@ data class Settings(
     val adminHash: String,          // yönetici şifresi "tuz:pbkdf2" (boşsa belirlenmemiş)
     val fileOps: Boolean,           // Tüm dosyalar: oluştur / yeniden adlandır / taşı / kopyala / sil (Alış ve web)
     val remoteFileOps: Boolean,
+    val pairAuto: Boolean,          // Alış eşleştirme isteklerini sormadan kabul et (bu ağa güven)
 )
 
 /** Basit, senkron ayar deposu. Değişiklikler StateFlow ile UI'ye ve servise yansır. */
@@ -185,6 +186,7 @@ object Prefs {
         adminHash = sp.getString("adminHash", "") ?: "",
         fileOps = sp.getBoolean("fileOps", false),
         remoteFileOps = sp.getBoolean("remoteFileOps", false),
+        pairAuto = sp.getBoolean("pairAuto", false),
     )
 
     fun update(block: SharedPreferences.Editor.() -> Unit) {

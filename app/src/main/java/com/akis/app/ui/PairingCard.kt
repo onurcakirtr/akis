@@ -68,6 +68,13 @@ fun PairingCard() {
             Spacer(Modifier.width(8.dp))
             Text(stringResource(R.string.pair_add))
         }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.pair_auto), style = MaterialTheme.typography.bodyMedium)
+                Text(stringResource(R.string.pair_auto_sub), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Switch(s.pairAuto, { v -> Prefs.set("pairAuto", v) })
+        }
         if (address == null) {
             Text(stringResource(R.string.pair_need_server), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
         }

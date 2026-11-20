@@ -1,7 +1,12 @@
 package com.akis.app
 
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
 import android.content.SharedPreferences
+import androidx.core.app.NotificationCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONArray
@@ -14,6 +19,8 @@ import java.util.UUID
  * Alış eşleştirmesi.
  *  - Telefonda "Alış'ı eşleştir" 5 dakikalık 6 haneli bir kod (ve QR) gösterir
  *  - Alış kodu POST /pair ile gönderir, karşılığında cihaza özel kalıcı bir anahtar alır
+ *  - Ya da (kodsuz) Alış POST /pair/request gönderir; telefona "İzin ver / Reddet" bildirimi gelir,
+ *    Alış POST /pair/status?r=… ile sonucu bekler. "Bu ağa güveniyorum" açıksa istek kendiliğinden kabul edilir
  *  - Alış her istekte "Authorization: Bearer <anahtar>" gönderir; yerel ağda onay / PIN istenmez
  *  - Dosya yönetimi (POST /api/fs) yalnızca eşleşmiş ve bu cihaz için izin verilmiş Alış'a açıktır
  * Anahtarın kendisi saklanmaz, yalnızca SHA-256 özeti.
@@ -38,10 +45,20 @@ object Pairing {
     private val _code = MutableStateFlow<Pair<String, Long>?>(null)
     val code: StateFlow<Pair<String, Long>?> get() = _code
     private var fails = 0
+    private lateinit var app: Context
+
+    /** Bildirimle onay bekleyen istekler. state: pending | ok | denied */
+    private class Req(val id: String, val ip: String, val name: String, val time: Long, var state: String = "pending", var token: String? = null)
+    private val requests = HashMap<String, Req>()
+
+    const val ACTION_ALLOW = "com.akis.app.PAIR_ALLOW"
+    const val ACTION_DENY = "com.akis.app.PAIR_DENY"
+    const val EXTRA_ID = "id"
 
     fun init(ctx: Context) {
         if (::sp.isInitialized) return
-        sp = ctx.applicationContext.getSharedPreferences("akis_pair", Context.MODE_PRIVATE)
+        app = ctx.applicationContext
+        sp = app.getSharedPreferences("akis_pair", Context.MODE_PRIVATE)
         _devices.value = load()
     }
 
@@ -94,12 +111,86 @@ object Pairing {
             return null
         }
         _code.value = null
+        return issue(name)
+    }
+
+    private fun issue(name: String): Pair<Device, String> {
         val bytes = ByteArray(32).also { rnd.nextBytes(it) }
         val token = bytes.joinToString("") { "%02x".format(it) }
         val now = System.currentTimeMillis()
         val dev = Device(UUID.randomUUID().toString(), name.trim().take(60).ifEmpty { "Alış" }, sha256(token), now, now, false)
         save(_devices.value + dev)
         return dev to token
+    }
+
+    /**
+     * Kodsuz eşleştirme isteği. "Bu ağa güveniyorum" açıksa hemen anahtar döner ("ok:<anahtar>"),
+     * değilse telefona bildirim gider ve istek kimliği döner ("wait:<id>").
+     */
+    @Synchronized
+    fun request(ip: String, name: String, auto: Boolean): String {
+        val now = System.currentTimeMillis()
+        requests.values.removeAll { now - it.time > 5 * 60_000 }
+        val clean = name.trim().take(60).ifEmpty { "Alış" }
+        if (auto) {
+            val (d, token) = issue(clean)
+            ServerState.log("🔗 ${d.name}")
+            return "ok:$token"
+        }
+        requests.values.firstOrNull { it.ip == ip && it.state == "pending" }?.let { return "wait:${it.id}" }
+        val r = Req(UUID.randomUUID().toString(), ip, clean, now)
+        requests[r.id] = r
+        notify(r)
+        return "wait:${r.id}"
+    }
+
+    /** pending | ok:<anahtar> (bir kez) | denied | gone */
+    @Synchronized
+    fun status(id: String, ip: String): String {
+        val r = requests[id]?.takeIf { it.ip == ip } ?: return "gone"
+        return when (r.state) {
+            "ok" -> { requests.remove(id); "ok:${r.token}" }
+            "denied" -> { requests.remove(id); "denied" }
+            else -> "pending"
+        }
+    }
+
+    @Synchronized
+    fun answer(id: String, allow: Boolean) {
+        val r = requests[id] ?: return
+        if (r.state != "pending") return
+        if (allow) {
+            val (d, token) = issue(r.name)
+            r.token = token
+            r.state = "ok"
+            ServerState.log("🔗 ${d.name}")
+        } else {
+            r.state = "denied"
+        }
+        app.getSystemService(NotificationManager::class.java).cancel(notifId(id))
+    }
+
+    private fun notifId(id: String) = 3000 + (id.hashCode() and 0xFFFF)
+
+    private fun notify(r: Req) {
+        fun action(act: String, code: Int) = PendingIntent.getBroadcast(
+            app, r.id.hashCode() * 2 + code,
+            Intent(app, PairReceiver::class.java).setAction(act).putExtra(EXTRA_ID, r.id),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+        )
+        val n = NotificationCompat.Builder(app, AkisApplication.CHANNEL_ACCESS)
+            .setSmallIcon(R.drawable.ic_stat)
+            .setContentTitle(Lang.s(R.string.pair_req_title, r.name))
+            .setContentText(Lang.s(R.string.pair_req_text, r.ip))
+            .setColor(0xFFD71921.toInt())
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setAutoCancel(true)
+            .setTimeoutAfter(5 * 60_000)
+            .addAction(0, Lang.s(R.string.allow), action(ACTION_ALLOW, 0))
+            .addAction(0, Lang.s(R.string.pair_deny), action(ACTION_DENY, 1))
+            .build()
+        try { app.getSystemService(NotificationManager::class.java).notify(notifId(r.id), n) } catch (_: SecurityException) {}
     }
 
     /** "Authorization: Bearer …" başlığından eşleşmiş cihaz. */
@@ -117,4 +208,14 @@ object Pairing {
     fun setFileOps(id: String, on: Boolean) = save(_devices.value.map { if (it.id == id) it.copy(fileOps = on) else it })
 
     fun remove(id: String) = save(_devices.value.filter { it.id != id })
+}
+
+/** Eşleştirme bildirimindeki "İzin ver / Reddet" düğmeleri. */
+class PairReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        Prefs.init(context)
+        Pairing.init(context)
+        val id = intent.getStringExtra(Pairing.EXTRA_ID) ?: return
+        Pairing.answer(id, intent.action == Pairing.ACTION_ALLOW)
+    }
 }

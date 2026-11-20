@@ -121,6 +121,11 @@
     <string name="f_admin_sub">Change settings from a computer with a separate password + approval on the phone</string>
     <string name="f_allfiles">All files</string>
     <string name="sec_alis">Alış</string>
+    <string name="pair_req_title">%1$s wants to pair</string>
+    <string name="pair_req_text">Alış at %1$s. Paired devices skip approval and PIN.</string>
+    <string name="pair_deny">Deny</string>
+    <string name="pair_auto">Trust this network</string>
+    <string name="pair_auto_sub">Accept Alış pairing requests without asking. Anyone on this Wi-Fi with Alış can pair.</string>
     <string name="pair_title">Alış devices</string>
     <string name="pair_sub">Pair the Alış app on another phone, tablet or TV. Paired devices skip approval and PIN on the local network.</string>
     <string name="pair_add">Pair Alış</string>
@@ -130,7 +135,7 @@
     <string name="pair_last">Last seen %1$s</string>
     <string name="pair_remove">Unpair</string>
     <string name="pair_code_title">Pairing code</string>
-    <string name="pair_code_hint">In Alış pick this server and choose Pair, then scan the QR code or type the code. Valid for 5 minutes, one device.</string>
+    <string name="pair_code_hint">Use this only if the approval notification doesn't work: in Alış choose Pair with code, then scan the QR code or type the code. Valid for 5 minutes, one device.</string>
     <string name="f_fileops">File management</string>
     <string name="f_fileops_sub">Let paired Alış devices create, rename, move, copy and delete files in All files (each device needs its own permission under Alış devices)</string>
     <string name="f_allfiles_sub">Share the whole phone storage (internal, SD card, USB), like a file server</string>
