@@ -13,6 +13,7 @@
 ![Compose](https://img.shields.io/badge/Jetpack%20Compose-Material%203-4285f4?style=flat-square&logo=jetpackcompose&logoColor=white&labelColor=111)
 ![UPnP](https://img.shields.io/badge/UPnP%20%2F%20DLNA-server-d71921?style=flat-square&labelColor=111)
 ![No ads](https://img.shields.io/badge/ads-none-555?style=flat-square&labelColor=111)
+[![License: GPL-3.0](https://img.shields.io/badge/license-GPL--3.0-blue?style=flat-square&labelColor=111)](LICENSE)
 
 **[🇬🇧 English](#-english)** · **[🇹🇷 Türkçe](#-türkçe)**
 
@@ -342,6 +343,14 @@ git push origin v1.1.0
 ```
 
 To sign with your own key, add `AKIS_KEYSTORE_BASE64`, `AKIS_KEYSTORE_PASSWORD`, `AKIS_KEY_ALIAS` and `AKIS_KEY_PASSWORD` as repository secrets; otherwise a debug key is used.
+
+## 📜 License
+
+Akış is free software under the **[GNU General Public License v3.0](LICENSE)**.
+You may use, study, change and share it; if you distribute it or a modified version, you must keep the same license and publish the full source code.
+Contributions are welcome — open an issue or a pull request.
+
+Copyright © 2026 onurcakirtr
 
 ## 🙏 Credits
 
@@ -675,6 +684,14 @@ git push origin v1.1.0
 ```
 
 Kendi anahtarınla imzalamak için depo sırlarına `AKIS_KEYSTORE_BASE64`, `AKIS_KEYSTORE_PASSWORD`, `AKIS_KEY_ALIAS` ve `AKIS_KEY_PASSWORD` ekle; yoksa debug anahtarı kullanılır.
+
+## 📜 Lisans
+
+Akış, **[GNU Genel Kamu Lisansı v3.0](LICENSE)** ile dağıtılan özgür yazılımdır.
+Kullanabilir, inceleyebilir, değiştirebilir ve paylaşabilirsin; kendisini ya da değiştirilmiş bir sürümünü dağıtan herkes aynı lisansı korumak ve kaynak kodun tamamını yayımlamak zorundadır.
+Katkılara açık — bir issue ya da pull request aç.
+
+Telif hakkı © 2026 onurcakirtr
 
 ## 🙏 Teşekkürler
 
