@@ -742,12 +742,7 @@ fun SettingsScreen() {
                     IconBadge(Icons.Rounded.Info, size = 40.dp)
                     Spacer(Modifier.width(14.dp))
                     Column {
-                        Text("Akış 1.0", style = MaterialTheme.typography.titleMedium)
-                        Text(
-                            stringResource(R.string.about_text),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        AboutVersion(stringResource(R.string.about_text))
                     }
                 }
                 Spacer(Modifier.height(12.dp))

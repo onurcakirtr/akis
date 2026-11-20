@@ -44,6 +44,8 @@ data class Settings(
     val zipView: Boolean,           // web: ZIP içine bakma
     val richThumbs: Boolean,        // web: APK ikonu, PDF ilk sayfa, klasör kapağı
     val keysHelp: Boolean,          // web: ? ile kısayol yardımı
+    val updateCheck: Boolean,       // günde bir kez GitHub'da yeni sürüm denetimi
+    val lastUpdateCheck: Long,
     val webLook: Boolean,           // web: tarayıcı başına dil ve tema seçimi
     val pwa: Boolean,               // web: ana ekrana ekle (uygulama tanımı)
     val fileReq: Boolean,           // dosya isteme bağlantıları
@@ -145,6 +147,8 @@ object Prefs {
         zipView = sp.getBoolean("zipView", true),
         richThumbs = sp.getBoolean("richThumbs", true),
         keysHelp = sp.getBoolean("keysHelp", true),
+        updateCheck = sp.getBoolean("updateCheck", true),
+        lastUpdateCheck = sp.getLong("lastUpdateCheck", 0L),
         webLook = sp.getBoolean("webLook", true),
         pwa = sp.getBoolean("pwa", true),
         fileReq = sp.getBoolean("fileReq", true),

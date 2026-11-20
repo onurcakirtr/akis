@@ -302,8 +302,9 @@ flowchart LR
 | Notification access *(optional)* | Notification mirroring |
 | Screen capture *(asked every time)* | Screen sharing |
 | Installed apps | App list and APK download *(optional feature)* |
+| Install apps | Installing an update you downloaded from GitHub (Android always asks you first) |
 
-Nothing is sent anywhere unless you enable remote access. No analytics, no ads.
+Nothing is sent anywhere unless you enable remote access — except a once-a-day "what is the latest release?" request to GitHub for updates, which you can turn off in Settings. No analytics, no ads.
 
 ## ❓ Troubleshooting
 
@@ -655,8 +656,9 @@ flowchart LR
 | Bildirim erişimi *(isteğe bağlı)* | Bildirim yansıtma |
 | Ekran kaydı *(her seferinde sorulur)* | Ekran paylaşımı |
 | Yüklü uygulamalar | Uygulama listesi ve APK indirme *(isteğe bağlı özellik)* |
+| Uygulama yükleme | GitHub'dan indirilen güncellemeyi kurmak (Android her seferinde önce sana sorar) |
 
-Uzaktan erişimi açmadıkça hiçbir şey hiçbir yere gönderilmez. Analiz yok, reklam yok.
+Uzaktan erişimi açmadıkça hiçbir şey hiçbir yere gönderilmez — güncellemeler için GitHub'a günde bir kez gönderilen "son sürüm ne?" sorusu dışında; o da Ayarlar'dan kapatılabilir. Analiz yok, reklam yok.
 
 ## ❓ Sorun giderme
 

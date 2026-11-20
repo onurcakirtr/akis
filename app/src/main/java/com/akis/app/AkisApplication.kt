@@ -54,6 +54,7 @@ class AkisApplication : Application() {
                 description = Lang.s(R.string.ch_files_desc)
             }
         )
+        nm.createNotificationChannel(NotificationChannel(CHANNEL_UPDATES, Lang.s(R.string.ch_updates), NotificationManager.IMPORTANCE_DEFAULT))
     }
 
     /** Sunucu / TV durumu değişince widget'ları ve hızlı ayar kutucuğunu tazeler (ilerleme 5 sn'de bir). */
@@ -83,5 +84,6 @@ class AkisApplication : Application() {
         const val CHANNEL_SERVER = "server"
         const val CHANNEL_ACCESS = "access"
         const val CHANNEL_FILES = "files"
+        const val CHANNEL_UPDATES = "updates"
     }
 }

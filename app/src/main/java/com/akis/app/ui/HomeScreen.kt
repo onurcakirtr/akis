@@ -126,6 +126,7 @@ fun HomeScreen() {
         modifier = Modifier.fillMaxWidth(),
     ) {
         item(key = "header") { Header(running, settings.name) }
+        item(key = "update") { UpdateCard(Modifier.animateItem()) }
         item(key = "power") {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                 PowerButton(running) { if (running) DlnaService.stop(ctx) else DlnaService.start(ctx) }

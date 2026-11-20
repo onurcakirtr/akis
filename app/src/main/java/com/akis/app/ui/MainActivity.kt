@@ -44,6 +44,8 @@ import androidx.compose.ui.res.stringResource
 import com.akis.app.R
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import com.akis.app.Prefs
 import com.akis.app.ServerState
 import com.akis.app.service.DlnaService
@@ -58,6 +60,8 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         Prefs.init(this)
         handleIntent(intent)
+        // Günde en fazla bir kez GitHub'da yeni sürüm var mı (ayardan kapatılabilir)
+        lifecycleScope.launch { com.akis.app.Updater.check(applicationContext, force = false) }
         setContent {
             val s by Prefs.settings.collectAsStateWithLifecycle()
             val theme = Themes.byId(s.theme)
