@@ -57,6 +57,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             p == "/" || p == "/index.html" -> res.html(shell(req.tunnel, look))
             p.startsWith("/static/") -> static(p.removePrefix("/static/"), res)
             p == "/manifest.webmanifest" -> if (Prefs.current.pwa) manifest(res) else res.text(404, Lang.s(R.string.http_not_found))
+            p == "/api/conf" -> json(res, conf(req.tunnel).put("api", 1))
             p == "/api/home" -> json(res, home())
             p == "/api/list" -> json(res, list(param(req, "id").ifEmpty { "0" }))
             p == "/api/search" -> json(res, JSONObject().put("items", items(lib.search(param(req, "q"), limit = 300))))
@@ -131,10 +132,10 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
         res.bytes(200, type, data, mapOf("Cache-Control" to "no-cache"))
     }
 
-    private fun shell(remote: Boolean, look: Look): String {
+    /** İstemcinin (web, Alış) göreceği yapılandırma: açık özellikler. /api/conf ve window.AKIS aynı kaynaktan. */
+    fun conf(remote: Boolean): JSONObject {
         val s = Prefs.current
-        val html = asset("index.html")?.toString(Charsets.UTF_8) ?: return "Akış"
-        val conf = JSONObject()
+        return JSONObject()
             .put("name", s.name)
             .put("search", s.search)
             .put("upload", s.upload && (!remote || s.remoteUpload))
@@ -158,7 +159,20 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("langs", JSONArray().also { a -> Lang.SUPPORTED.forEach { a.put(JSONArray().put(it.first).put(it.second)) } })
             .put("themes", JSONArray().also { a -> WebUi.themeNames().forEach { a.put(JSONArray().put(it.first).put(it.second)) } })
             .put("uploadTarget", if (s.uploadFolder.isEmpty()) Lang.s(R.string.downloads_dir, Uploads.DEFAULT_DIR) else MediaLibrary.treeName(ctx, s.uploadFolder))
-            .put("t", WebStrings.json())
+            .put("fileOps", fileOpsOn(remote))
+            .put("fileReq", s.fileReq)
+            .put("pin", s.webPin.isNotEmpty())
+    }
+
+    fun fileOpsOn(remote: Boolean): Boolean {
+        val s = Prefs.current
+        return s.fileOps && filesOn() && (!remote || s.remoteFileOps)
+    }
+
+    private fun shell(remote: Boolean, look: Look): String {
+        val s = Prefs.current
+        val html = asset("index.html")?.toString(Charsets.UTF_8) ?: return "Akış"
+        val conf = conf(remote).put("t", WebStrings.json())
         return html
             .replace("{{LANG}}", Lang.locale.language)
             .replace("{{TITLE}}", esc(s.name))
@@ -715,6 +729,84 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
                 ServerState.addBytes(sent)
             }
         }
+    }
+
+    /**
+     * POST /api/fs — Tüm dosyalarda düzenleme (Alış dosya yöneticisi).
+     * Gövde JSON: {"op":"mkdir|rename|delete|move|copy", "p":[yollar], "dst":"hedef klasör", "name":"yeni ad"}.
+     * X-Akis: 1 başlığı zorunlu. Depolama köklerinin kendisi silinemez / taşınamaz.
+     * @return true ise dosya sisteminde bir şey değişti.
+     */
+    fun fileOp(req: HttpRequest, res: HttpResponder): Boolean {
+        fun out(code: Int, o: JSONObject) =
+            res.bytes(code, "application/json; charset=utf-8", o.toString().toByteArray(Charsets.UTF_8), mapOf("Cache-Control" to "no-store"))
+        fun err(code: Int, e: String): Boolean { out(code, JSONObject().put("ok", false).put("e", e)); return false }
+        if (!fileOpsOn(req.tunnel)) return err(403, "off")
+        if (req.headers["x-akis"] != "1") return err(403, "header")
+        val body = try { JSONObject(String(req.body, Charsets.UTF_8)) } catch (_: Exception) { return err(400, "bad") }
+        val op = body.optString("op")
+        val arr = body.optJSONArray("p") ?: JSONArray()
+        val sources = ArrayList<java.io.File>()
+        for (i in 0 until arr.length()) sources += FileAccess.resolve(arr.optString(i)) ?: return err(404, "missing")
+        val roots = FileAccess.roots().map { it.canonicalPath }.toSet()
+        fun isRoot(f: java.io.File) = f.canonicalPath in roots
+        fun dstDir(): java.io.File? = FileAccess.resolve(body.optString("dst"))?.takeIf { it.isDirectory }
+        fun unique(dir: java.io.File, name: String): java.io.File {
+            var t = java.io.File(dir, name)
+            if (!t.exists()) return t
+            val base = name.substringBeforeLast('.', name)
+            val ext = name.substringAfterLast('.', "").let { if (it.isEmpty() || it == name) "" else ".$it" }
+            var n = 2
+            while (true) {
+                t = java.io.File(dir, "$base ($n)$ext")
+                if (!t.exists()) return t
+                n++
+            }
+        }
+        val touched = ArrayList<String>()
+        var failed = 0
+        when (op) {
+            "mkdir" -> {
+                val dir = dstDir() ?: return err(404, "missing")
+                val name = Uploads.safeName(body.optString("name"))
+                val f = java.io.File(dir, name)
+                if (f.exists()) return err(409, "exists")
+                if (f.mkdir()) touched += f.path else failed++
+            }
+            "rename" -> {
+                val f = sources.singleOrNull() ?: return err(400, "bad")
+                if (isRoot(f)) return err(403, "root")
+                val t = java.io.File(f.parentFile, Uploads.safeName(body.optString("name")))
+                if (t.exists()) return err(409, "exists")
+                if (f.renameTo(t)) { touched += f.path; touched += t.path } else failed++
+            }
+            "delete" -> for (f in sources) {
+                if (isRoot(f)) { failed++; continue }
+                if (runCatching { f.deleteRecursively() }.getOrDefault(false)) touched += f.path else failed++
+            }
+            "move", "copy" -> {
+                val dir = dstDir() ?: return err(404, "missing")
+                val dp = dir.canonicalPath
+                for (f in sources) {
+                    val fp = f.canonicalPath
+                    if (isRoot(f) || dp == fp || dp.startsWith("$fp/")) { failed++; continue }
+                    if (op == "move" && f.parentFile?.canonicalPath == dp) continue
+                    val t = unique(dir, f.name)
+                    val ok = runCatching {
+                        if (op == "move") f.renameTo(t) || (f.copyRecursively(t) && f.deleteRecursively())
+                        else f.copyRecursively(t)
+                    }.getOrDefault(false)
+                    if (ok) { touched += t.path; if (op == "move") touched += f.path } else failed++
+                }
+            }
+            else -> return err(400, "bad")
+        }
+        if (touched.isNotEmpty()) {
+            runCatching { android.media.MediaScannerConnection.scanFile(ctx, touched.toTypedArray(), null, null) }
+            ServerState.log("📁 $op (${touched.size}) ← ${ServerState.clientName(req.remote)}")
+        }
+        out(200, JSONObject().put("ok", failed == 0).put("failed", failed))
+        return touched.isNotEmpty()
     }
 
     private fun zip(req: HttpRequest, res: HttpResponder, path: String) {

@@ -128,6 +128,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             "POST" -> when {
                 p == "/h" -> webProgress(req, res)
                 p == "/zipsel" && settings.webUi -> webApi.zipSelection(req, res)
+                p == "/api/fs" && settings.webUi -> if (webApi.fileOp(req, res)) contentChanged()
                 p.startsWith("/admin/") && settings.webUi -> adminApi.handle(req, res)
                 else -> control(req, res, base)
             }
@@ -159,7 +160,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val p = req.path
         if (ip.startsWith("127.") || ip == currentIp?.hostAddress) return true
         if (DeviceAccess.isBlocked(ip) || DeviceAccess.isBanned(ip)) {
-            res.text(403, Lang.s(R.string.http_blocked))
+            deny(res, 403, Lang.s(R.string.http_blocked), "blocked")
             return false
         }
         if (req.tunnel) return remoteAccess(req, res, settings)
@@ -171,23 +172,27 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val pinSet = settings.webPin.isNotEmpty()
         val pinOk = pinSet && DeviceAccess.cookieOk(req.headers["cookie"], settings.webPin, uuid)
         if (pinSet && webPath(p) && !pinOk) {
-            if (req.method == "GET") res.html(WebUi.pinPage(settings.name, wrong = false, locked = DeviceAccess.locked(ip)))
-            else res.text(403, Lang.s(R.string.http_pin_required))
+            if (req.method == "GET" && !p.startsWith("/api/")) res.html(WebUi.pinPage(settings.name, wrong = false, locked = DeviceAccess.locked(ip)))
+            else deny(res, 403, Lang.s(R.string.http_pin_required), if (DeviceAccess.locked(ip)) "pin-locked" else "pin")
             return false
         }
         if (!settings.deviceApproval || pinOk || DeviceAccess.isAllowed(ip)) return true
         if (DeviceAccess.isBlocked(ip)) {
-            res.text(403, Lang.s(R.string.http_blocked))
+            deny(res, 403, Lang.s(R.string.http_blocked), "blocked")
             return false
         }
         DeviceAccess.request(ip, ServerState.clientName(ip))
         when {
             p.startsWith("/ctl/") -> res.text(500, Xml.FAULT, "text/xml; charset=\"utf-8\"")
-            webPath(p) && req.method == "GET" -> res.html(WebUi.waitPage(settings.name))
-            else -> res.text(403, Lang.s(R.string.waiting_approval))
+            webPath(p) && req.method == "GET" && !p.startsWith("/api/") -> res.html(WebUi.waitPage(settings.name))
+            else -> deny(res, 403, Lang.s(R.string.waiting_approval), "approval")
         }
         return false
     }
+
+    /** Erişim reddi; X-Akis-Access başlığı uygulamaların (Alış) durumu anlaması için: pin, approval, blocked, login, off. */
+    private fun deny(res: HttpResponder, code: Int, text: String, why: String) =
+        res.bytes(code, "text/plain; charset=utf-8", text.toByteArray(Charsets.UTF_8), mapOf("X-Akis-Access" to why, "Cache-Control" to "no-store"))
 
     // ---------------- Uzaktan erişim (Cloudflare Tunnel) ----------------
 
@@ -196,13 +201,13 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         val p = req.path
         val m = req.method
         if (!s.remoteOn) {
-            res.text(403, Lang.s(R.string.http_remote_blocked))
+            deny(res, 403, Lang.s(R.string.http_remote_blocked), "off")
             return false
         }
         val never = p == "/desc.xml" || p == "/cd.xml" || p == "/cm.xml" || p.startsWith("/ctl/") || p.startsWith("/evt/") ||
             p.startsWith("/admin/") || m == "SUBSCRIBE" || m == "UNSUBSCRIBE" || m == "NOTIFY"
         if (never) {
-            res.text(403, Lang.s(R.string.http_remote_blocked))
+            deny(res, 403, Lang.s(R.string.http_remote_blocked), "off")
             return false
         }
         if (p == "/icon.png" || p == "/icon48.png" || p.startsWith("/static/") || p.startsWith("/share/") || p.startsWith("/drop/")) return true
@@ -212,10 +217,11 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         }
         if (!RemoteAuth.valid(req.headers["cookie"])) {
             if (m == "GET" && (p == "/" || p == "/index.html")) res.send(303, null, 0, mapOf("Location" to "/rlogin"))
-            else res.text(401, Lang.s(R.string.http_pin_required))
+            else deny(res, 401, Lang.s(R.string.http_pin_required), "login")
             return false
         }
         val denied = p.startsWith("/m/live") ||
+            (p == "/api/fs" && !s.remoteFileOps) ||
             ((p == "/api/notifs" || p == "/nicon") && !s.remoteNotifs) ||
             ((p == "/api/inbox" || p.startsWith("/inbox/")) && !s.remoteInbox) ||
             (p == "/live/screen" && !s.remoteScreen) ||
@@ -225,7 +231,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             ((p == "/api/apps" || p == "/appicon" || p == "/apk") && !s.remoteApps) ||
             (m == "PUT" && !s.remoteUpload)
         if (denied) {
-            res.text(403, Lang.s(R.string.http_remote_blocked))
+            deny(res, 403, Lang.s(R.string.http_remote_blocked), "off")
             return false
         }
         return true

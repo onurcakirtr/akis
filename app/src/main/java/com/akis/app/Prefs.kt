@@ -86,6 +86,8 @@ data class Settings(
     val remoteUpload: Boolean,
     val remoteWarned: Boolean,      // uyarı penceresi onaylandı
     val adminHash: String,          // yönetici şifresi "tuz:pbkdf2" (boşsa belirlenmemiş)
+    val fileOps: Boolean,           // Tüm dosyalar: oluştur / yeniden adlandır / taşı / kopyala / sil (Alış ve web)
+    val remoteFileOps: Boolean,
 )
 
 /** Basit, senkron ayar deposu. Değişiklikler StateFlow ile UI'ye ve servise yansır. */
@@ -181,6 +183,8 @@ object Prefs {
         remoteUpload = sp.getBoolean("remoteUpload", false),
         remoteWarned = sp.getBoolean("remoteWarned", false),
         adminHash = sp.getString("adminHash", "") ?: "",
+        fileOps = sp.getBoolean("fileOps", false),
+        remoteFileOps = sp.getBoolean("remoteFileOps", false),
     )
 
     fun update(block: SharedPreferences.Editor.() -> Unit) {

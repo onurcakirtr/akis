@@ -403,6 +403,13 @@ fun SettingsScreen() {
                             Text(stringResource(R.string.allfiles_upnp), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                             Switch(s.allFilesUpnp, { v -> Prefs.set("allFilesUpnp", v) })
                         }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(stringResource(R.string.f_fileops), style = MaterialTheme.typography.bodyMedium)
+                                Text(stringResource(R.string.f_fileops_sub), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                            Switch(s.fileOps, { v -> Prefs.set("fileOps", v) })
+                        }
                         if (filesGranted) {
                             Text(stringResource(R.string.allfiles_granted), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.primary)
                         } else {
@@ -624,6 +631,7 @@ fun SettingsScreen() {
                             Text(stringResource(R.string.remote_allow), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             listOf(
                                 Triple("remoteUpload", stringResource(R.string.f_upload), s.remoteUpload),
+                                Triple("remoteFileOps", stringResource(R.string.f_fileops), s.remoteFileOps),
                                 Triple("remoteCamera", stringResource(R.string.f_camera), s.remoteCamera),
                                 Triple("remoteStatus", stringResource(R.string.f_status), s.remoteStatus),
                                 Triple("remoteApps", stringResource(R.string.f_apps), s.remoteApps),

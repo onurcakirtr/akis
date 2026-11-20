@@ -120,6 +120,8 @@
     <string name="f_admin">Manage from the web</string>
     <string name="f_admin_sub">Change settings from a computer with a separate password + approval on the phone</string>
     <string name="f_allfiles">All files</string>
+    <string name="f_fileops">File management</string>
+    <string name="f_fileops_sub">Let apps like Alış create, rename, move, copy and delete files in All files</string>
     <string name="f_allfiles_sub">Share the whole phone storage (internal, SD card, USB), like a file server</string>
     <string name="f_approval">Device approval</string>
     <string name="f_approval_sub">Ask on the phone (\"Allow / Block\") when a new device connects</string>

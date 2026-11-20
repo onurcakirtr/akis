@@ -119,6 +119,8 @@
     <string name="f_admin">Web\'den yönetim</string>
     <string name="f_admin_sub">Ayrı bir şifre + telefonda onayla bilgisayardan ayarları değiştir</string>
     <string name="f_allfiles">Tüm dosyalar</string>
+    <string name="f_fileops">Dosya yönetimi</string>
+    <string name="f_fileops_sub">Alış gibi uygulamalar Tüm dosyalar\'da klasör oluşturabilsin, yeniden adlandırabilsin, taşıyıp kopyalayabilsin ve silebilsin</string>
     <string name="f_allfiles_sub">Telefonun tüm depolamasını (dahili, SD kart, USB) bir dosya sunucusu gibi paylaş</string>
     <string name="f_approval">Cihaz onayı</string>
     <string name="f_approval_sub">Yeni bir cihaz bağlanınca telefona \"İzin ver / Engelle\" sorulsun</string>
