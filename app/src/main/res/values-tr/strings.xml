@@ -124,7 +124,7 @@
     <string name="pair_req_text">%1$s adresindeki Alış. Eşleşen cihazlar onay ve PIN beklemez.</string>
     <string name="pair_deny">Reddet</string>
     <string name="pair_auto">Bu ağa güveniyorum</string>
-    <string name="pair_auto_sub">Alış eşleştirme isteklerini sormadan kabul et. Bu Wi-Fi'daki Alış olan herkes eşleşebilir.</string>
+    <string name="pair_auto_sub">Alış eşleştirme isteklerini sormadan kabul et. Bu Wi-Fi\'daki Alış olan herkes eşleşebilir.</string>
     <string name="pair_title">Alış cihazları</string>
     <string name="pair_sub">Başka bir telefon, tablet ya da TV\'deki Alış uygulamasını eşleştir. Eşleşen cihazlar yerel ağda onay ve PIN beklemez.</string>
     <string name="pair_add">Alış\'ı eşleştir</string>

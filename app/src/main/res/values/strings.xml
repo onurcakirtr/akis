@@ -135,7 +135,7 @@
     <string name="pair_last">Last seen %1$s</string>
     <string name="pair_remove">Unpair</string>
     <string name="pair_code_title">Pairing code</string>
-    <string name="pair_code_hint">Use this only if the approval notification doesn't work: in Alış choose Pair with code, then scan the QR code or type the code. Valid for 5 minutes, one device.</string>
+    <string name="pair_code_hint">Use this only if the approval notification doesn\'t work: in Alış choose Pair with code, then scan the QR code or type the code. Valid for 5 minutes, one device.</string>
     <string name="f_fileops">File management</string>
     <string name="f_fileops_sub">Let paired Alış devices create, rename, move, copy and delete files in All files (each device needs its own permission under Alış devices)</string>
     <string name="f_allfiles_sub">Share the whole phone storage (internal, SD card, USB), like a file server</string>
