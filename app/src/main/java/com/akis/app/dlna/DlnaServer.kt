@@ -97,12 +97,19 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         return mbit * 125_000L
     }
 
+    /** İstek Alış'tan mı: eşleşmiş cihaz anahtarı ya da Alış'ın kendini tanıttığı User-Agent ("Alis/…"). */
+    private fun fromAlis(req: HttpRequest): Boolean =
+        Pairing.byAuth(req.headers["authorization"]) != null || (req.headers["user-agent"] ?: "").startsWith("Alis/")
+
     private fun handle(req: HttpRequest, res: HttpResponder) {
         ServerState.touchClient(req.remote, req.headers["user-agent"] ?: "")
         val base = req.headers["host"]?.let { "http://$it" } ?: ServerState.address.value ?: "http://127.0.0.1:$port"
         val p = req.path
         val settings = Prefs.current
         if (!checkAccess(req, res, settings)) return
+        // Web arayüzü düğmesi yalnızca tarayıcıdaki siteyi kapatır; Alış (yerel uygulama) yine çalışır.
+        // Erişim denetimi (onay, PIN, uzaktan giriş, engel) yukarıda zaten uygulandı.
+        val web = settings.webUi || fromAlis(req)
         when (req.method) {
             "GET", "HEAD" -> when {
                 p == "/desc.xml" -> res.xml(Xml.device(settings.name, uuid, base, ServerIcon.version(ctx)))
@@ -121,7 +128,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                 }
                 p.startsWith("/share/") -> webApi.share(req, res)
                 p.startsWith("/drop/") -> drop(req, res)
-                !settings.webUi -> res.text(403, Lang.s(R.string.http_web_off))
+                !web -> res.text(403, Lang.s(R.string.http_web_off))
                 adminApi.handle(req, res) -> Unit
                 webApi.handle(req, res) -> Unit
                 else -> res.text(404, Lang.s(R.string.http_not_found))
@@ -129,14 +136,14 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             "POST" -> when {
                 p == "/h" -> webProgress(req, res)
                 p == "/pair" || p.startsWith("/pair/") -> pairRequest(req, res)
-                p == "/zipsel" && settings.webUi -> webApi.zipSelection(req, res)
-                p == "/api/fs" && settings.webUi -> if (webApi.fileOp(req, res)) contentChanged()
-                p.startsWith("/admin/") && settings.webUi -> adminApi.handle(req, res)
+                p == "/zipsel" && web -> webApi.zipSelection(req, res)
+                p == "/api/fs" && web -> if (webApi.fileOp(req, res)) contentChanged()
+                p.startsWith("/admin/") && web -> adminApi.handle(req, res)
                 else -> control(req, res, base)
             }
             "PUT" -> when {
                 p.startsWith("/drop/") -> drop(req, res)
-                p.startsWith("/yukle/") && settings.upload && settings.webUi -> upload(req, res)
+                p.startsWith("/yukle/") && settings.upload && web -> upload(req, res)
                 else -> res.text(403, Lang.s(R.string.http_upload_off))
             }
             "SUBSCRIBE" -> gena.subscribe(req, res)
