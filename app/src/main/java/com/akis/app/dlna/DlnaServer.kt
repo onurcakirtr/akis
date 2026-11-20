@@ -97,12 +97,19 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         return mbit * 125_000L
     }
 
+    /** Alış'ın cihaz adı: eşleşmişse Akış'ta kayıtlı ad, değilse Alış'ın gönderdiği X-Alis-Name (URL kodlu). */
+    private fun alisName(req: HttpRequest): String? {
+        Pairing.byAuth(req.headers["authorization"])?.let { return it.name }
+        if ((req.headers["user-agent"] ?: "").startsWith("Alis/").not()) return null
+        return req.headers["x-alis-name"]?.let { runCatching { decode(it) }.getOrNull() } ?: ""
+    }
+
     /** İstek Alış'tan mı: eşleşmiş cihaz anahtarı ya da Alış'ın kendini tanıttığı User-Agent ("Alis/…"). */
     private fun fromAlis(req: HttpRequest): Boolean =
         Pairing.byAuth(req.headers["authorization"]) != null || (req.headers["user-agent"] ?: "").startsWith("Alis/")
 
     private fun handle(req: HttpRequest, res: HttpResponder) {
-        ServerState.touchClient(req.remote, req.headers["user-agent"] ?: "")
+        ServerState.touchClient(req.remote, req.headers["user-agent"] ?: "", alisName(req))
         val base = req.headers["host"]?.let { "http://$it" } ?: ServerState.address.value ?: "http://127.0.0.1:$port"
         val p = req.path
         val settings = Prefs.current

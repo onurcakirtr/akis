@@ -29,6 +29,7 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.SportsEsports
+import androidx.compose.material.icons.rounded.ConnectedTv
 import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material.icons.rounded.Upload
 import androidx.compose.material.icons.rounded.Warning
@@ -645,6 +646,7 @@ private fun DeviceAction(icon: androidx.compose.ui.graphics.vector.ImageVector, 
 @Composable
 private fun ClientRow(c: ClientInfo, now: Long, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val icon = when {
+        c.alis -> Icons.Rounded.ConnectedTv
         c.name.contains("TV") -> Icons.Rounded.Tv
         c.name == "VLC" || c.name == "Kodi" -> Icons.Rounded.PlayArrow
         c.name == "Windows" -> Icons.Rounded.Computer
@@ -660,7 +662,13 @@ private fun ClientRow(c: ClientInfo, now: Long, modifier: Modifier = Modifier, o
     }
     ExpressiveCard(modifier = modifier, onClick = onClick) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            IconBadge(icon, bg = MaterialTheme.colorScheme.tertiaryContainer, tint = MaterialTheme.colorScheme.onTertiaryContainer, size = 44.dp)
+            // Alış cihazları ana renkte: diğer istemcilerden (TV, VLC, tarayıcı) ayrılsın
+            IconBadge(
+                icon,
+                bg = if (c.alis) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiaryContainer,
+                tint = if (c.alis) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onTertiaryContainer,
+                size = 44.dp,
+            )
             Gap(14.dp)
             Column(Modifier.weight(1f)) {
                 Text(c.name, style = MaterialTheme.typography.titleMedium)

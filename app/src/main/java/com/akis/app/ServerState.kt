@@ -11,6 +11,8 @@ data class ClientInfo(
     val userAgent: String,
     val firstSeen: Long,
     val lastSeen: Long,
+    /** Alış uygulaması (adı Alış'ın ayarlarındaki cihaz adı) */
+    val alis: Boolean = false,
 )
 
 data class StreamInfo(
@@ -85,18 +87,21 @@ object ServerState {
         if (n > 0) bytesSent.update { it + n }
     }
 
-    fun touchClient(ip: String, ua: String) {
-        val name = friendlyName(ua)
+    /** @param alisName Alış'ın kendi bildirdiği (ya da eşleşmede kaydedilen) cihaz adı */
+    fun touchClient(ip: String, ua: String, alisName: String? = null) {
+        val alis = alisName != null || ua.startsWith("Alis/")
+        val name = if (alis) "Alış • " + (alisName?.trim()?.takeIf { it.isNotEmpty() }?.take(40) ?: "Android") else friendlyName(ua)
         var isNew = false
         clients.update { list ->
             val i = list.indexOfFirst { it.ip == ip }
             if (i < 0) {
                 isNew = true
-                list + ClientInfo(ip, name, ua, now(), now())
+                list + ClientInfo(ip, name, ua, now(), now(), alis)
             } else {
                 val c = list[i]
-                val better = if (c.name == GENERIC && name != GENERIC) name else c.name
-                list.toMutableList().also { it[i] = c.copy(name = better, lastSeen = now()) }
+                // Alış adı her zaman güncel tutulur (ayarlarda değişebilir)
+                val better = if (alis) name else if (c.name == GENERIC && name != GENERIC) name else c.name
+                list.toMutableList().also { it[i] = c.copy(name = better, lastSeen = now(), alis = c.alis || alis) }
             }
         }
         if (isNew) log(Lang.s(R.string.log_new_device, name, ip))
