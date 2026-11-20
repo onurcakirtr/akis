@@ -57,7 +57,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             p == "/" || p == "/index.html" -> res.html(shell(req.tunnel, look))
             p.startsWith("/static/") -> static(p.removePrefix("/static/"), res)
             p == "/manifest.webmanifest" -> if (Prefs.current.pwa) manifest(res) else res.text(404, Lang.s(R.string.http_not_found))
-            p == "/api/conf" -> json(res, conf(req.tunnel).put("api", 1))
+            p == "/api/conf" -> json(res, conf(req.tunnel, com.akis.app.Pairing.byAuth(req.headers["authorization"])).put("api", 1))
             p == "/api/home" -> json(res, home())
             p == "/api/list" -> json(res, list(param(req, "id").ifEmpty { "0" }))
             p == "/api/search" -> json(res, JSONObject().put("items", items(lib.search(param(req, "q"), limit = 300))))
@@ -133,7 +133,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
     }
 
     /** İstemcinin (web, Alış) göreceği yapılandırma: açık özellikler. /api/conf ve window.AKIS aynı kaynaktan. */
-    fun conf(remote: Boolean): JSONObject {
+    fun conf(remote: Boolean, device: com.akis.app.Pairing.Device? = null): JSONObject {
         val s = Prefs.current
         return JSONObject()
             .put("name", s.name)
@@ -159,14 +159,17 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
             .put("langs", JSONArray().also { a -> Lang.SUPPORTED.forEach { a.put(JSONArray().put(it.first).put(it.second)) } })
             .put("themes", JSONArray().also { a -> WebUi.themeNames().forEach { a.put(JSONArray().put(it.first).put(it.second)) } })
             .put("uploadTarget", if (s.uploadFolder.isEmpty()) Lang.s(R.string.downloads_dir, Uploads.DEFAULT_DIR) else MediaLibrary.treeName(ctx, s.uploadFolder))
-            .put("fileOps", fileOpsOn(remote))
+            .put("fileOps", fileOpsOn(remote, device))
+            .put("fileOpsSwitch", s.fileOps && filesOn())
+            .put("paired", device != null)
             .put("fileReq", s.fileReq)
             .put("pin", s.webPin.isNotEmpty())
     }
 
-    fun fileOpsOn(remote: Boolean): Boolean {
+    /** Dosya yönetimi yalnızca eşleşmiş ve bu cihaz için izin verilmiş Alış'a açıktır (web tarayıcılarına değil). */
+    fun fileOpsOn(remote: Boolean, device: com.akis.app.Pairing.Device?): Boolean {
         val s = Prefs.current
-        return s.fileOps && filesOn() && (!remote || s.remoteFileOps)
+        return s.fileOps && filesOn() && device?.fileOps == true && (!remote || s.remoteFileOps)
     }
 
     private fun shell(remote: Boolean, look: Look): String {
@@ -741,7 +744,9 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
         fun out(code: Int, o: JSONObject) =
             res.bytes(code, "application/json; charset=utf-8", o.toString().toByteArray(Charsets.UTF_8), mapOf("Cache-Control" to "no-store"))
         fun err(code: Int, e: String): Boolean { out(code, JSONObject().put("ok", false).put("e", e)); return false }
-        if (!fileOpsOn(req.tunnel)) return err(403, "off")
+        val device = com.akis.app.Pairing.byAuth(req.headers["authorization"]) ?: return err(403, "pair")
+        if (!device.fileOps) return err(403, "device")
+        if (!fileOpsOn(req.tunnel, device)) return err(403, "off")
         if (req.headers["x-akis"] != "1") return err(403, "header")
         val body = try { JSONObject(String(req.body, Charsets.UTF_8)) } catch (_: Exception) { return err(400, "bad") }
         val op = body.optString("op")
@@ -803,7 +808,7 @@ class WebApi(private val ctx: Context, private val lib: MediaLibrary) {
         }
         if (touched.isNotEmpty()) {
             runCatching { android.media.MediaScannerConnection.scanFile(ctx, touched.toTypedArray(), null, null) }
-            ServerState.log("📁 $op (${touched.size}) ← ${ServerState.clientName(req.remote)}")
+            ServerState.log("📁 $op (${touched.size}) ← ${device.name}")
         }
         out(200, JSONObject().put("ok", failed == 0).put("failed", failed))
         return touched.isNotEmpty()

@@ -558,6 +558,9 @@ fun SettingsScreen() {
             }
         }
 
+        item { SectionTitle(stringResource(R.string.sec_alis)) }
+        item { PairingCard() }
+
         item { SectionTitle(stringResource(R.string.sec_remote)) }
         item {
             ExpressiveCard(color = MaterialTheme.colorScheme.errorContainer) {

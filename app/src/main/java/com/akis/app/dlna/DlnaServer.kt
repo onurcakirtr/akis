@@ -2,6 +2,7 @@ package com.akis.app.dlna
 
 import android.content.Context
 import com.akis.app.DeviceAccess
+import com.akis.app.Pairing
 import com.akis.app.FileAccess
 import com.akis.app.Lang
 import com.akis.app.R
@@ -127,6 +128,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             }
             "POST" -> when {
                 p == "/h" -> webProgress(req, res)
+                p == "/pair" -> pairRequest(req, res)
                 p == "/zipsel" && settings.webUi -> webApi.zipSelection(req, res)
                 p == "/api/fs" && settings.webUi -> if (webApi.fileOp(req, res)) contentChanged()
                 p.startsWith("/admin/") && settings.webUi -> adminApi.handle(req, res)
@@ -164,6 +166,8 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             return false
         }
         if (req.tunnel) return remoteAccess(req, res, settings)
+        // Eşleşmiş Alış: yerel ağda onay / PIN gerekmez
+        if (p == "/pair" || Pairing.byAuth(req.headers["authorization"]) != null) return true
         if (p in openPaths || p.startsWith("/static/") || p.startsWith("/share/") || p.startsWith("/drop/") || iconSize(p) != null) return true
         if (p == "/pin") {
             pinLogin(req, res, settings)
@@ -204,7 +208,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             deny(res, 403, Lang.s(R.string.http_remote_blocked), "off")
             return false
         }
-        val never = p == "/desc.xml" || p == "/cd.xml" || p == "/cm.xml" || p.startsWith("/ctl/") || p.startsWith("/evt/") ||
+        val never = p == "/pair" || p == "/desc.xml" || p == "/cd.xml" || p == "/cm.xml" || p.startsWith("/ctl/") || p.startsWith("/evt/") ||
             p.startsWith("/admin/") || m == "SUBSCRIBE" || m == "UNSUBSCRIBE" || m == "NOTIFY"
         if (never) {
             deny(res, 403, Lang.s(R.string.http_remote_blocked), "off")
@@ -345,6 +349,18 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
     }
 
     /** Web oynatıcının bildirdiği konum: /h?id=…&t=saniye&d=saniye */
+    /** POST /pair {"code":"123456","name":"Salon TV"} → {"ok":true,"token":"…","id":"…","name":"Akış • …","uuid":"…"} */
+    private fun pairRequest(req: HttpRequest, res: HttpResponder) {
+        val b = runCatching { org.json.JSONObject(String(req.body, Charsets.UTF_8)) }.getOrDefault(org.json.JSONObject())
+        val r = Pairing.pair(b.optString("code"), b.optString("name"))
+        val o = if (r == null) org.json.JSONObject().put("ok", false)
+        else {
+            ServerState.log("🔗 ${r.first.name}")
+            org.json.JSONObject().put("ok", true).put("token", r.second).put("id", r.first.id).put("name", Prefs.current.name).put("uuid", uuid)
+        }
+        res.bytes(if (r == null) 403 else 200, "application/json; charset=utf-8", o.toString().toByteArray(Charsets.UTF_8), mapOf("Cache-Control" to "no-store"))
+    }
+
     private fun webProgress(req: HttpRequest, res: HttpResponder) {
         val id = queryParam(req.query, "id")
         val t = queryParam(req.query, "t").toDoubleOrNull()

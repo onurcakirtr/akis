@@ -29,6 +29,7 @@ class AkisApplication : Application() {
         WebUi.themeNames = { Themes.ALL.map { it.id to Lang.s(it.name) } }
         WatchHistory.init(this)
         DeviceAccess.init(this)
+        Pairing.init(this)
         QuickShare.init(this)
         FileRequests.init(this)
         Inbox.init(this)
