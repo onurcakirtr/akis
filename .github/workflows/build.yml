@@ -26,9 +26,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Build APK
-        run: chmod +x gradlew && ./gradlew assembleRelease --no-daemon
+        run: chmod +x gradlew && ./gradlew assembleStandardRelease assembleFullRelease --no-daemon
 
       - uses: actions/upload-artifact@v4
         with:
           name: Akis-apk
-          path: app/build/outputs/apk/release/*.apk
+          path: app/build/outputs/apk/*/release/*.apk

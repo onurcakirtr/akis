@@ -452,92 +452,104 @@ fun SettingsScreen() {
                     Icons.Rounded.BatteryStd, stringResource(R.string.f_status), stringResource(R.string.f_status_sub), s.phoneStatus, divider = true,
                     extra = { Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 ) { Prefs.set("phoneStatus", it) }
-                FeatureRow(
-                    Icons.Rounded.Apps, stringResource(R.string.f_apps), stringResource(R.string.f_apps_sub), s.appsList, divider = true,
-                    extra = {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.apps_system), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                            Switch(s.appsSystem, { v -> Prefs.set("appsSystem", v) })
+                if (Prefs.full) {
+                    FeatureRow(
+                        Icons.Rounded.Apps, stringResource(R.string.f_apps), stringResource(R.string.f_apps_sub), s.appsList, divider = true,
+                        extra = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(stringResource(R.string.apps_system), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                Switch(s.appsSystem, { v -> Prefs.set("appsSystem", v) })
+                            }
+                            Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                    ) { Prefs.set("appsList", it) }
+                }
+                if (Prefs.full) {
+                    FeatureRow(
+                        Icons.Rounded.Videocam, stringResource(R.string.f_camera), stringResource(R.string.f_camera_sub), s.camera, divider = true,
+                        extra = {
+                            Segmented(
+                                options = listOf("back" to stringResource(R.string.cam_back), "front" to stringResource(R.string.cam_front)),
+                                selected = if (s.camFront) "front" else "back",
+                            ) { v -> Prefs.set("camFront", v == "front") }
+                            Segmented(
+                                options = listOf("480" to "480p", "720" to "720p"),
+                                selected = s.camHeight.toString(),
+                            ) { v -> Prefs.update { putInt("camHeight", v.toInt()) } }
+                            Text(stringResource(R.string.cam_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                    ) { on ->
+                        if (on && ctx.checkSelfPermission(android.Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                            camPerm.launch(android.Manifest.permission.CAMERA)
+                        } else {
+                            Prefs.set("camera", on)
                         }
-                        Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    },
-                ) { Prefs.set("appsList", it) }
-                FeatureRow(
-                    Icons.Rounded.Videocam, stringResource(R.string.f_camera), stringResource(R.string.f_camera_sub), s.camera, divider = true,
-                    extra = {
-                        Segmented(
-                            options = listOf("back" to stringResource(R.string.cam_back), "front" to stringResource(R.string.cam_front)),
-                            selected = if (s.camFront) "front" else "back",
-                        ) { v -> Prefs.set("camFront", v == "front") }
-                        Segmented(
-                            options = listOf("480" to "480p", "720" to "720p"),
-                            selected = s.camHeight.toString(),
-                        ) { v -> Prefs.update { putInt("camHeight", v.toInt()) } }
-                        Text(stringResource(R.string.cam_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    },
-                ) { on ->
-                    if (on && ctx.checkSelfPermission(android.Manifest.permission.CAMERA) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                        camPerm.launch(android.Manifest.permission.CAMERA)
-                    } else {
-                        Prefs.set("camera", on)
                     }
                 }
-                FeatureRow(
-                    Icons.Rounded.Smartphone, stringResource(R.string.f_screen), stringResource(R.string.f_screen_sub), s.screen, divider = true,
-                    extra = { Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                ) { Prefs.set("screen", it) }
-                FeatureRow(
-                    Icons.Rounded.Mic, stringResource(R.string.f_mic), stringResource(R.string.f_mic_sub), s.mic, divider = true,
-                    extra = {
-                        Text(stringResource(R.string.cam_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    },
-                ) { on ->
-                    if (on && ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
-                        micPerm.launch(android.Manifest.permission.RECORD_AUDIO)
-                    } else {
-                        Prefs.set("mic", on)
+                if (Prefs.full) {
+                    FeatureRow(
+                        Icons.Rounded.Smartphone, stringResource(R.string.f_screen), stringResource(R.string.f_screen_sub), s.screen, divider = true,
+                        extra = { Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                    ) { Prefs.set("screen", it) }
+                }
+                if (Prefs.full) {
+                    FeatureRow(
+                        Icons.Rounded.Mic, stringResource(R.string.f_mic), stringResource(R.string.f_mic_sub), s.mic, divider = true,
+                        extra = {
+                            Text(stringResource(R.string.cam_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                    ) { on ->
+                        if (on && ctx.checkSelfPermission(android.Manifest.permission.RECORD_AUDIO) != android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                            micPerm.launch(android.Manifest.permission.RECORD_AUDIO)
+                        } else {
+                            Prefs.set("mic", on)
+                        }
                     }
                 }
-                FeatureRow(
-                    Icons.Rounded.LiveTv, stringResource(R.string.f_live_upnp), stringResource(R.string.f_live_upnp_sub), s.liveUpnp, divider = true,
-                    extra = {
-                        Text(stringResource(R.string.live_hd), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Segmented(listOf("720" to "720p", "1080" to "1080p"), s.liveRes.toString()) { v -> Prefs.update { putInt("liveRes", v.toInt()) } }
-                        Segmented(
-                            listOf("low" to stringResource(R.string.live_q_low), "mid" to stringResource(R.string.live_q_mid), "high" to stringResource(R.string.live_q_high)),
-                            s.liveBitrate,
-                        ) { v -> Prefs.update { putString("liveBitrate", v) } }
-                        Text(stringResource(R.string.live_hd_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    },
-                ) { Prefs.set("liveUpnp", it) }
+                if (Prefs.full) {
+                    FeatureRow(
+                        Icons.Rounded.LiveTv, stringResource(R.string.f_live_upnp), stringResource(R.string.f_live_upnp_sub), s.liveUpnp, divider = true,
+                        extra = {
+                            Text(stringResource(R.string.live_hd), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Segmented(listOf("720" to "720p", "1080" to "1080p"), s.liveRes.toString()) { v -> Prefs.update { putInt("liveRes", v.toInt()) } }
+                            Segmented(
+                                listOf("low" to stringResource(R.string.live_q_low), "mid" to stringResource(R.string.live_q_mid), "high" to stringResource(R.string.live_q_high)),
+                                s.liveBitrate,
+                            ) { v -> Prefs.update { putString("liveBitrate", v) } }
+                            Text(stringResource(R.string.live_hd_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                    ) { Prefs.set("liveUpnp", it) }
+                }
                 FeatureRow(
                     Icons.Rounded.NotificationsActive, stringResource(R.string.f_ring), stringResource(R.string.f_ring_sub), s.ring, divider = true,
                     extra = { if (!s.adminOn) Text(stringResource(R.string.ring_need_admin), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error) },
                 ) { Prefs.set("ring", it) }
                 FeatureRow(Icons.Rounded.QrCode2, stringResource(R.string.f_qrcard), stringResource(R.string.f_qrcard_sub), s.qrCard, divider = true) { Prefs.set("qrCard", it) }
                 FeatureRow(Icons.Rounded.Wifi, stringResource(R.string.f_wifiqr), stringResource(R.string.f_wifiqr_sub), s.wifiQr, divider = true) { Prefs.set("wifiQr", it) }
-                FeatureRow(
-                    Icons.Rounded.Notifications, stringResource(R.string.f_notifs), stringResource(R.string.f_notifs_sub), s.notifs, divider = true,
-                    extra = {
-                        if (!com.akis.app.NotifMirror.granted(ctx)) {
-                            Text(stringResource(R.string.notifs_need), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
-                            FilledTonalButton(onClick = {
-                                runCatching { ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
-                            }) { Text(stringResource(R.string.notifs_grant)) }
+                if (Prefs.full) {
+                    FeatureRow(
+                        Icons.Rounded.Notifications, stringResource(R.string.f_notifs), stringResource(R.string.f_notifs_sub), s.notifs, divider = true,
+                        extra = {
+                            if (!com.akis.app.NotifMirror.granted(ctx)) {
+                                Text(stringResource(R.string.notifs_need), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                                FilledTonalButton(onClick = {
+                                    runCatching { ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
+                                }) { Text(stringResource(R.string.notifs_grant)) }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(stringResource(R.string.notifs_title_only), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+                                Switch(s.notifsTitleOnly, { v -> Prefs.set("notifsTitleOnly", v) })
+                            }
+                            Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        },
+                    ) { on ->
+                        Prefs.set("notifs", on)
+                        if (on) com.akis.app.NotifMirror.rebind(ctx) else com.akis.app.NotifMirror.clear()
+                        if (on && !com.akis.app.NotifMirror.granted(ctx)) {
+                            runCatching { ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(stringResource(R.string.notifs_title_only), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
-                            Switch(s.notifsTitleOnly, { v -> Prefs.set("notifsTitleOnly", v) })
-                        }
-                        Text(stringResource(R.string.sensitive_note), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    },
-                ) { on ->
-                    Prefs.set("notifs", on)
-                    if (on) com.akis.app.NotifMirror.rebind(ctx) else com.akis.app.NotifMirror.clear()
-                    if (on && !com.akis.app.NotifMirror.granted(ctx)) {
-                        runCatching { ctx.startActivity(android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) }
                     }
                 }
                 FeatureRow(Icons.Rounded.Inbox, stringResource(R.string.f_inbox_web), stringResource(R.string.f_inbox_web_sub), s.inboxWeb, divider = true) { Prefs.set("inboxWeb", it) }
@@ -632,6 +644,7 @@ fun SettingsScreen() {
                             }
                             if (s.totpSecret.isEmpty()) Text(stringResource(R.string.remote_totp_hint), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                             Text(stringResource(R.string.remote_allow), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            val sensitive = setOf("remoteCamera", "remoteApps", "remoteScreen", "remoteNotifs", "remoteMic")
                             listOf(
                                 Triple("remoteUpload", stringResource(R.string.f_upload), s.remoteUpload),
                                 Triple("remoteFileOps", stringResource(R.string.f_fileops), s.remoteFileOps),
@@ -642,7 +655,7 @@ fun SettingsScreen() {
                                 Triple("remoteNotifs", stringResource(R.string.f_notifs_short), s.remoteNotifs),
                                 Triple("remoteInbox", stringResource(R.string.f_inbox_short), s.remoteInbox),
                                 Triple("remoteMic", stringResource(R.string.f_mic_short), s.remoteMic),
-                            ).forEach { (key, label, on) ->
+                            ).filter { Prefs.full || it.first !in sensitive }.forEach { (key, label, on) ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(label, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                                     Switch(on, { v -> Prefs.set(key, v) })

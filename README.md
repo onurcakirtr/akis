@@ -139,9 +139,21 @@ English and Turkish; every browser can choose its own.
 
 ## 🚀 Install
 
-1. Download the latest **`Akis-x.y.z.apk`** from [**Releases**](https://github.com/onurcakirtr/akis/releases/latest).
+1. Download the latest APK from [**Releases**](https://github.com/onurcakirtr/akis/releases/latest):
+
+   | File | What's inside |
+   |---|---|
+   | **`Akis-x.y.z.apk`** — *recommended* | Everything except the features below |
+   | **`Akis-Full-x.y.z.apk`** | Also live camera, microphone, screen sharing, notification mirroring and installed apps |
+
 2. Open it on your phone and allow installing from this source.
 3. Open Akış — the short tour explains the rest.
+
+Both editions use the same package, so Full can be installed over the standard one (and back).
+
+> [!IMPORTANT]
+> **Google Play Protect** checks every app that isn't from the Play Store. Akış is open source (GPL-3.0) and signed with the same key on every release, but Play Protect may still show a warning — more likely for **Full**, because camera, microphone, screen capture and notification access together look like monitoring apps to an automatic scan.
+> If you see a warning, tap **More details → Install anyway**. The code that runs is exactly what you see in this repository; every APK is built by GitHub Actions from it.
 
 **Requirements:** Android 10 or newer. Remote access needs a 64-bit ARM phone (almost all phones from the last years).
 
@@ -153,10 +165,10 @@ English and Turkish; every browser can choose its own.
 3. Press ▶ Run with your phone connected, or `Build → Build APK(s)`.
 
 ```bash
-./gradlew assembleRelease
+./gradlew assembleStandardRelease assembleFullRelease
 ```
 
-The APK is in `app/build/outputs/apk/release/`.
+The APKs are in `app/build/outputs/apk/standard/release/` and `…/full/release/`. In Android Studio pick the edition under *Build Variants* (`standardDebug` / `fullDebug`).
 </details>
 
 ## 🧭 Quick start
@@ -235,7 +247,7 @@ flowchart LR
 </details>
 
 <details open>
-<summary><b>📱 Phone tools (all off by default)</b></summary>
+<summary><b>📱 Phone tools (all off by default; camera, microphone, screen, notifications and apps need the Full edition)</b></summary>
 
 - Phone status: battery, temperature, storage, memory, Wi-Fi
 - Installed apps with APK download (split APKs as `.apks`)
@@ -480,9 +492,21 @@ Türkçe ve İngilizce; her tarayıcı kendi dilini seçebilir.
 
 ## 🚀 Kurulum
 
-1. [**Releases**](https://github.com/onurcakirtr/akis/releases/latest) sayfasından en yeni **`Akis-x.y.z.apk`** dosyasını indir.
+1. [**Releases**](https://github.com/onurcakirtr/akis/releases/latest) sayfasından en yeni APK'yı indir:
+
+   | Dosya | İçinde ne var |
+   |---|---|
+   | **`Akis-x.y.z.apk`** — *önerilen* | Aşağıdakiler hariç her şey |
+   | **`Akis-Full-x.y.z.apk`** | Ek olarak canlı kamera, mikrofon, ekran paylaşımı, bildirim yansıtma ve yüklü uygulamalar |
+
 2. Telefonda aç, bu kaynaktan yüklemeye izin ver.
 3. Akış'ı aç — kısa tanıtım gerisini anlatır.
+
+İki sürümün paket adı aynı; Full, standardın üzerine kurulabilir (tersi de).
+
+> [!IMPORTANT]
+> **Google Play Protect**, Play Store dışından gelen her uygulamayı kontrol eder. Akış açık kaynaktır (GPL-3.0) ve her sürüm aynı anahtarla imzalanır; yine de Play Protect uyarı gösterebilir — özellikle **Full** için, çünkü kamera, mikrofon, ekran kaydı ve bildirim erişimi bir arada otomatik taramaya izleme uygulaması gibi görünür.
+> Uyarı çıkarsa **Ayrıntılar → Yine de yükle**'ye dokun. Çalışan kod tam olarak bu depoda gördüğün koddur; her APK GitHub Actions tarafından buradan derlenir.
 
 **Gereksinim:** Android 10 ya da üstü. Uzaktan erişim 64 bit ARM telefon ister (son yılların neredeyse tüm telefonları).
 
@@ -494,10 +518,10 @@ Türkçe ve İngilizce; her tarayıcı kendi dilini seçebilir.
 3. Telefon bağlıyken ▶ Run'a bas ya da `Build → Build APK(s)`.
 
 ```bash
-./gradlew assembleRelease
+./gradlew assembleStandardRelease assembleFullRelease
 ```
 
-APK `app/build/outputs/apk/release/` klasöründe olur.
+APK'lar `app/build/outputs/apk/standard/release/` ve `…/full/release/` klasörlerinde olur. Android Studio'da sürümü *Build Variants* penceresinden seç (`standardDebug` / `fullDebug`).
 </details>
 
 ## 🧭 Hızlı başlangıç
@@ -576,7 +600,7 @@ flowchart LR
 </details>
 
 <details open>
-<summary><b>📱 Telefon araçları (hepsi varsayılan kapalı)</b></summary>
+<summary><b>📱 Telefon araçları (hepsi varsayılan kapalı; kamera, mikrofon, ekran, bildirimler ve uygulamalar Full sürümde)</b></summary>
 
 - Telefon durumu: pil, sıcaklık, depolama, bellek, Wi-Fi
 - Yüklü uygulamalar ve APK indirme (parçalı APK'lar `.apks` olarak)

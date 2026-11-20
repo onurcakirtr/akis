@@ -45,6 +45,22 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
+    }
+    // İki sürüm: standart (hassas izinler yok; Play Protect'e daha az takılır) ve full (kamera, mikrofon, ekran,
+    // bildirim yansıtma, yüklü uygulamalar). Paket adı aynı: full, standardın üzerine kurulabilir.
+    flavorDimensions += "edition"
+    productFlavors {
+        create("standard") {
+            dimension = "edition"
+            isDefault = true
+            buildConfigField("boolean", "FULL", "false")
+        }
+        create("full") {
+            dimension = "edition"
+            versionNameSuffix = "-full"
+            buildConfigField("boolean", "FULL", "true")
+        }
     }
     // cloudflared (uzaktan erişim) çalıştırılabilmesi için yerel kütüphane klasörüne açılmalı
     packaging {

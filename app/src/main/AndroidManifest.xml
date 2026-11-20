@@ -10,13 +10,7 @@
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
-    <!-- Web'den canlı kamera (isteğe bağlı, Ayarlar'dan açılır) -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
+    <!-- Kamera, mikrofon, ekran, bildirim yansıtma ve yüklü uygulamalar yalnızca full sürümde: src/full/AndroidManifest.xml -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
@@ -25,10 +19,6 @@
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-    <!-- Web'de yüklü uygulamalar listesi (isteğe bağlı, Ayarlar'dan açılır) -->
-    <uses-permission
-        android:name="android.permission.QUERY_ALL_PACKAGES"
-        tools:ignore="QueryAllPackagesPermission" />
     <!-- "Tüm dosyalar" paylaşımı (isteğe bağlı, Ayarlar'dan açılır) -->
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
@@ -55,14 +45,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Ekran paylaşımı onayı (görünmez ara ekran) -->
-        <activity
-            android:name=".ui.ScreenConsentActivity"
-            android:exported="false"
-            android:excludeFromRecents="true"
-            android:taskAffinity=""
-            android:theme="@style/Theme.Akis.Overlay" />
-
         <!-- Paylaş → Akış: süreli indirme bağlantısı -->
         <activity
             android:name=".ui.ShareActivity"
@@ -81,7 +63,7 @@
         <service
             android:name=".service.DlnaService"
             android:exported="false"
-            android:foregroundServiceType="connectedDevice|camera|microphone|mediaProjection" />
+            android:foregroundServiceType="connectedDevice" />
 
         <!-- Android 12 ve altında seçilen uygulama dilini saklar -->
         <service
@@ -112,16 +94,6 @@
         <receiver
             android:name=".RingReceiver"
             android:exported="false" />
-
-        <service
-            android:name=".NotifListener"
-            android:exported="false"
-            android:label="@string/notif_listener"
-            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
-            <intent-filter>
-                <action android:name="android.service.notification.NotificationListenerService" />
-            </intent-filter>
-        </service>
 
         <receiver
             android:name=".widget.SmallWidget"
