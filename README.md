@@ -14,14 +14,14 @@
 ![UPnP](https://img.shields.io/badge/UPnP%20%2F%20DLNA-server-d71921?style=flat-square&labelColor=111)
 ![No ads](https://img.shields.io/badge/ads-none-555?style=flat-square&labelColor=111)
 
-**🇬🇧 English** (below) · **[🇹🇷 Türkçe için tıkla](#-türkçe)**
+**[🇬🇧 English](#-english)** · **[🇹🇷 Türkçe](#-türkçe)**
 
 </div>
 
 ---
 
-<details open>
-<summary><b>🇬🇧 English</b> — click to collapse</summary>
+<details open id="-english">
+<summary><b>🇬🇧 English</b></summary>
 
 <br>
 
@@ -144,7 +144,7 @@ English and Turkish; every browser can choose its own.
 
 **Requirements:** Android 10 or newer. Remote access needs a 64-bit ARM phone (almost all phones from the last years).
 
-<details>
+<details open>
 <summary><b>Build it yourself</b></summary>
 
 1. Install **Android Studio** and **JDK 25**.
@@ -191,7 +191,7 @@ flowchart LR
 
 ## 📚 Features in detail
 
-<details>
+<details open>
 <summary><b>📺 Library and UPnP / DLNA</b></summary>
 
 - Automatic discovery (SSDP) — no IP to type
@@ -207,7 +207,7 @@ flowchart LR
 - **Live folder:** camera, screen and microphone as live items; **HD** items (H.264 + AAC in MPEG-TS) play on TVs and VLC
 </details>
 
-<details>
+<details open>
 <summary><b>🎬 Web interface and player</b></summary>
 
 - Own player, built from scratch: the phone **remuxes** videos to fragmented MP4 on the fly and converts AC3/DTS audio to AAC
@@ -220,7 +220,7 @@ flowchart LR
 - Every browser picks its **own language, theme and light/dark mode** — by default it follows the phone
 </details>
 
-<details>
+<details open>
 <summary><b>📁 Files and sharing</b></summary>
 
 - Document preview (PDF, text, code, Markdown, JSON), look inside ZIPs, better thumbnails (APK icons, PDF first page, folder covers)
@@ -233,7 +233,7 @@ flowchart LR
 - **QR card:** a printable card with the name, addresses and Wi-Fi
 </details>
 
-<details>
+<details open>
 <summary><b>📱 Phone tools (all off by default)</b></summary>
 
 - Phone status: battery, temperature, storage, memory, Wi-Fi
@@ -245,7 +245,7 @@ flowchart LR
 - Ring the phone — only from the web admin page, full volume for 30 s even on silent
 </details>
 
-<details>
+<details open>
 <summary><b>🔒 Security</b></summary>
 
 - New devices need approval on the phone (*Allow / Block*)
@@ -257,7 +257,7 @@ flowchart LR
 - Remote access: separate password, 2-step code, optional approval on the phone, 7-day sessions; TV/DLNA and admin are never reachable remotely
 </details>
 
-<details>
+<details open>
 <summary><b>🎨 Customisation</b></summary>
 
 - 12 themes: Material You, Nothing, Samsung, Cyberpunk, iOS, Terminal, Dracula, Ocean, Sunset, Sakura, Forest, Paper — light / dark / system
@@ -294,7 +294,7 @@ Nothing is sent anywhere unless you enable remote access. No analytics, no ads.
 
 ## ❓ Troubleshooting
 
-<details>
+<details open>
 <summary><b>The TV / VLC doesn't see the phone</b></summary>
 
 - Guest networks and some routers have **AP / client isolation** — turn it off or use the phone's hotspot.
@@ -302,13 +302,13 @@ Nothing is sent anywhere unless you enable remote access. No analytics, no ads.
 - Battery optimisation: *Settings → Apps → Akış → Battery → Unrestricted*.
 </details>
 
-<details>
+<details open>
 <summary><b>A video doesn't play in the browser</b></summary>
 
 The web player can repackage most videos. If a codec isn't supported by the browser (e.g. some HEVC on desktop Chrome), use **Open in VLC** on the video page or play it on the TV.
 </details>
 
-<details>
+<details open>
 <summary><b>Camera / microphone don't work</b></summary>
 
 Start the server from the app (not from the widget or tile) — Android only allows camera and microphone for services started while the app is open.
@@ -353,8 +353,8 @@ To sign with your own key, add `AKIS_KEYSTORE_BASE64`, `AKIS_KEYSTORE_PASSWORD`,
 
 ---
 
-<details id="-türkçe">
-<summary><b>🇹🇷 Türkçe</b> — açmak için tıkla</summary>
+<details open id="-türkçe">
+<summary><b>🇹🇷 Türkçe</b></summary>
 
 <br>
 
@@ -477,7 +477,7 @@ Türkçe ve İngilizce; her tarayıcı kendi dilini seçebilir.
 
 **Gereksinim:** Android 10 ya da üstü. Uzaktan erişim 64 bit ARM telefon ister (son yılların neredeyse tüm telefonları).
 
-<details>
+<details open>
 <summary><b>Kendin derle</b></summary>
 
 1. **Android Studio** ve **JDK 25** kur.
@@ -524,7 +524,7 @@ flowchart LR
 
 ## 📚 Özellikler ayrıntılı
 
-<details>
+<details open>
 <summary><b>📺 Kitaplık ve UPnP / DLNA</b></summary>
 
 - Otomatik keşif (SSDP) — IP yazmaya gerek yok
@@ -540,7 +540,7 @@ flowchart LR
 - **Canlı klasörü:** kamera, ekran ve mikrofon canlı öğe olarak; **HD** öğeleri (H.264 + AAC, MPEG-TS) TV'lerde ve VLC'de oynar
 </details>
 
-<details>
+<details open>
 <summary><b>🎬 Web arayüzü ve oynatıcı</b></summary>
 
 - Sıfırdan yazılmış kendi oynatıcısı: telefon videoyu anında parçalı MP4'e çevirir, AC3/DTS sesi AAC'ye dönüştürür
@@ -553,7 +553,7 @@ flowchart LR
 - Her tarayıcı **kendi dilini, temasını ve açık/koyu modunu** seçer — varsayılan olarak telefonu takip eder
 </details>
 
-<details>
+<details open>
 <summary><b>📁 Dosyalar ve paylaşım</b></summary>
 
 - Belge önizleme (PDF, metin, kod, Markdown, JSON), ZIP içine bakma, daha iyi küçük resimler (APK ikonu, PDF ilk sayfa, klasör kapağı)
@@ -566,7 +566,7 @@ flowchart LR
 - **QR kartı:** ad, adresler ve Wi-Fi'ı içeren yazdırılabilir kart
 </details>
 
-<details>
+<details open>
 <summary><b>📱 Telefon araçları (hepsi varsayılan kapalı)</b></summary>
 
 - Telefon durumu: pil, sıcaklık, depolama, bellek, Wi-Fi
@@ -578,7 +578,7 @@ flowchart LR
 - Telefonu çaldır — yalnızca web yönetim sayfasından, sessizde bile 30 sn tam ses
 </details>
 
-<details>
+<details open>
 <summary><b>🔒 Güvenlik</b></summary>
 
 - Yeni cihazlar telefonda onay ister (*İzin ver / Engelle*)
@@ -590,7 +590,7 @@ flowchart LR
 - Uzaktan erişim: ayrı şifre, iki adımlı kod, isteğe bağlı telefonda onay, 7 günlük oturum; TV/DLNA ve yönetim uzaktan asla açılmaz
 </details>
 
-<details>
+<details open>
 <summary><b>🎨 Kişiselleştirme</b></summary>
 
 - 12 tema: Material You, Nothing, Samsung, Cyberpunk, iOS, Terminal, Dracula, Okyanus, Gün batımı, Sakura, Orman, Kağıt — açık / koyu / sistem
@@ -627,7 +627,7 @@ Uzaktan erişimi açmadıkça hiçbir şey hiçbir yere gönderilmez. Analiz yok
 
 ## ❓ Sorun giderme
 
-<details>
+<details open>
 <summary><b>TV / VLC telefonu görmüyor</b></summary>
 
 - Misafir ağlarında ve bazı modemlerde **AP / istemci izolasyonu** açık olur — kapat ya da telefonun hotspot'unu kullan.
@@ -635,13 +635,13 @@ Uzaktan erişimi açmadıkça hiçbir şey hiçbir yere gönderilmez. Analiz yok
 - Pil optimizasyonu: *Ayarlar → Uygulamalar → Akış → Pil → Kısıtlanmamış*.
 </details>
 
-<details>
+<details open>
 <summary><b>Bir video tarayıcıda oynamıyor</b></summary>
 
 Web oynatıcısı çoğu videoyu yeniden paketleyebilir. Codec tarayıcıda desteklenmiyorsa (ör. masaüstü Chrome'da bazı HEVC'ler) video sayfasındaki **VLC'de aç**'ı kullan ya da TV'de oynat.
 </details>
 
-<details>
+<details open>
 <summary><b>Kamera / mikrofon çalışmıyor</b></summary>
 
 Sunucuyu uygulamanın içinden başlat (widget ya da kutucuktan değil) — Android kamera ve mikrofonu yalnızca uygulama açıkken başlatılan servislere verir.
