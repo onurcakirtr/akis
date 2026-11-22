@@ -100,6 +100,9 @@ fun HomeScreen() {
     val settings by Prefs.settings.collectAsStateWithLifecycle()
     var showQr by remember { mutableStateOf(false) }
     var actFor by remember { mutableStateOf<ClientInfo?>(null) }
+    // Alış kumandası açık olan cihaz (eşleşme kimliği)
+    var remoteFor by remember { mutableStateOf<String?>(null) }
+    val alis by com.akis.app.AlisLink.devices.collectAsStateWithLifecycle()
     val tunnelState by com.akis.app.Tunnel.state.collectAsStateWithLifecycle()
     val remoteUrl by com.akis.app.Tunnel.url.collectAsStateWithLifecycle()
     var qrTab by remember { mutableStateOf("local") }
@@ -198,7 +201,11 @@ fun HomeScreen() {
             }
             if (streams.isNotEmpty()) {
                 item(key = "st-title") { SectionTitle(stringResource(R.string.now_playing), Modifier.animateItem()) }
-                items(streams, key = { "s-" + it.key }) { StreamCard(it, Modifier.animateItem()) }
+                items(streams, key = { "s-" + it.key }) { st ->
+                    // Karşıdaki Alış ise MB yerine saniye cinsinden ilerleme ve dokununca kumanda
+                    val a = alis.values.filter { it.ip == st.ip && it.online && it.app != "idle" }.maxByOrNull { it.seen }
+                    StreamCard(st, Modifier.animateItem(), a) { if (a != null) remoteFor = a.id }
+                }
             }
             if (shares.isNotEmpty() || requests.isNotEmpty()) {
                 item(key = "sh-title") { SectionTitle(stringResource(R.string.active_shares), Modifier.animateItem()) }
@@ -299,6 +306,7 @@ fun HomeScreen() {
         QrCardDialog(settings.name, address!!, remoteUrl.takeIf { tunnelState == com.akis.app.Tunnel.State.UP }, settings.wifiSsid, settings.wifiPass) { cardOpen = false }
     }
     if (inboxOpen) InboxDialog(inbox) { inboxOpen = false }
+    remoteFor?.let { id -> AlisRemoteDialog(id) { remoteFor = null } }
     actFor?.let { c ->
         AlertDialog(
             onDismissRequest = { actFor = null },
@@ -307,6 +315,10 @@ fun HomeScreen() {
                 Column {
                     Text(c.ip, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(8.dp))
+                    // Eşleşmiş Alış: kumanda
+                    alis.values.filter { it.ip == c.ip && it.online }.maxByOrNull { it.seen }?.let { a ->
+                        DeviceAction(Icons.Rounded.ConnectedTv, stringResource(R.string.alis_remote), stringResource(R.string.alis_remote_sub)) { remoteFor = a.id; actFor = null }
+                    }
                     DeviceAction(Icons.Rounded.LinkOff, stringResource(R.string.kick), stringResource(R.string.kick_sub)) { DeviceAccess.kick(c.ip, c.name); actFor = null }
                     DeviceAction(Icons.Rounded.Timer, stringResource(R.string.ban_15), stringResource(R.string.ban_sub)) { DeviceAccess.ban(c.ip, c.name, 15); actFor = null }
                     DeviceAction(Icons.Rounded.Timer, stringResource(R.string.ban_60), null) { DeviceAccess.ban(c.ip, c.name, 60); actFor = null }
@@ -595,8 +607,8 @@ private fun AddressCard(address: String, remote: String?, webUi: Boolean, onQr: 
 }
 
 @Composable
-private fun StreamCard(s: StreamInfo, modifier: Modifier = Modifier) {
-    ExpressiveCard(modifier = modifier, color = MaterialTheme.colorScheme.primaryContainer) {
+private fun StreamCard(s: StreamInfo, modifier: Modifier = Modifier, alis: com.akis.app.AlisLink.Device? = null, onRemote: () -> Unit = {}) {
+    ExpressiveCard(modifier = modifier, color = MaterialTheme.colorScheme.primaryContainer, onClick = if (alis != null) onRemote else null) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconBadge(
                 if (s.kind == Kind.AUDIO) Icons.Rounded.MusicNote else Icons.Rounded.Movie,
@@ -613,7 +625,9 @@ private fun StreamCard(s: StreamInfo, modifier: Modifier = Modifier) {
             Icon(Icons.Rounded.PlayArrow, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
         }
         Spacer(Modifier.height(12.dp))
-        val progress = if (s.size > 0) (s.position.toFloat() / s.size).coerceIn(0f, 1f) else 0f
+        val timed = alis != null && alis.durMs > 0
+        val progress = if (timed) (alis!!.posMs.toFloat() / alis.durMs).coerceIn(0f, 1f)
+        else if (s.size > 0) (s.position.toFloat() / s.size).coerceIn(0f, 1f) else 0f
         LinearProgressIndicator(
             progress = { progress },
             modifier = Modifier.fillMaxWidth().height(8.dp).clip(MaterialTheme.shapes.small),
@@ -622,7 +636,8 @@ private fun StreamCard(s: StreamInfo, modifier: Modifier = Modifier) {
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            "${formatBytes(s.position)} / ${formatBytes(s.size)}",
+            if (timed) "${formatDuration(alis!!.posMs)} / ${formatDuration(alis.durMs)}" + (if (alis.playing) "" else "  ⏸") + "  ·  " + stringResource(R.string.alis_tap_remote)
+            else "${formatBytes(s.position)} / ${formatBytes(s.size)}",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
         )

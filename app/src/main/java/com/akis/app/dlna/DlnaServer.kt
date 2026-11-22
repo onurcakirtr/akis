@@ -97,6 +97,26 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
         return mbit * 125_000L
     }
 
+    // ---------------- Alış kumanda bağı (yalnızca eşleşmiş Alış) ----------------
+
+    private fun json(res: HttpResponder, code: Int, o: Any) =
+        res.bytes(code, "application/json; charset=utf-8", o.toString().toByteArray(Charsets.UTF_8), mapOf("Cache-Control" to "no-store"))
+
+    /** GET /alis/cmd?wait=25 — bekleyen komutlar (uzun istek) */
+    private fun alisCmd(req: HttpRequest, res: HttpResponder) {
+        val dev = Pairing.byAuth(req.headers["authorization"]) ?: return json(res, 403, org.json.JSONObject().put("e", "pair"))
+        val wait = (queryParam(req.query, "wait").toLongOrNull() ?: 25).coerceIn(0, 30) * 1000
+        json(res, 200, org.json.JSONObject().put("cmds", com.akis.app.AlisLink.poll(dev, req.remote, wait)))
+    }
+
+    /** POST /alis/state — Alış'ın oynatıcı durumu */
+    private fun alisState(req: HttpRequest, res: HttpResponder) {
+        val dev = Pairing.byAuth(req.headers["authorization"]) ?: return json(res, 403, org.json.JSONObject().put("e", "pair"))
+        val st = runCatching { org.json.JSONObject(String(req.body, Charsets.UTF_8)) }.getOrNull() ?: return json(res, 400, org.json.JSONObject().put("e", "bad"))
+        com.akis.app.AlisLink.report(dev, req.remote, st)
+        json(res, 200, org.json.JSONObject().put("ok", true))
+    }
+
     /** Alış'ın cihaz adı: eşleşmişse Akış'ta kayıtlı ad, değilse Alış'ın gönderdiği X-Alis-Name (URL kodlu). */
     private fun alisName(req: HttpRequest): String? {
         Pairing.byAuth(req.headers["authorization"])?.let { return it.name }
@@ -134,6 +154,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
                     else res.text(404, Lang.s(R.string.http_no_thumb))
                 }
                 p.startsWith("/share/") -> webApi.share(req, res)
+                p == "/alis/cmd" -> alisCmd(req, res)
                 p.startsWith("/drop/") -> drop(req, res)
                 !web -> res.text(403, Lang.s(R.string.http_web_off))
                 adminApi.handle(req, res) -> Unit
@@ -143,6 +164,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             "POST" -> when {
                 p == "/h" -> webProgress(req, res)
                 p == "/pair" || p.startsWith("/pair/") -> pairRequest(req, res)
+                p == "/alis/state" -> alisState(req, res)
                 p == "/zipsel" && web -> webApi.zipSelection(req, res)
                 p == "/api/fs" && web -> if (webApi.fileOp(req, res)) contentChanged()
                 p.startsWith("/admin/") && web -> adminApi.handle(req, res)
@@ -222,7 +244,7 @@ class DlnaServer(private val ctx: Context, val port: Int, private val uuid: Stri
             deny(res, 403, Lang.s(R.string.http_remote_blocked), "off")
             return false
         }
-        val never = p == "/pair" || p.startsWith("/pair/") || p == "/desc.xml" || p == "/cd.xml" || p == "/cm.xml" || p.startsWith("/ctl/") || p.startsWith("/evt/") ||
+        val never = p == "/pair" || p.startsWith("/pair/") || p.startsWith("/alis/") || p == "/desc.xml" || p == "/cd.xml" || p == "/cm.xml" || p.startsWith("/ctl/") || p.startsWith("/evt/") ||
             p.startsWith("/admin/") || m == "SUBSCRIBE" || m == "UNSUBSCRIBE" || m == "NOTIFY"
         if (never) {
             deny(res, 403, Lang.s(R.string.http_remote_blocked), "off")
