@@ -27,6 +27,8 @@ object LiveTs {
     private class Chunk(val seq: Long, val key: Boolean, val data: ByteArray)
 
     private class Session(val source: String) {
+        // wait / notify için Java nesnesi gerekir
+        @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
         val lock = java.lang.Object()
         val ring = ArrayDeque<Chunk>()
         var seq = 0L

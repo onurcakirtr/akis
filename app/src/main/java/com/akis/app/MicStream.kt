@@ -18,6 +18,8 @@ import kotlin.concurrent.thread
 object MicStream {
     const val RATE = 16_000
     private const val CHUNK = RATE / 10 * 2 // 100 ms, 16 bit
+    // wait / notify için Java nesnesi gerekir
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     private val lock = java.lang.Object()
     /** Son ~3 saniye: ağ takılınca dinleyici araya giren parçaları da alır. */
     private val ring = arrayOfNulls<ByteArray>(32)

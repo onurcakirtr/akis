@@ -26,6 +26,8 @@ import java.io.OutputStream
  */
 object ScreenStream {
     private const val NOTIF_ASK = 3600
+    // wait / notify için Java nesnesi gerekir
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     private val lock = java.lang.Object()
     private var projection: MediaProjection? = null
     private var display: VirtualDisplay? = null

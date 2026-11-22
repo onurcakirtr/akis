@@ -23,6 +23,8 @@ import java.io.OutputStream
  * Açıkken ServerState.cameraLive = true olur ve telefondaki bildirimde gösterilir.
  */
 object CameraStream {
+    // wait / notify için Java nesnesi gerekir
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     private val lock = java.lang.Object()
     private var thread: HandlerThread? = null
     private var handler: Handler? = null

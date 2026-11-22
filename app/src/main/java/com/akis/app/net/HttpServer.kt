@@ -266,7 +266,7 @@ class HttpServer(
                     query = if (q >= 0) target.substring(q + 1) else "",
                     headers = headers,
                     body = body,
-                    remote = if (viaTunnel) cfIp!! else remote,
+                    remote = if (viaTunnel) cfIp else remote,
                     tunnel = viaTunnel,
                     bodyStream = stream,
                     contentLength = if (streaming) len else body.size.toLong(),

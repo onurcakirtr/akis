@@ -49,6 +49,8 @@ object ServerState {
 
     // ---------------- Değişiklik sayacı (web sayfası uzun istekle bekler) ----------------
 
+    // wait / notify için Java nesnesi gerekir
+    @Suppress("PLATFORM_CLASS_MAPPED_TO_KOTLIN")
     private val changeLock = java.lang.Object()
     @Volatile var changeVersion = 0
         private set

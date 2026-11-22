@@ -625,8 +625,8 @@ private fun StreamCard(s: StreamInfo, modifier: Modifier = Modifier, alis: com.a
             Icon(Icons.Rounded.PlayArrow, null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
         }
         Spacer(Modifier.height(12.dp))
-        val timed = alis != null && alis.durMs > 0
-        val progress = if (timed) (alis!!.posMs.toFloat() / alis.durMs).coerceIn(0f, 1f)
+        val a = alis?.takeIf { it.durMs > 0 }
+        val progress = if (a != null) (a.posMs.toFloat() / a.durMs).coerceIn(0f, 1f)
         else if (s.size > 0) (s.position.toFloat() / s.size).coerceIn(0f, 1f) else 0f
         LinearProgressIndicator(
             progress = { progress },
@@ -636,7 +636,7 @@ private fun StreamCard(s: StreamInfo, modifier: Modifier = Modifier, alis: com.a
         )
         Spacer(Modifier.height(6.dp))
         Text(
-            if (timed) "${formatDuration(alis!!.posMs)} / ${formatDuration(alis.durMs)}" + (if (alis.playing) "" else "  ⏸") + "  ·  " + stringResource(R.string.alis_tap_remote)
+            if (a != null) "${formatDuration(a.posMs)} / ${formatDuration(a.durMs)}" + (if (a.playing) "" else "  ⏸") + "  ·  " + stringResource(R.string.alis_tap_remote)
             else "${formatBytes(s.position)} / ${formatBytes(s.size)}",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f),
